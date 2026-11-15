@@ -12,15 +12,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Explicit LogicalName so resource names are the same on Windows and Linux. d3 comes from the shared library. -->
+    <!-- Explicit LogicalName so resource names are the same on Windows and Linux. d3 comes from the shared library, and the views and their styles from the code views library. -->
     <EmbeddedResource Include="Resources\Page\search.html" LogicalName="Page/search.html" />
-    <EmbeddedResource Include="Resources\Page\views.html" LogicalName="Page/views.html" />
-    <EmbeddedResource Include="Resources\Page\page.css" LogicalName="Page/page.css" />
     <EmbeddedResource Include="Resources\Page\page.js" LogicalName="Page/page.js" />
     <EmbeddedResource Include="Resources\Page\vba-highlight.js" LogicalName="Page/vba-highlight.js" />
-    <EmbeddedResource Include="Resources\Page\graph.js" LogicalName="Page/graph.js" />
-    <EmbeddedResource Include="Resources\Page\classes.js" LogicalName="Page/classes.js" />
-    <EmbeddedResource Include="Resources\Page\calls.js" LogicalName="Page/calls.js" />
     <EmbeddedResource Include="Resources\Page\favicon.svg" LogicalName="Page/favicon.svg" />
   </ItemGroup>
 

@@ -21,7 +21,6 @@ public sealed class ShellPageTests
       FaviconSvg = "<svg/>",
       Stylesheet = ".tool-rule { color: red; }",
       DataJson = "{\"name\":\"</script>\"}",
-      ScriptAssembly = typeof(ShellPage).Assembly,
       Scripts = [],
     };
     return change is null ? page : change(page);

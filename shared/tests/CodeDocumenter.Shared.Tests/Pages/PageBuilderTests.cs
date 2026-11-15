@@ -60,7 +60,7 @@ public sealed class PageBuilderTests
   public void D3_comes_first_with_its_licence_then_the_shells_script_then_the_tools()
   {
     // A tool's scripts come from its own assembly, so the list is empty here; the tools' tests cover theirs.
-    var scripts = PageBuilder.Scripts(typeof(PageBuilder).Assembly, []);
+    var scripts = PageBuilder.Scripts([]);
 
     Assert.StartsWith($"<script>\n/*! d3 {VendoredScripts.D3Version} (ISC licence)\n\n", scripts, StringComparison.Ordinal);
     Assert.Contains($"*/\n// https://d3js.org v{VendoredScripts.D3Version} ", scripts, StringComparison.Ordinal);
@@ -71,7 +71,7 @@ public sealed class PageBuilderTests
   [Fact]
   public void A_missing_script_names_itself_and_its_assembly()
   {
-    var exception = Assert.Throws<InvalidOperationException>(() => PageBuilder.Scripts(typeof(PageBuilder).Assembly, ["Page/missing.js"]));
+    var exception = Assert.Throws<InvalidOperationException>(() => PageBuilder.Scripts([new PageScript(typeof(PageBuilder).Assembly, "Page/missing.js")]));
 
     Assert.Contains("'Page/missing.js'", exception.Message, StringComparison.Ordinal);
     Assert.Contains("CodeDocumenter.Shared", exception.Message, StringComparison.Ordinal);

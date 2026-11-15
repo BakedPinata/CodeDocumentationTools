@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Reflection;
 using System.Text;
+using CodeDocumenter.CodeViews;
 using CodeDocumenter.Shared;
 using CodeDocumenter.Shared.Files;
 using CodeDocumenter.Shared.Pages;
@@ -16,9 +17,9 @@ public sealed record PlannedPage(string Path) : IPlannedOutput
 }
 
 /// <summary>
-/// Builds the single, self-contained documentation page on the shell pqdoc's page shares (<see cref="ShellPage"/>):
-/// vbadoc's views and search box from Resources/Page, with the styles, scripts, data and (optionally) source
-/// written inline. Nothing in the page refers to another file or URL.
+/// Builds the single, self-contained documentation page on the shell every tool's page shares (<see cref="ShellPage"/>),
+/// with the views of code in the code views library (<see cref="CodeViewsPage"/>) and vbadoc's search box, highlighter
+/// and data, all written inline with (optionally) the source. Nothing in the page refers to another file or URL.
 /// </summary>
 public static class HtmlPageWriter
 {
@@ -43,8 +44,11 @@ public static class HtmlPageWriter
   // The page template's generator tag starts with the tool's name, which is how older pages are recognised.
   const string GeneratorTag = "<meta name=\"generator\" content=\"vbadoc ";
 
-  /// <summary>Our own scripts, in load order after the vendored libraries.</summary>
-  static readonly string[] PageScripts = ["Page/vba-highlight.js", "Page/page.js", "Page/graph.js", "Page/classes.js", "Page/calls.js"];
+  /// <summary>
+  /// Our own scripts, which come before the code views library's: the highlighter, and what the page is told about
+  /// vbadoc (how a module's text is decoded, and the Export tab).
+  /// </summary>
+  static readonly string[] PageScripts = ["Page/vba-highlight.js", "Page/page.js"];
 
   static Assembly Resources => typeof(HtmlPageWriter).Assembly;
 
@@ -67,7 +71,7 @@ public static class HtmlPageWriter
       Version = Version,
       PageTitle = title,
       Title = title,
-      Tabs = [new ShellTab("graph", "Dependency graph"), new ShellTab("classes", "Class diagram"), new ShellTab("calls", "Calls")],
+      Tabs = CodeViewsPage.Tabs,
       SearchHtml = EmbeddedResources.ReadText(Resources, "Page/search.html"),
       LoadFolderHint = "Choose the folder that holds this page's module files, to see their source",
       Summary = Summary(model),
@@ -76,14 +80,13 @@ public static class HtmlPageWriter
       ExportTab = true,
       PanelName = "Source",
       ExplorerLabel = "Modules and members",
-      ViewsHtml = EmbeddedResources.ReadText(Resources, "Page/views.html"),
+      ViewsHtml = CodeViewsPage.ViewsHtml,
       FaviconSvg = EmbeddedResources.ReadText(Resources, "Page/favicon.svg"),
-      Stylesheet = EmbeddedResources.ReadText(Resources, "Page/page.css"),
+      Stylesheet = CodeViewsPage.Stylesheet,
       DataJson = data.ToJson(),
       ViewsJson = viewsJson ?? "",
       SourcesHtml = embedSource ? EmbeddedSources(project) : "",
-      ScriptAssembly = Resources,
-      Scripts = PageScripts,
+      Scripts = CodeViewsPage.Scripts(PageScripts.Select(name => new PageScript(Resources, name))),
     };
 
     var html = page.Render();

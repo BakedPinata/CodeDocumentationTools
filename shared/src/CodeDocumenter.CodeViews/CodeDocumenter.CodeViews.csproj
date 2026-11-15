@@ -1,11 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!-- The views every tool that documents code shares (see "Structure" in docs/GUIDELINES.md): the dependency graph,
-       the class diagram and the Calls tab, drawn from the code model. vbadoc's Core library uses it, and so will the
-       tools for other languages; pqdoc doesn't. It uses CodeDocumenter.Shared and never a tool. -->
+       the class diagram and the Calls tab, with the page of code they're part of. vbadoc's Core library uses it, and
+       so will the tools for other languages; pqdoc doesn't. It uses CodeDocumenter.Shared and never a tool. -->
 
   <ItemGroup>
     <ProjectReference Include="..\CodeDocumenter.Shared\CodeDocumenter.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Explicit LogicalName so resource names are the same on Windows and Linux. -->
+    <EmbeddedResource Include="Resources\Views\views.html" LogicalName="Views/views.html" />
+    <EmbeddedResource Include="Resources\Views\views.css" LogicalName="Views/views.css" />
+    <EmbeddedResource Include="Resources\Views\code-page.js" LogicalName="Views/code-page.js" />
+    <EmbeddedResource Include="Resources\Views\graph.js" LogicalName="Views/graph.js" />
+    <EmbeddedResource Include="Resources\Views\classes.js" LogicalName="Views/classes.js" />
+    <EmbeddedResource Include="Resources\Views\calls.js" LogicalName="Views/calls.js" />
   </ItemGroup>
 
 </Project>

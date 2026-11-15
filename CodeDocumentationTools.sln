@@ -45,6 +45,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeDocumenter.Workbooks.Te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeDocumenter.CodeViews", "shared\src\CodeDocumenter.CodeViews\CodeDocumenter.CodeViews.csproj", "{C7AD2E0E-5864-420D-BE30-5E78311457BD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeDocumenter.CodeViews.Tests", "shared\tests\CodeDocumenter.CodeViews.Tests\CodeDocumenter.CodeViews.Tests.csproj", "{19B18042-B24F-4EC9-9976-60C4E69F1427}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -259,6 +261,18 @@ Global
 		{C7AD2E0E-5864-420D-BE30-5E78311457BD}.Release|x64.Build.0 = Release|Any CPU
 		{C7AD2E0E-5864-420D-BE30-5E78311457BD}.Release|x86.ActiveCfg = Release|Any CPU
 		{C7AD2E0E-5864-420D-BE30-5E78311457BD}.Release|x86.Build.0 = Release|Any CPU
+		{19B18042-B24F-4EC9-9976-60C4E69F1427}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19B18042-B24F-4EC9-9976-60C4E69F1427}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19B18042-B24F-4EC9-9976-60C4E69F1427}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{19B18042-B24F-4EC9-9976-60C4E69F1427}.Debug|x64.Build.0 = Debug|Any CPU
+		{19B18042-B24F-4EC9-9976-60C4E69F1427}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{19B18042-B24F-4EC9-9976-60C4E69F1427}.Debug|x86.Build.0 = Debug|Any CPU
+		{19B18042-B24F-4EC9-9976-60C4E69F1427}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19B18042-B24F-4EC9-9976-60C4E69F1427}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19B18042-B24F-4EC9-9976-60C4E69F1427}.Release|x64.ActiveCfg = Release|Any CPU
+		{19B18042-B24F-4EC9-9976-60C4E69F1427}.Release|x64.Build.0 = Release|Any CPU
+		{19B18042-B24F-4EC9-9976-60C4E69F1427}.Release|x86.ActiveCfg = Release|Any CPU
+		{19B18042-B24F-4EC9-9976-60C4E69F1427}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -281,5 +295,6 @@ Global
 		{646D357C-2370-4DB0-A2BB-AC29C857C8D1} = {4F52FD11-658E-A102-6CD3-7D7C16FFA15B}
 		{AA7AC829-9829-4741-8F8E-F459E4573096} = {4F52FD11-658E-A102-6CD3-7D7C16FFA15B}
 		{C7AD2E0E-5864-420D-BE30-5E78311457BD} = {4F52FD11-658E-A102-6CD3-7D7C16FFA15B}
+		{19B18042-B24F-4EC9-9976-60C4E69F1427} = {4F52FD11-658E-A102-6CD3-7D7C16FFA15B}
 	EndGlobalSection
 EndGlobal

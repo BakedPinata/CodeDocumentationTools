@@ -10,6 +10,11 @@ namespace CodeDocumenter.Shared.Pages;
 /// <param name="Label">What the tab says.</param>
 public sealed record ShellTab(string Name, string Label);
 
+/// <summary>A script a page inlines: an embedded resource, by the logical name its project gives it.</summary>
+/// <param name="Assembly">The assembly that embeds it.</param>
+/// <param name="Name">Its logical name, such as <c>Page/page.js</c>.</param>
+public sealed record PageScript(Assembly Assembly, string Name);
+
 /// <summary>
 /// A page built on the shell both tools share: the template in Resources/Shell with the shell's stylesheet and script,
 /// and what the tool puts into it. The shell owns the top bar, tabs, theme, side panel, splitter, Load folder and source
@@ -108,11 +113,11 @@ public sealed partial record ShellPage
   /// <summary>For --embed-source, the hidden &lt;pre&gt; elements holding the source; otherwise empty.</summary>
   public string SourcesHtml { get; init; } = string.Empty;
 
-  /// <summary>The assembly that embeds <see cref="Scripts"/>.</summary>
-  public required Assembly ScriptAssembly { get; init; }
-
-  /// <summary>The tool's own scripts, in load order after d3 and the shell's script.</summary>
-  public required IReadOnlyList<string> Scripts { get; init; }
+  /// <summary>
+  /// The page's scripts after d3 and the shell's, in load order: the tool's own, and those of a library of views it
+  /// uses.
+  /// </summary>
+  public required IReadOnlyList<PageScript> Scripts { get; init; }
 
   /// <summary>Puts the page together.</summary>
   /// <exception cref="ArgumentException">The tool's name isn't a plain lower-case name.</exception>
@@ -150,7 +155,7 @@ public sealed partial record ShellPage
         ? string.Empty
         : $"<script type=\"application/json\" id=\"{Tool}-views\">\n{PageBuilder.EscapeForScriptElement(ViewsJson)}\n</script>",
       ["SOURCES"] = SourcesHtml,
-      ["SCRIPTS"] = PageBuilder.Scripts(ScriptAssembly, Scripts),
+      ["SCRIPTS"] = PageBuilder.Scripts(Scripts),
     };
 
     return PageBuilder.Fill(Template.Value, values);

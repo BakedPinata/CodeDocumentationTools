@@ -87,8 +87,7 @@ public sealed class HtmlExporter : IExporter
       DataJson = SerialiseGraph(graph, context),
       ViewsJson = context.ViewsJson ?? string.Empty,
       SourcesHtml = context.EmbedSource && context.Sources is not null ? EmbeddedSources(context.Sources) : string.Empty,
-      ScriptAssembly = Resources,
-      Scripts = PageScripts,
+      Scripts = [.. PageScripts.Select(name => new PageScript(Resources, name))],
     };
 
     return page.Render();
