@@ -412,6 +412,7 @@
     onShownChange: function (fn) { listeners.shown.push(fn); },
     preparePrint: shell.print.prepare,
     finishPrint: shell.print.finish,
+    viewText: shell.copy.text,
     locked: shell.lock.on,
     onLockChange: function (fn) { listeners.lock.push(fn); },
     lockSource: function (view, fn) { lockSources[view] = fn; },
@@ -474,6 +475,7 @@
       });
     },
     element: function () { return shell.activeView() === "graph" ? $("graph-svg") : null; },
+    language: "powerquery", // for Copy's code blocks
     describe: function (id) {
       var query = queriesById.get(id);
       if (!query) return null;

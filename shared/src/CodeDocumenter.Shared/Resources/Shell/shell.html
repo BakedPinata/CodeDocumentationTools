@@ -83,6 +83,21 @@
       <p class="print-status muted" id="print-status" role="status"></p>
     </div>
   </details>
+  <details class="dropdown copy-menu" id="copy" hidden>
+    <summary class="button" title="Copy what the page shows as text (Markdown), to paste into a chat or a document">Copy</summary>
+    <div class="menu" id="copy-menu">
+      <h3>Copy as text</h3>
+      <div class="print-actions">
+        <button type="button" class="button" id="copy-view" title="What the page shows now, as Markdown: each item with its signature, description and what it uses, and what the open view adds, such as the calls that are opened">Copy this view</button>
+      </div>
+      <label class="print-option"><input type="checkbox" id="copy-source"> Include each item's source</label>
+      <p class="copy-status" id="copy-status" role="status"></p>
+      <div class="copy-fallback" id="copy-fallback" hidden>
+        <label for="copy-text">The browser wouldn't copy it. Press Ctrl+C to copy it from here:</label>
+        <textarea id="copy-text" rows="8" readonly spellcheck="false"></textarea>
+      </div>
+    </div>
+  </details>
   <div class="search">
 {{SEARCH}}
   </div>

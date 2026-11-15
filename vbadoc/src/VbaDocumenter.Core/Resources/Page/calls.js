@@ -844,8 +844,71 @@
   followFocus();
   if (vb.activeView() === "calls") draw();
 
-  // For tests: the tree's root and direction.
+  // ---- The tree as text ----
+  //
+  // What Copy puts on the clipboard for this tab (step L6 of the generalisation plan): the tree as it's opened, as a
+  // nested Markdown list, with the same rows, order and words as the tree. A procedure with calls that isn't opened
+  // ends in "…", so whoever reads the text knows there's more below it.
+
+  function lineText(row) { return row.line ? ", line " + row.line : ""; }
+
+  function rowText(row, depth, key, path, out) {
+    var indent = new Array(depth + 1).join("  ");
+    if (row.block) {
+      if (open.has(key + ":closed")) { out.push(indent + "- `" + row.block.text + "`" + lineText(row) + " …"); return; }
+      out.push(indent + "- `" + row.block.text + "`" + lineText(row));
+      rowsText(row.rows, depth + 1, key, path, out);
+      return;
+    }
+    var prefix = row.relation ? row.relation + ": " : row.condition && row.within === undefined ? row.condition + ": " : "";
+    if (row.lateBound !== undefined) {
+      out.push(indent + "- " + prefix + "`" + row.lateBound + "` (late-bound)" + lineText(row));
+      return;
+    }
+    var recursive = path.indexOf(row.id) >= 0;
+    var expandable = !recursive && hasChildren(row.id);
+    var isOpen = expandable && open.has(key);
+    var member = vb.membersById.get(row.id);
+    out.push(indent + "- " + prefix + nameOf(row.id) + " (" + kindOf(row.id) +
+      (member && member.role !== "none" && depth <= 1 && path.length === 0 ? ", " + vb.roleLabel(member.role).toLowerCase() : "") + ")" +
+      (recursive ? " ↻ recursion" : "") + lineText(row) +
+      (row.within ? ", in " + (row.condition ? "the " + row.condition + " of " : "") + "`" + row.within + "`" : "") +
+      (expandable && !isOpen ? " …" : ""));
+    if (!isOpen) return;
+    var children = childrenOf(row.id);
+    rowsText(children.rows, depth + 1, key, path.concat([row.id]), out);
+    if (children.leftOut > 0) {
+      out.push(indent + "  - + " + children.leftOut + (children.leftOut === 1 ? " call" : " calls") + " to items the views don't show");
+    }
+  }
+
+  function rowsText(rows, depth, key, path, out) {
+    rows.forEach(function (row, i) {
+      rowText(row, depth, key + (row.block ? "/b" + row.block.id : "/" + i + ":" + (row.id || "")), path, out);
+    });
+  }
+
+  function treeText() {
+    var list = roots();
+    if (list.length === 0) return "";
+    var out = [];
+    list.forEach(function (item) {
+      if (!item.group) { rowText({ id: item.id }, 0, item.key, [], out); return; }
+      var closed = open.has(item.key + ":closed");
+      out.push("- " + item.group + " (" + item.children.length + ")" + (closed ? " …" : ""));
+      if (!closed) item.children.forEach(function (id) { rowText({ id: id }, 1, item.key + "/" + id, [], out); });
+    });
+    var heading = root
+      ? (direction === "calls" ? "Calls from " : "Called by, into ") + nameOf(root)
+      : direction === "calls" ? "Calls, from the entry points" : "Called by";
+    return "### " + heading + "\n\n" +
+      (direction === "calls" ? "What each procedure calls, in the order of its code" : "What calls each procedure") +
+      ", as far as the tree is opened. A row ending in … has more below it that isn't opened.\n\n" + out.join("\n");
+  }
+
+  // For tests: the tree's root and direction. For Copy: the tree as text.
   window.vbadocCalls = {
+    text: treeText,
     root: function () { return root; },
     direction: function () { return direction; },
     showing: function () { return showing; }

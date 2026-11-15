@@ -747,7 +747,8 @@
     onFavouritesChange: shell.onFavouritesChange,
     viewPart: shell.views.part,
     preparePrint: shell.print.prepare,
-    finishPrint: shell.print.finish
+    finishPrint: shell.print.finish,
+    viewText: shell.copy.text
   };
 
   // Favourites and the filter are per workbook. In the explorer's Favourites group a member shows its module, as it
@@ -837,6 +838,9 @@
       if (view === "calls") return $("calls-sequence").hidden ? $("calls-tree") : $("calls-sequence");
       return null;
     },
+    // For Copy: the Calls tab adds the tree as it's opened, and code blocks are VBA.
+    language: "vba",
+    text: function () { return shell.activeView() === "calls" && window.vbadocCalls ? window.vbadocCalls.text() : ""; },
     describe: function (id) {
       var member = membersById.get(id);
       var module = modulesById.get(member ? member.module : id);
@@ -846,7 +850,8 @@
       return {
         name: member ? module.id + "." + member.name : module.id,
         kind: member ? KIND_LABELS[member.kind] || member.kind : moduleKindLabel(module),
-        signature: member ? member.signature : module.file + " · " + module.lines + " lines",
+        signature: member ? member.signature : "",
+        note: member ? "" : module.file + " · " + module.lines + " lines",
         description: (member || module).description || "",
         uses: namesAt(index.uses.get(id), function (e) { return e.to; }, own),
         usedBy: namesAt(index.usedBy.get(id), function (e) { return e.from; }, own),

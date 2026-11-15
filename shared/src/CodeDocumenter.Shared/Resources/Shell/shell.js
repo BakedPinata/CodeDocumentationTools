@@ -140,6 +140,12 @@
 //   shell.print.prepare(which, options) / finish()   make the document without printing it ("current" or "all";
 //                                      options.source includes each item's source), giving a promise, and put the
 //                                      page back afterwards: what the menu does around window.print(), for tests
+//   The Copy menu, beside Print, is there once print.init is called: it puts the same view on the clipboard as
+//   Markdown, from the same describe(id). Two more things print.init can be given are for it: text(), what the open
+//   view adds of its own, as Markdown under a heading of level 3 (such as the calls that are opened), or ""; and
+//   language, the name written on its code blocks, such as "vba"
+//   shell.copy.text(options)           the text the menu would copy (options.source includes each item's source),
+//                                      giving a promise, for tests
 //   shell.exports.init({ what, whyNot(id), uses(id), needs(id), offers(id), pickFor(id), references, writeTo })   the Export tab,
 //                                      which lists the explorer's items: what they are ("modules and classes"), why an
 //                                      item can't be picked (null when it can), the items it uses that can come, what
@@ -2960,6 +2966,7 @@
     var printSource = null;
     var printBox = $("print-document");
     var printMenu = $("print");
+    var copyMenu = $("copy");
     var printStatus = $("print-status");
     var printCopies = 0;
     var themeBeforePrint = null;
@@ -2973,6 +2980,8 @@
       printSource = config;
       printMenu.hidden = false;
       $("print-source").checked = settings.load("print-source") === "true";
+      copyMenu.hidden = false;
+      $("copy-source").checked = settings.load("copy-source") === "true";
     }
 
     function ownReferences(value, prefix) {
@@ -3075,16 +3084,27 @@
       return html + "</article>";
     }
 
+    // What a printed or copied view says about itself: its tab, and whatever limits what it shows.
+    function viewSays() {
+      var what = [tabLabel(activeView)];
+      if (filterActive() && favouriteSource.describeFilter) what.push((viewLock !== null ? "locked: " : "filtered: ") + favouriteSource.describeFilter(filterIds().concat(aloneIds())));
+      if (hiddenList().length > 0) what.push(hiddenList().length + " hidden");
+      if (choicesCount() > 0) what.push(choicesCount() + " of the Show… choices leave things out");
+      if (selected !== null) what.push("selected: " + selected + (focused && viewLock === null ? " (focused)" : ""));
+      return what;
+    }
+
+    // The view the page is showing, if it's still as that view has it, or null.
+    function viewShowing() {
+      return currentView !== null && arrangementOf(captureView()) === currentArrangement ? viewNamed(currentView) : null;
+    }
+
     // One view's part of the document, from the page as it is now. Gives a promise of its element.
     function printedView(name, description, withSource) {
       return Promise.resolve(printSource.ready ? printSource.ready() : null).then(function () {
         var section = document.createElement("section");
         section.className = "print-view";
-        var what = [tabLabel(activeView)];
-        if (filterActive() && favouriteSource.describeFilter) what.push((viewLock !== null ? "locked: " : "filtered: ") + favouriteSource.describeFilter(filterIds().concat(aloneIds())));
-        if (hiddenList().length > 0) what.push(hiddenList().length + " hidden");
-        if (choicesCount() > 0) what.push(choicesCount() + " of the Show… choices leave things out");
-        if (selected !== null) what.push("selected: " + selected + (focused && viewLock === null ? " (focused)" : ""));
+        var what = viewSays();
         section.innerHTML = "<h2>" + escapeHtml(name) + "</h2>" +
           (description ? "<p class=\"print-description\">" + escapeHtml(description) + "</p>" : "") +
           "<p class=\"print-what\">" + escapeHtml(what.join(" · ")) + "</p>";
@@ -3141,7 +3161,7 @@
           applyView(cleanView(Object.assign({ name: "before printing" }, before)));
         });
       } else {
-        var showing = currentView !== null && arrangementOf(captureView()) === currentArrangement ? viewNamed(currentView) : null;
+        var showing = viewShowing();
         done = printedView(showing ? showing.name : "The page as it is now", showing ? showing.description : "", withSource)
           .then(function (section) { printBox.appendChild(section); });
       }
@@ -3182,6 +3202,117 @@
     $("print-current").addEventListener("click", function () { printNow("current"); });
     $("print-all").addEventListener("click", function () { printNow("all"); });
     $("print-source").addEventListener("change", function () { settings.save("print-source", $("print-source").checked ? "true" : "false"); });
+
+    // ---- Copying a view as text ----
+    //
+    // The Copy menu puts what the page shows on the clipboard as Markdown, to paste into a chat or a document: the
+    // title, the page's summary and the build stamp, the view's name and description and what limits it, what the
+    // tool adds for the open view (print.init's text(), such as the calls that are opened), then the items a printed
+    // view would list, each with its kind, signature, description and Uses / Used by, and its source if asked. It
+    // says how much it copied, and warns when that's long for a chat. If the browser refuses the clipboard, the text
+    // is shown in a box to copy by hand. Nothing is sent anywhere: where the text goes is the person's choice.
+
+    var copyStatus = $("copy-status");
+    var copyFallback = $("copy-fallback");
+    var COPY_LONG = 30000; // characters: beyond this the menu warns, as a chat may refuse it or lose track of it
+
+    // A code block that the code can't end early: its fence is longer than any run of backticks in it.
+    function fenced(code, language) {
+      var longest = (code.match(/`+/g) || []).reduce(function (most, run) { return Math.max(most, run.length); }, 0);
+      var fence = new Array(Math.max(3, longest + 1) + 1).join("`");
+      return fence + (language || "") + "\n" + code + "\n" + fence;
+    }
+
+    // Text on one line. Names and descriptions are otherwise left as written, since the text is read more often
+    // than it's rendered.
+    function oneLine(text) { return String(text).replace(/\s*[\r\n]+\s*/g, " ").trim(); }
+
+    function itemText(item, withSource) {
+      var parts = ["#### " + oneLine(item.name) + (item.kind ? " (" + oneLine(item.kind) + ")" : "")];
+      if (item.signature) parts.push(fenced(item.signature, printSource.language));
+      if (item.note) parts.push(oneLine(item.note));
+      if (item.description) parts.push(String(item.description).trim());
+      var links = [["Uses", item.uses], ["Used by", item.usedBy]].filter(function (list) { return list[1] && list[1].length > 0; })
+        .map(function (list) { return "- " + list[0] + ": " + list[1].join(", "); });
+      if (links.length > 0) parts.push(links.join("\n"));
+      if (withSource && item.source && sources.has(item.source.id)) {
+        var lines = sources.get(item.source.id);
+        var first = Math.max(1, item.source.first || 1);
+        var last = Math.min(lines.length, item.source.last || lines.length);
+        var end = Math.min(last, first + PRINT_SOURCE_LINES - 1);
+        parts.push((first > 1 || last < lines.length ? "Lines " + first + " to " + end + ":\n\n" : "") + fenced(lines.slice(first - 1, end).join("\n"), printSource.language));
+        if (end < last) parts.push("… and " + (last - end) + " more lines, to line " + last + ".");
+      }
+      return parts.join("\n\n");
+    }
+
+    // The page as it is now, as Markdown. Gives a promise of the text.
+    function viewText(copyOptions) {
+      if (!printSource) return Promise.reject(new Error("This page has nothing to copy."));
+      var withSource = !!(copyOptions && copyOptions.source);
+      return Promise.resolve(printSource.ready ? printSource.ready() : null).then(function () {
+        var summary = $("page-summary");
+        var showing = viewShowing();
+        var parts = ["# " + oneLine($("page-title").textContent)];
+        parts.push((summary ? oneLine(summary.textContent) + "\n" : "") + "Made by " + oneLine($("tool-version").textContent));
+        parts.push("## " + (showing ? oneLine(showing.name) : "The page as it is now"));
+        if (showing && showing.description) parts.push(String(showing.description).trim());
+        parts.push(viewSays().join(" · "));
+        var own = printSource.text ? printSource.text() : "";
+        if (own) parts.push(String(own).trim());
+
+        var ids = printedItems();
+        var items = ids.slice(0, PRINT_ITEMS).map(function (id) { return printSource.describe(id); }).filter(function (item) { return !!item; });
+        if (items.length > 0) {
+          parts.push("### " + itemsText(ids.length));
+          items.forEach(function (item) { parts.push(itemText(item, withSource)); });
+          if (ids.length > PRINT_ITEMS) parts.push("… and " + (ids.length - PRINT_ITEMS) + " more, not listed. Tick fewer items to list them all.");
+        }
+        if (withSource && items.length > 0 && !items.some(function (item) { return item.source && sources.has(item.source.id); })) {
+          parts.push("The source isn't included: it isn't loaded in the page. Use Load folder first.");
+        }
+        return parts.join("\n\n") + "\n";
+      });
+    }
+
+    function setCopyStatus(text, isWarning) {
+      copyStatus.textContent = text;
+      copyStatus.classList.toggle("warning", !!isWarning);
+    }
+
+    function copyViewNow() {
+      var button = $("copy-view");
+      var withSource = $("copy-source").checked;
+      button.disabled = true;
+      copyFallback.hidden = true;
+      setCopyStatus("Preparing…");
+      viewText({ source: withSource }).then(function (text) {
+        return copyText(text).then(function (copied) {
+          var size = text.length.toLocaleString() + " characters";
+          var long = text.length > COPY_LONG ? " That's long for a chat: tick fewer items in the explorer" + (withSource ? ", or leave out the source" : "") + "." : "";
+          if (copied) {
+            setCopyStatus("Copied " + size + "." + long, long !== "");
+            announce("Copied");
+          } else {
+            $("copy-text").value = text;
+            copyFallback.hidden = false;
+            $("copy-text").focus();
+            $("copy-text").select();
+            $("copy-text").scrollTop = 0;
+            setCopyStatus(size + "." + long, long !== "");
+          }
+        });
+      }, function (error) {
+        console.error(error);
+        setCopyStatus("Couldn't make the text to copy.", true);
+      }).then(function () { button.disabled = false; });
+    }
+
+    copyMenu.querySelector("summary").addEventListener("click", function () {
+      if (!copyMenu.open) { setCopyStatus(""); copyFallback.hidden = true; $("copy-text").value = ""; }
+    });
+    $("copy-view").addEventListener("click", copyViewNow);
+    $("copy-source").addEventListener("change", function () { settings.save("copy-source", $("copy-source").checked ? "true" : "false"); });
 
     // ---- Tabs ----
 
@@ -3289,6 +3420,7 @@
       onViewApplied: function (fn) { listeners.applied.push(fn); },
       exports: { init: initExport },
       print: { init: initPrint, prepare: preparePrint, finish: finishPrint },
+      copy: { text: viewText },
       source: {
         init: initSource,
         has: function (id) { return sources.has(id); },
