@@ -12,7 +12,7 @@ versions of their own, and a change to one changes the build stamp of the tools 
 | `CodeDocumenter.CodeViews` | The views of code every tool but pqdoc shares, and the page they're part of. It uses `CodeDocumenter.Shared` | vbadoc |
 
 Each is in `src/`, with its tests in `tests/` (`CodeDocumenter.Shared.Tests`, `CodeDocumenter.Workbooks.Tests`,
-`CodeDocumenter.CodeViews.Tests`), and
+`CodeDocumenter.CodeViews.Tests`, `CodeDocumenter.CodeViews.BrowserTests`), and
 `CodeDocumenter.Shared.sln` holds them all.
 
 ## What's in them
@@ -40,7 +40,7 @@ Each is in `src/`, with its tests in `tests/` (`CodeDocumenter.Shared.Tests`, `C
 
 | Folder | What |
 |---|---|
-| (root) | `CodeViewsPage`: what a tool puts into its `ShellPage` for a page of code: the tabs, the views' HTML, the stylesheet, and the scripts in load order around the tool's own; `PageClassLine` and `PageClassEdge`: the class diagram's part of the page's data |
+| (root) | `CodeModel` and its records: the page's data (files, groups, units, members, edges, calls and blocks); `CodeLanguage` and its records: a language's description of itself; `CodeViewsPage`: what a tool puts into its `ShellPage` for a page of code: the tabs, the views' HTML, the stylesheet, and the scripts in load order around the tool's own |
 | `Resources/Views/` | `code-page.js`: the page of code (data, selection, the source panel and its Dependencies list, the explorer, search, Back and Forward; what a tool tells it, and what it gives the views, are at its top); `graph.js`, `classes.js` and `calls.js`: the views; `views.html`: their toolbars and containers; `views.css`: their styles and the source panel's |
 
 ## Commands
@@ -54,6 +54,43 @@ dotnet test --solution CodeDocumentationTools.sln                # everything, s
 ```
 
 ## Decisions
+
+### The code model (step M3 of the generalisation plan)
+
+- **`CodeModel` is the page's data,** in terms no language owns: `source`, `language`, `files`, `groups`, `units`,
+  `members`, `unitEdges`, `memberEdges`, `classEdges`, `unfollowed`, `calls`, `blocks`, and `extra` for whatever the
+  tool's own script wants (the views don't read it; a unit has an `extra` too). `ToJson()` writes it as the tools
+  always have: camelCase, nulls left out, a property a line.
+- **Files are apart from what's in them.** A unit names its file, and a member its own file and lines. A unit that
+  isn't the whole of one file lists its `parts` (file, first and last line), so a file can hold several units and a
+  unit can be in several files. Sources are embedded and loaded by file (`data-file`), not by unit.
+- **`CodeLanguage` is what a language says of itself:** `unitKinds` (label, plural, shape, colour, stereotype,
+  hollow), `memberCategories` and `memberKinds` (with `callable` and `hasBody`), `relationships` (label, verb, line,
+  arrow, colour, tags and tooltips, `plain` for the ordinary one, and `dispatch` when a call can follow it),
+  `classRelationships` (with the Show… choice each follows), `roles` and `entryGroups`, and words: `unit`, `member`,
+  `callable`, the groups layout's label, and what an unfollowed call is called and why.
+- **Both validate.** `CodeLanguage.Validate()` and `CodeModel.Validate()` throw, naming what's wrong, when a kind,
+  role, file, group or unit is named that isn't listed, so a mistake in a language's Core shows when the page is
+  made and not as a blank legend. A tool calls `Validate()` when it builds its model.
+- **Shapes and colours are the views'.** A shape is one of `CodeShapes`. A colour is a slot: 1 to 3 for kinds of
+  unit (`--kind-1` to `--kind-3`), 1 to 3 for lines (`--edge-1` to `--edge-3`), each defined per theme in
+  `views.css` and validated as a palette. More slots are added there, validated, when a language needs them.
+- **What a kind looks like is written when the page opens.** `code-page.js` makes a `<style>` from the language
+  (each relationship's stroke, dash and arrowhead; each unit kind's box outline; each tag), put first in the head so
+  the stylesheet's own rules still win a tie. The class diagram's arrowheads are made from it too.
+- **Wording:** the scripts say "unit" in code and data, and build what a person reads from the language's words
+  (`page.language`, `page.capital`, and in the graph's settings, `{unit}` and `{members}` in the text). The level
+  switch, the Members button and the Calls tab's note are filled in by script; `views.html` holds no language's words.
+- **`window.codeViews` is the views' name for the page,** and the tool's own global (`window.vbadoc`) is the same
+  object. The views' handles are `codeViewsGraph`, `codeViewsClasses` and `codeViewsCalls`, and they store their
+  settings under the tool's name, as before.
+- **A call follows a relationship that says so.** `dispatch` gives the words each way ("implemented by",
+  "implements") and, optionally, which roles and kinds count, which is how VBA's WithEvents handlers are told from
+  other event edges without the Calls tab knowing of them.
+- **A saved view from before still opens.** The graph reads a layout kept under `modules` as the unit level's, and
+  the class diagram a focus kept the same way. Show… choices of unit kinds saved under their old ids are dropped.
+- **Toy, the made-up language,** is `Toy.cs` in the browser tests, linked into the unit tests too. It's the second
+  language until a real one arrives, and stays afterwards as the one that's free to be odd.
 
 ### The views of code (step M2 of the generalisation plan)
 
@@ -69,10 +106,9 @@ dotnet test --solution CodeDocumentationTools.sln                # everything, s
   scripts from the tool and from this library. pqdoc's are all its own.
 - **The class diagram's data is here; working it out is the language's.** `ClassDiagram` reads VBA's members, so
   it stays in vbadoc until the VBA language has a library (N2).
-- **The library has no browser tests yet.** Its views can only be opened in a page, and only vbadoc can make one
-  until M3, so vbadoc's browser tests go on testing them. `CodeDocumenter.CodeViews.Tests` checks what
-  `CodeViewsPage` hands a tool.
-- **The scripts still say `window.vbadoc` and store settings as `vbadoc-…`.** M3's to change.
+- **The library had no browser tests until M3,** as only vbadoc could make a page. vbadoc's browser tests go on
+  testing the views on VBA. `CodeDocumenter.CodeViews.Tests` checks what `CodeViewsPage` hands a tool.
+- **The scripts said `window.vbadoc` until M3,** which gave them `window.codeViews`.
 
 ### Three libraries, and "source" (step M1 of the generalisation plan)
 

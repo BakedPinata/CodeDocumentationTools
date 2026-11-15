@@ -100,8 +100,9 @@ Agreed on 2026-11-13. Until a tool says otherwise:
   - **`CodeDocumenter.Workbooks`:** what only the tools that read Excel workbooks need. Opening and writing a
     workbook, and the `import` command.
   - **`CodeDocumenter.CodeViews`:** what every tool that documents code needs, which is every tool but pqdoc. The
-    views drawn from code (the graph, the class diagram and the Calls tab) and the page of code they're part of: its
-    script, template and styles. A tool brings its data, its highlighter and what's its own.
+    code model (`CodeModel`, `CodeLanguage`), the views drawn from it (the graph, the class diagram and the Calls tab)
+    and the page of code they're part of: its script, template and styles. A tool fills in the model, describes its
+    language, and brings its highlighter and what's its own.
 
   The tools' Core libraries use them and never each other, and they never use a tool. `CodeDocumenter.Workbooks` and
   `CodeDocumenter.CodeViews` use `CodeDocumenter.Shared`, and not each other. They aren't products, so they have no
@@ -221,6 +222,12 @@ Agreed on 2026-11-13. Until a tool says otherwise:
 - **Each tool keeps its own global, data block and stored settings** (`window.vbadoc`, `#vbadoc-data`, `vbadoc-…`),
   so its views talk to the tool, not the shell, and a setting remembered before the shell keeps working. A tool whose
   page is the code views library's says what's its own in `window.codeViewsPage`, before the library's script runs.
+- **A page of code is the code model, and the views know no language.** A tool's Core fills in `CodeModel`: files,
+  groups, units and members, the edges between them, and the language's description of itself (`CodeLanguage`), which
+  says what its kinds of unit, member and relationship are, how each is drawn, and what things are called. The views
+  take their legends, the Show… menu, the explorer's layouts and every word a person reads from it. Colours are
+  slots of the views' palette, which is validated; a language chooses among them. A kind or a word written into a
+  view's script is a bug, and the library's browser tests draw a made-up language to catch one.
 - **Generated pages never load anything from the network.**
 - Vendored libraries are stored once, byte-for-byte unchanged, in `shared/src/CodeDocumenter.Shared/Resources/Vendor/`
   with their licence files, and are inlined into each page with the licence as a comment.

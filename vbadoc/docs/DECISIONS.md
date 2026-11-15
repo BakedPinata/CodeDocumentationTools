@@ -606,6 +606,26 @@ Favourites below. Back and Forward stay as they are.
 - **Browser tests written for the graph's geometry** open the page without the explorer (a stored setting), because
   a narrower view moves nodes under the legend or out of view. The explorer has tests of its own.
 
+### VBA as a language of the code model (0.40.0, step M3 of the generalisation plan)
+
+- **`VbaLanguage.Description` says what VBA is to the views:** five kinds of module, with the shapes, colours and
+  labels they had; the member kinds in the categories the Show… menu had; Uses, Implements and Events with their
+  lines; the class diagram's three; the roles, of which macros, event handlers and worksheet functions are entry
+  points; and the words (module, member, procedure, late-bound, Folders). Nothing a page shows changed but two
+  things below.
+- **`PageData.From` fills in `CodeModel`.** A module is a unit and the whole of its file; a file's id is its name; a
+  `'@Folder("A.B")` is the group B inside the group A; an interface is a kind of its own (`interface`), where it was
+  a class with a flag; a predeclared class has a kind label and a note. What only vbadoc's script wants goes in
+  `extra`: the project's code page and references on the model, and why a module can't be exported and what it
+  relies on, on each unit.
+- **The note on a sheet's control handler** ("the control is on the sheet, not in the VBA project") is worked out
+  in Core now, as a member's `roleNote`, where the page's script used to.
+- **Embedded source is by file:** `<pre class="vbadoc-source" data-file="Order.cls">`, where it was `data-module`.
+- **Changed in the page:** the explorer's Types layout says "UserForms" where it said "Forms", as the Show… menu
+  always did, since both now read one label. Show… choices of module kinds remembered in a browser are forgotten
+  once, as their ids changed (`unit:class`, was `module:class`).
+- **The browser tests ask for `data-unit` and `unit:…`** where they asked for `data-module` and `module:…`.
+
 ### Where the views live (0.39.0, step M2 of the generalisation plan)
 
 - **The graph, the class diagram, the Calls tab and the page they're part of are the code views library's**

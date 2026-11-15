@@ -20,8 +20,8 @@ rather than repeating it.
   real example of the missing Ifs still to be checked. L4 is done: a views file in the output folder is built into
   the page. L5 is done: descriptions and printing, with the user's check on a work machine still to come. L6 is
   done: Copy as text. M1 is done: the shared library is three. M2 is done: vbadoc's views are in the code views library, with their
-  browser tests still in vbadoc (see the step).
-- **vbadoc 0.39.0:** stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
+  browser tests still in vbadoc (see the step). M3 is done: the code model, with VBA as its first language.
+- **vbadoc 0.40.0:** stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
   `<workbook>-vba.html`, with an explorer of modules and members, in `'@Folder` folders or by kind. It asks
   before overwriting a page that would change (`--on-exists`, `--force`), as pqdoc does. Stage 6 (UserForms) is parked;
   stage 7 waits for the generalisation plan. Since 0.31.0 (step J2) it writes into add-ins (`.xlam`) as into workbooks.
@@ -35,7 +35,7 @@ rather than repeating it.
   and the tools' questions as dialogs. See `codedocui/README.md`.
 - **`shared/`:** the code more than one tool uses, in three libraries since step M1: `CodeDocumenter.Shared` (what
   every tool needs, the page shell among it), `CodeDocumenter.Workbooks` (what the workbook tools need) and
-  `CodeDocumenter.CodeViews` (the page of code and its views, since M2). See its README.
+  `CodeDocumenter.CodeViews` (the code model, and the page of code and its views). See its README.
 - **The feedback plan** (steps A0–J2, agreed on 2026-11-03) is closed and deleted. Every step is done but G2–G4 and
   E5b, which are steps L3–L6 of the generalisation plan. The user closed the checks that were still to come. The plan
   as it stood is at the tag `feedback-plan-final`, and E5b's original notes at `feedback-plan-e5b-notes`; the log below
@@ -50,6 +50,23 @@ rather than repeating it.
 ## Log
 
 Newest first.
+
+### 2026-11-15: Step M3, the code model
+
+- The page's data is `CodeModel`: files apart from the units and members in them, groups, edges, calls and blocks,
+  and `CodeLanguage`, a language's description of itself (kinds, how each is drawn, roles, entry points, words). Both
+  validate when a page is made.
+- The graph, the class diagram, the Calls tab and the page's script take legends, the Show… menu, the explorer's
+  layouts and all wording from the description. They say "unit" inside. vbadoc describes VBA (`VbaLanguage`) and
+  fills the model in.
+- A made-up language, Toy, is drawn in a browser by the library's own tests
+  (`CodeDocumenter.CodeViews.BrowserTests`): two kinds of unit, a relationship of its own, a unit in two files, a
+  file with two units. One test fails on any word of VBA's in the page.
+- Changed: the Types layout says "UserForms"; remembered Show… choices of module kinds are dropped once. Saved
+  views still open.
+- Checked: every test passes (12 new browser tests, 24 new unit tests), and screenshots of vbadoc's tabs in both
+  themes, which look as they did.
+- vbadoc 0.40.0.
 
 ### 2026-11-15: Step M2, vbadoc's views move to the code views library
 

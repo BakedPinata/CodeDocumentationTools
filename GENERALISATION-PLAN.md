@@ -47,7 +47,7 @@ step K0. The progress table says where the work is.
 | [L6](#step-l6-copy-a-view-as-text-g4) | Copy a view as text, to paste into a chat (G4) | Claude | Done |
 | [M1](#step-m1-the-shared-library-in-three) | The shared library in three: what every tool needs, what only workbooks need, and the code views. The shell says "source", not "workbook" | Claude | Done |
 | [M2](#step-m2-vbadocs-views-move-to-the-code-views-library) | vbadoc's graph, class diagram and Calls tab move to the code views library | Claude | Done, with the views' browser tests left in vbadoc: see the step |
-| [M3](#step-m3-the-code-model) | The code model: the views draw what a language describes, and files are apart from the things in them. vbadoc is its first language | Claude | Not started |
+| [M3](#step-m3-the-code-model) | The code model: the views draw what a language describes, and files are apart from the things in them. vbadoc is its first language | Claude | Done |
 | [N1](#step-n1-sample-databases-and-a-spike-on-reading-them) | Sample Access databases, and a spike on getting forms and VBA out of them | Claude, then you at home and on a work machine | Not started |
 | [N2](#step-n2-accessdoc-reads-a-databases-vba) | `accessdoc`: the VBA language in a library vbadoc and accessdoc share; the tool's skeleton; a page of the database's VBA | Claude | Not started |
 | [N3](#step-n3-accessdoc-reads-forms) | `accessdoc`: forms read into sections, controls, subforms, data sources and events, with handlers linked to their controls | Claude | Not started |
@@ -771,6 +771,29 @@ What was decided along the way:
 The model of 5.4, in C# and in the page's data, with vbadoc's Core filling it in. The views take kinds, labels,
 shapes, relationships and wording from the language's description. A small made-up language in the library's own
 tests (two kinds of unit, one extra relationship, a type in two files) proves the views don't assume VBA.
+
+Done on 2026-11-15, as above. What was decided along the way:
+
+- **The description travels in the page's data** (`data.language`), so the scripts need nothing but the data: a
+  language's Core fills in `CodeLanguage` in C#, and the views read it.
+- **What a language says:** its kinds of unit (label, plural, shape, colour, stereotype), its kinds of member and the
+  categories the Show… menu groups them in, its relationships (label, verb, line, arrowhead, colour, tags, and
+  whether a call can follow one), the class diagram's lines, its roles and which are entry points, and its words:
+  what a unit, a member and something callable are called, and what a call that can't be followed is.
+- **Colours are slots of the views' palette,** three for kinds of unit and three for lines, which are the ones
+  already validated. A language picks slots; it can't bring a colour. C# will need more, validated then (P4).
+- **The views say "unit" inside and the language's word outside.** The scripts, the data and the page's attributes
+  speak of units (`data.units`, `data-unit`, `unit:class`); everything a person reads uses the language's words.
+- **A unit is the whole of its file unless it says where its parts are.** The source panel shows a unit in several
+  places a part at a time, and a member always by its own file and lines.
+- **The made-up language is Toy,** in `CodeDocumenter.CodeViews.BrowserTests`: gadgets of two kinds, parts, an
+  Extends relationship a call can follow, a gadget in two files and a file with two gadgets. One test reads every
+  tab and fails on any word of VBA's.
+- **The views' browser tests stay in vbadoc as well.** They test the views on real VBA, and the library's own test
+  what vbadoc can't: a second language.
+- **Changed for someone with a page open:** Show… choices of module kinds saved before are forgotten (their ids
+  changed), and the explorer's Types layout says "UserForms" where it said "Forms", as the Show… menu does. Saved
+  views still open, their graph layouts included.
 
 ### Step N1: Sample databases, and a spike on reading them
 
