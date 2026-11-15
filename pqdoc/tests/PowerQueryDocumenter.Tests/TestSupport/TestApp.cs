@@ -1,3 +1,4 @@
+using CodeDocumenter.Workbooks.Importing;
 using CodeDocumenter.Shared.Files;
 using PowerQueryDocumenter.Cli;
 using PowerQueryDocumenter.Core.Application;
@@ -23,7 +24,7 @@ public sealed class TestApp : IDisposable
   public TestApp(
     string currentDirectory,
     HttpMessageHandler? handler = null,
-    IUserInteraction? interaction = null,
+    IImportInteraction? interaction = null,
     Dictionary<string, string>? variables = null)
   {
     httpClient = new HttpClient(handler ?? StubHttpMessageHandler.Unused());
@@ -41,7 +42,7 @@ public sealed class TestApp : IDisposable
   public StringWriter Error { get; } = new();
 
   /// <summary>The interaction used.</summary>
-  public IUserInteraction Interaction { get; }
+  public IImportInteraction Interaction { get; }
 
   /// <summary>The environment used.</summary>
   public FakeEnvironment Environment { get; }

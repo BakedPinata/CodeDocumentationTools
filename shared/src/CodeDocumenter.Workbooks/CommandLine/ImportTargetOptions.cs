@@ -1,8 +1,8 @@
 using System.CommandLine;
 using System.CommandLine.Parsing;
-using CodeDocumenter.Shared.Importing;
+using CodeDocumenter.Workbooks.Importing;
 
-namespace CodeDocumenter.Shared.CommandLine;
+namespace CodeDocumenter.Workbooks.CommandLine;
 
 /// <summary>The workbook an <c>import</c> writes.</summary>
 /// <param name="New">A new workbook to build, as a full path, or null.</param>

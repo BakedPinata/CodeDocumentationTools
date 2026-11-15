@@ -1,7 +1,7 @@
 using System.Text;
 using CodeDocumenter.Shared.Files;
 
-namespace CodeDocumenter.Shared.Importing;
+namespace CodeDocumenter.Workbooks.Importing;
 
 /// <summary>What's written for a bundle, for <c>--on-exists</c>: its README stands for the folder.</summary>
 /// <param name="Path">The bundle's README.</param>

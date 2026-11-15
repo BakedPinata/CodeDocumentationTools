@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The views every tool that documents code shares (see "Structure" in docs/GUIDELINES.md): the dependency graph,
+       the class diagram and the Calls tab, drawn from the code model. vbadoc's Core library uses it, and so will the
+       tools for other languages; pqdoc doesn't. It uses CodeDocumenter.Shared and never a tool. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\CodeDocumenter.Shared\CodeDocumenter.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

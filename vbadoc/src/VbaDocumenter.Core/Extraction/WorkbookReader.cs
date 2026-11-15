@@ -1,5 +1,6 @@
+using CodeDocumenter.Shared;
 using System.IO.Compression;
-using CodeDocumenter.Shared.Workbooks;
+using CodeDocumenter.Workbooks;
 using OpenMcdf;
 
 namespace VbaDocumenter.Core.Extraction;

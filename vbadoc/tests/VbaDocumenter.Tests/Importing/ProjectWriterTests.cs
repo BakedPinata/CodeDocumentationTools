@@ -1,5 +1,5 @@
 using System.Text;
-using CodeDocumenter.Shared.Workbooks;
+using CodeDocumenter.Workbooks;
 using OpenMcdf;
 using VbaDocumenter.Core.Extraction;
 using VbaDocumenter.Core.Importing;

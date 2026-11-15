@@ -1,8 +1,9 @@
+using CodeDocumenter.Workbooks.CommandLine;
 using System.CommandLine;
 using CodeDocumenter.Shared.CommandLine;
-using CodeDocumenter.Shared.Importing;
+using CodeDocumenter.Workbooks.Importing;
 
-namespace CodeDocumenter.Shared.Tests.CommandLine;
+namespace CodeDocumenter.Workbooks.Tests.CommandLine;
 
 public sealed class ImportTargetOptionsTests
 {

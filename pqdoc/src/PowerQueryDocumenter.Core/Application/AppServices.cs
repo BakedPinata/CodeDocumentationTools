@@ -1,3 +1,4 @@
+using CodeDocumenter.Workbooks.Importing;
 using CodeDocumenter.Shared.Files;
 using PowerQueryDocumenter.Core.Configuration;
 using PowerQueryDocumenter.Core.Export;
@@ -16,7 +17,7 @@ public sealed class AppServices
   public required HttpClient HttpClient { get; init; }
 
   /// <summary>Prompts and interactivity detection.</summary>
-  public required IUserInteraction Interaction { get; init; }
+  public required IImportInteraction Interaction { get; init; }
 
   /// <summary>Environment variables and current directory.</summary>
   public required IAppEnvironment Environment { get; init; }

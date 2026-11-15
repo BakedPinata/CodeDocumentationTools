@@ -1,3 +1,4 @@
+using CodeDocumenter.Workbooks.Importing;
 using System.Text;
 using CodeDocumenter.Shared;
 using CodeDocumenter.Shared.Files;
@@ -24,7 +25,7 @@ public sealed class ImportCommandTests : IDisposable
   readonly TestLog _log = new();
   readonly StringWriter _output = new();
   readonly StringWriter _error = new();
-  IUserInteraction _interaction = new FakeUserInteraction(isInteractive: false);
+  IImportInteraction _interaction = new FakeUserInteraction(isInteractive: false);
 
   string Source => Path.Combine(_folder, "Tools.xlsm");
   string Bundle => Path.Combine(_folder, "Shared");

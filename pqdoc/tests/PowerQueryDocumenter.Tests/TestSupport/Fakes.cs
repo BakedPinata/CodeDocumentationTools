@@ -1,11 +1,11 @@
 using CodeDocumenter.Shared.Files;
-using CodeDocumenter.Shared.Importing;
+using CodeDocumenter.Workbooks.Importing;
 using PowerQueryDocumenter.Core.Configuration;
 
 namespace PowerQueryDocumenter.Tests.TestSupport;
 
 /// <summary>Scripted answers to overwrite prompts.</summary>
-public sealed class FakeUserInteraction : IUserInteraction
+public sealed class FakeUserInteraction : IImportInteraction
 {
   private readonly Queue<OverwriteAnswer> pendingAnswers;
 

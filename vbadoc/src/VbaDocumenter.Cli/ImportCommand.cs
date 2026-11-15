@@ -1,7 +1,8 @@
+using CodeDocumenter.Workbooks.CommandLine;
 using CodeDocumenter.Shared;
 using CodeDocumenter.Shared.CommandLine;
 using CodeDocumenter.Shared.Files;
-using CodeDocumenter.Shared.Importing;
+using CodeDocumenter.Workbooks.Importing;
 using Serilog;
 using VbaDocumenter.Core.Analysis;
 using VbaDocumenter.Core.Extraction;
@@ -18,7 +19,7 @@ namespace VbaDocumenter.Cli;
 /// </summary>
 sealed class ImportCommand(ILogger logger, AppServices services)
 {
-  readonly IUserInteraction _interaction = services.Interaction;
+  readonly IImportInteraction _interaction = services.Interaction;
 
   public int Run(ImportRequest request, ImportTarget? target, bool noReferences, bool dropSignature)
   {

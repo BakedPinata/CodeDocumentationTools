@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- xUnit.net v3 test projects are executables. -->
+    <OutputType>Exe</OutputType>
+    <RootNamespace>CodeDocumenter.Workbooks.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CodeDocumenter.Workbooks\CodeDocumenter.Workbooks.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Helpers the shared library's tests have already, used here as they are. -->
+    <Compile Include="..\CodeDocumenter.Shared.Tests\TempDirectory.cs" Link="Support\TempDirectory.cs" />
+    <Compile Include="..\CodeDocumenter.Shared.Tests\TestLog.cs" Link="Support\TestLog.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <!-- The linked helpers keep their namespace. -->
+    <Using Include="CodeDocumenter.Shared.Tests" />
+  </ItemGroup>
+
+</Project>

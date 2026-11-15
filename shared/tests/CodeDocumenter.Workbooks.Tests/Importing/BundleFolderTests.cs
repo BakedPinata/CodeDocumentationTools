@@ -1,7 +1,7 @@
 using System.Text;
-using CodeDocumenter.Shared.Importing;
+using CodeDocumenter.Workbooks.Importing;
 
-namespace CodeDocumenter.Shared.Tests.Importing;
+namespace CodeDocumenter.Workbooks.Tests.Importing;
 
 /// <summary>A bundle only goes where it can't cost anyone their own files.</summary>
 public sealed class BundleFolderTests : IDisposable

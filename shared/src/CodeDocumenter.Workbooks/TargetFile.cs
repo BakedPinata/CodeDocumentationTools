@@ -1,6 +1,7 @@
+using CodeDocumenter.Shared;
 using OpenMcdf;
 
-namespace CodeDocumenter.Shared.Workbooks;
+namespace CodeDocumenter.Workbooks;
 
 /// <summary>Reading a workbook to write into: what can be a target, and why anything else can't.</summary>
 public static class TargetFile

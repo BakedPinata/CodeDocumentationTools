@@ -1,4 +1,4 @@
-namespace CodeDocumenter.Shared.Importing;
+namespace CodeDocumenter.Workbooks.Importing;
 
 /// <summary>
 /// Something a source has that <c>import</c> could be asked for, so another program can offer the choice the page's

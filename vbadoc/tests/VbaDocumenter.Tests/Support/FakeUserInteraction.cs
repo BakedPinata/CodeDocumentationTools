@@ -1,12 +1,12 @@
 using CodeDocumenter.Shared.Files;
-using CodeDocumenter.Shared.Importing;
+using CodeDocumenter.Workbooks.Importing;
 
 namespace VbaDocumenter.Tests.Support;
 
 /// <summary>Scripted answers to prompts.</summary>
 /// <param name="isInteractive">Whether the session counts as interactive.</param>
 /// <param name="answers">Answers returned to successive overwrite prompts.</param>
-public sealed class FakeUserInteraction(bool isInteractive, params OverwriteAnswer[] answers) : IUserInteraction
+public sealed class FakeUserInteraction(bool isInteractive, params OverwriteAnswer[] answers) : IImportInteraction
 {
   readonly Queue<OverwriteAnswer> _pending = new(answers);
 

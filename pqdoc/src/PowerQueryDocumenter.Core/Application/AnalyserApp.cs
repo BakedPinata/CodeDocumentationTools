@@ -1,7 +1,7 @@
 using CodeDocumenter.Shared;
 using CodeDocumenter.Shared.Files;
 using CodeDocumenter.Shared.Pages;
-using CodeDocumenter.Shared.Workbooks;
+using CodeDocumenter.Workbooks;
 using PowerQueryDocumenter.Core.Analysis;
 using PowerQueryDocumenter.Core.Configuration;
 using PowerQueryDocumenter.Core.Export;

@@ -1,3 +1,4 @@
+using CodeDocumenter.Workbooks.Importing;
 using System.Globalization;
 using System.Text;
 using CodeDocumenter.Shared;
@@ -28,7 +29,7 @@ internal sealed class ToolRunner(HttpClient plantUmlClient)
   /// <param name="interaction">Asks the tool's questions. It's called off the window's thread.</param>
   /// <param name="log">Takes each line the tool writes. It's called off the window's thread.</param>
   /// <param name="cancellationToken">Cancels the run, as Ctrl+C does at a console.</param>
-  public Task<RunResult> RunAsync(ToolCommand command, IUserInteraction interaction, Action<LogLine> log, CancellationToken cancellationToken)
+  public Task<RunResult> RunAsync(ToolCommand command, IImportInteraction interaction, Action<LogLine> log, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(command);
     ArgumentNullException.ThrowIfNull(interaction);
@@ -36,7 +37,7 @@ internal sealed class ToolRunner(HttpClient plantUmlClient)
     return Task.Run(() => RunHereAsync(command, interaction, log, cancellationToken), CancellationToken.None);
   }
 
-  private async Task<RunResult> RunHereAsync(ToolCommand command, IUserInteraction interaction, Action<LogLine> log, CancellationToken cancellationToken)
+  private async Task<RunResult> RunHereAsync(ToolCommand command, IImportInteraction interaction, Action<LogLine> log, CancellationToken cancellationToken)
   {
     string? page = null;
     var loggers = new List<Logger>();

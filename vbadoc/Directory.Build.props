@@ -8,6 +8,8 @@
     <Product>vbadoc</Product>
     <!-- The folder the build stamp follows: see Directory.Build.targets at the root. -->
     <ToolRoot>$(MSBuildThisFileDirectory)</ToolRoot>
+    <!-- The shared libraries vbadoc is built from, which its stamp follows too. -->
+    <ToolStampPaths>:/shared/src/CodeDocumenter.Shared :/shared/src/CodeDocumenter.Workbooks :/shared/src/CodeDocumenter.CodeViews</ToolStampPaths>
   </PropertyGroup>
 
 </Project>

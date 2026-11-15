@@ -1,3 +1,4 @@
+using CodeDocumenter.Workbooks.Importing;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
@@ -43,7 +44,7 @@ public sealed class CliRunnerTests : IDisposable
   private string[] QueryFiles(string folder) =>
     Directory.GetFiles(folder, "*.m").Select(f => Path.GetFileName(f)).Order(StringComparer.Ordinal).ToArray();
 
-  private TestApp App(HttpMessageHandler? handler = null, IUserInteraction? interaction = null, Dictionary<string, string>? variables = null) =>
+  private TestApp App(HttpMessageHandler? handler = null, IImportInteraction? interaction = null, Dictionary<string, string>? variables = null) =>
     new(temp.Path, handler, interaction, variables);
 
   public void Dispose() => temp.Dispose();

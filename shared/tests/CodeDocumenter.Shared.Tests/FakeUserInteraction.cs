@@ -1,5 +1,4 @@
 using CodeDocumenter.Shared.Files;
-using CodeDocumenter.Shared.Importing;
 
 namespace CodeDocumenter.Shared.Tests;
 
@@ -8,14 +7,8 @@ public sealed class FakeUserInteraction : IUserInteraction
 {
   private readonly Queue<OverwriteAnswer> pendingAnswers;
 
-  /// <summary>Answers to the clash prompt, in order.</summary>
-  public Queue<ClashAnswer> ClashAnswers { get; } = [];
-
   /// <summary>Answers to <see cref="Confirm"/>, in order.</summary>
   public Queue<bool> Confirmations { get; } = [];
-
-  /// <summary>The clashes that were asked about, in order.</summary>
-  public List<ImportClash> ClashesAsked { get; } = [];
 
   /// <summary>The questions that were asked, in order.</summary>
   public List<string> Questions { get; } = [];
@@ -41,15 +34,6 @@ public sealed class FakeUserInteraction : IUserInteraction
     return pendingAnswers.Count > 0
       ? pendingAnswers.Dequeue()
       : throw new InvalidOperationException($"Unexpected prompt for {path}");
-  }
-
-  /// <inheritdoc />
-  public ClashAnswer AskClash(ImportClash clash)
-  {
-    ClashesAsked.Add(clash);
-    return ClashAnswers.Count > 0
-      ? ClashAnswers.Dequeue()
-      : throw new InvalidOperationException($"Unexpected prompt for {clash.Item}");
   }
 
   /// <inheritdoc />

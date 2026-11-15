@@ -1,9 +1,10 @@
+using CodeDocumenter.Shared;
 using System.IO.Compression;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 
-namespace CodeDocumenter.Shared.Workbooks;
+namespace CodeDocumenter.Workbooks;
 
 /// <summary>
 /// A workbook's zip package held in memory, part by part, so that parts can be added and changed and every other part

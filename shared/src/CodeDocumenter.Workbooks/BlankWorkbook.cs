@@ -1,7 +1,7 @@
 using System.Text;
 using System.Xml.Linq;
 
-namespace CodeDocumenter.Shared.Workbooks;
+namespace CodeDocumenter.Workbooks;
 
 /// <summary>
 /// A new workbook with one empty sheet, built here rather than from a template made in Excel: the parts Excel needs, and

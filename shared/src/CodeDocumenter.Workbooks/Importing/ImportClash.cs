@@ -1,7 +1,7 @@
 using CodeDocumenter.Shared.Files;
 using Serilog;
 
-namespace CodeDocumenter.Shared.Importing;
+namespace CodeDocumenter.Workbooks.Importing;
 
 /// <summary>What to do with an item the target already has (<c>--on-clash</c>). It's about the items, not the file written.</summary>
 public enum OnClashBehaviour
@@ -85,7 +85,7 @@ public sealed record ClashResolution(IReadOnlyList<string> Overwrite, IReadOnlyL
 /// Applies <c>--on-clash</c>. Every answer comes before anything is written. <c>--force</c> plays no part: an unattended
 /// run says what it wants done with each item, because replacing the wrong one is worse than stopping.
 /// </summary>
-public sealed class ClashResolver(ILogger logger, IUserInteraction interaction)
+public sealed class ClashResolver(ILogger logger, IImportInteraction interaction)
 {
   private const string HowToProceed = "Re-run with --on-clash overwrite or --on-clash skip to say what to do with them.";
 

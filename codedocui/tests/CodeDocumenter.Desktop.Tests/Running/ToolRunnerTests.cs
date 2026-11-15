@@ -3,7 +3,7 @@ using CodeDocumenter.Desktop.Importing;
 using CodeDocumenter.Desktop.Running;
 using CodeDocumenter.Shared;
 using CodeDocumenter.Shared.Files;
-using CodeDocumenter.Shared.Importing;
+using CodeDocumenter.Workbooks.Importing;
 
 namespace CodeDocumenter.Desktop.Tests.Running;
 
@@ -167,7 +167,7 @@ public sealed class ToolRunnerTests : IDisposable
   }
 
   /// <summary>Answers the tools' questions as told, and remembers what they asked about.</summary>
-  private sealed class Answers : IUserInteraction
+  private sealed class Answers : IImportInteraction
   {
     public OverwriteAnswer Answer { get; set; } = OverwriteAnswer.Quit;
 

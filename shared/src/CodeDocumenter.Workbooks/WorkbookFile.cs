@@ -1,10 +1,11 @@
+using CodeDocumenter.Shared;
 using System.Buffers.Binary;
 using System.Globalization;
 using System.IO.Compression;
 using System.Xml;
 using OpenMcdf;
 
-namespace CodeDocumenter.Shared.Workbooks;
+namespace CodeDocumenter.Workbooks;
 
 /// <summary>What kind of file a workbook is, from its first bytes.</summary>
 public enum WorkbookContainer

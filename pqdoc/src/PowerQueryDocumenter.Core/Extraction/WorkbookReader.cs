@@ -1,9 +1,10 @@
+using CodeDocumenter.Shared;
 using System.Buffers.Binary;
 using System.IO.Compression;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
-using CodeDocumenter.Shared.Workbooks;
+using CodeDocumenter.Workbooks;
 using Serilog;
 
 namespace PowerQueryDocumenter.Core.Extraction;

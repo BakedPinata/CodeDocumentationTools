@@ -1,7 +1,8 @@
+using CodeDocumenter.Shared;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
-using CodeDocumenter.Shared.Workbooks;
+using CodeDocumenter.Workbooks;
 using PowerQueryDocumenter.Core.Extraction;
 using PowerQueryDocumenter.Core.Model;
 using Serilog;

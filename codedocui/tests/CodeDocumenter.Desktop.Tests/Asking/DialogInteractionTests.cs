@@ -1,7 +1,8 @@
+using CodeDocumenter.Workbooks.CommandLine;
 using CodeDocumenter.Desktop.Asking;
 using CodeDocumenter.Shared.CommandLine;
 using CodeDocumenter.Shared.Files;
-using CodeDocumenter.Shared.Importing;
+using CodeDocumenter.Workbooks.Importing;
 
 namespace CodeDocumenter.Desktop.Tests.Asking;
 
@@ -74,7 +75,7 @@ public sealed class DialogInteractionTests
     var question = Assert.Single(standIn.Asked);
     Assert.Equal(new[] { "Skip", "Skip all", "Quit" }, question.Answers);
     Assert.DoesNotContain("Overwrite", question.Text, StringComparison.Ordinal);
-    Assert.All(question.Answers, label => Assert.NotNull(ConsoleUserInteraction.ReadClashAnswer(label, canOverwrite: false)));
+    Assert.All(question.Answers, label => Assert.NotNull(ConsoleImportInteraction.ReadClashAnswer(label, canOverwrite: false)));
   }
 
   [Fact]
@@ -84,7 +85,7 @@ public sealed class DialogInteractionTests
     Interaction().AskClash(Replaceable);
 
     Assert.All(standIn.Asked[0].Answers, label =>
-      Assert.Equal(ClashQuestion.Answers(Replaceable).Single(a => a.Label == label).Answer, ConsoleUserInteraction.ReadClashAnswer(label, canOverwrite: true)));
+      Assert.Equal(ClashQuestion.Answers(Replaceable).Single(a => a.Label == label).Answer, ConsoleImportInteraction.ReadClashAnswer(label, canOverwrite: true)));
   }
 
   [Fact]

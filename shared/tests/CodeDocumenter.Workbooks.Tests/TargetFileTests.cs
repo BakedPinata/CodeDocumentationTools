@@ -1,7 +1,8 @@
-using CodeDocumenter.Shared.Workbooks;
+using CodeDocumenter.Shared;
+using CodeDocumenter.Workbooks;
 using OpenMcdf;
 
-namespace CodeDocumenter.Shared.Tests.Workbooks;
+namespace CodeDocumenter.Workbooks.Tests;
 
 /// <summary>What a tool can write into is its own list, so only a tool that writes into add-ins takes them.</summary>
 public sealed class TargetFileTests : IDisposable

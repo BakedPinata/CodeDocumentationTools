@@ -1,6 +1,7 @@
+using CodeDocumenter.Shared;
 using System.Text;
-using CodeDocumenter.Shared.Importing;
-using CodeDocumenter.Shared.Workbooks;
+using CodeDocumenter.Workbooks.Importing;
+using CodeDocumenter.Workbooks;
 using VbaDocumenter.Core.Analysis;
 using VbaDocumenter.Core.Extraction;
 using VbaDocumenter.Core.Importing;

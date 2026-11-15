@@ -1,7 +1,8 @@
-using CodeDocumenter.Shared.Importing;
-using CodeDocumenter.Shared.Workbooks;
+using CodeDocumenter.Shared;
+using CodeDocumenter.Workbooks.Importing;
+using CodeDocumenter.Workbooks;
 
-namespace CodeDocumenter.Shared.Tests.Importing;
+namespace CodeDocumenter.Workbooks.Tests.Importing;
 
 /// <summary>Reading the file the page's Export tab writes.</summary>
 public class ExportManifestTests

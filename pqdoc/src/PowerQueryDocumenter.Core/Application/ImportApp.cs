@@ -1,8 +1,9 @@
+using CodeDocumenter.Workbooks.CommandLine;
 using CodeDocumenter.Shared;
 using CodeDocumenter.Shared.CommandLine;
 using CodeDocumenter.Shared.Files;
-using CodeDocumenter.Shared.Importing;
-using CodeDocumenter.Shared.Workbooks;
+using CodeDocumenter.Workbooks.Importing;
+using CodeDocumenter.Workbooks;
 using PowerQueryDocumenter.Core.Analysis;
 using PowerQueryDocumenter.Core.Export;
 using PowerQueryDocumenter.Core.Extraction;

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- What only the tools that read and write Excel workbooks need (see "Structure" in docs/GUIDELINES.md): opening a
+       workbook, and the import command. vbadoc's and pqdoc's Core libraries use it; it uses CodeDocumenter.Shared and
+       never them. -->
+
+  <ItemGroup>
+    <PackageReference Include="OpenMcdf" />
+    <!-- For the import command's options and messages. -->
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="System.CommandLine" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CodeDocumenter.Shared\CodeDocumenter.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

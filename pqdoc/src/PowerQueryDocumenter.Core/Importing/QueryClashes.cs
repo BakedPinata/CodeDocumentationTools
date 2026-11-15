@@ -1,4 +1,4 @@
-using CodeDocumenter.Shared.Importing;
+using CodeDocumenter.Workbooks.Importing;
 using PowerQueryDocumenter.Core.Analysis;
 using PowerQueryDocumenter.Core.Model;
 using Serilog;

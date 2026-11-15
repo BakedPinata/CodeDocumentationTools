@@ -7,6 +7,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\shared\src\CodeDocumenter.Shared\CodeDocumenter.Shared.csproj" />
+    <ProjectReference Include="..\..\..\shared\src\CodeDocumenter.Workbooks\CodeDocumenter.Workbooks.csproj" />
+    <ProjectReference Include="..\..\..\shared\src\CodeDocumenter.CodeViews\CodeDocumenter.CodeViews.csproj" />
   </ItemGroup>
 
   <ItemGroup>

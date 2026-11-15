@@ -1,7 +1,7 @@
 using CodeDocumenter.Shared;
 using CodeDocumenter.Shared.Files;
-using CodeDocumenter.Shared.Importing;
-using CodeDocumenter.Shared.Workbooks;
+using CodeDocumenter.Workbooks.Importing;
+using CodeDocumenter.Workbooks;
 using Serilog.Events;
 using VbaDocumenter.Cli;
 using VbaDocumenter.Core.Extraction;

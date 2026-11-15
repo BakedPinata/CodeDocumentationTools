@@ -1,7 +1,8 @@
+using CodeDocumenter.Shared;
 using CodeDocumenter.Desktop.Importing;
 using CodeDocumenter.Desktop.Running;
-using CodeDocumenter.Shared.Importing;
-using CodeDocumenter.Shared.Workbooks;
+using CodeDocumenter.Workbooks.Importing;
+using CodeDocumenter.Workbooks;
 
 namespace CodeDocumenter.Desktop.Tests.Importing;
 

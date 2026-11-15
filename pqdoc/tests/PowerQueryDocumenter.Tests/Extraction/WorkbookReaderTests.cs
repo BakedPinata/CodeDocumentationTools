@@ -1,6 +1,7 @@
+using CodeDocumenter.Shared;
 using System.Text;
 using PowerQueryDocumenter.Core.Analysis;
-using CodeDocumenter.Shared.Workbooks;
+using CodeDocumenter.Workbooks;
 using PowerQueryDocumenter.Core.Extraction;
 using PowerQueryDocumenter.Tests.TestSupport;
 using Serilog.Core;

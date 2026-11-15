@@ -4,7 +4,7 @@ using CodeDocumenter.Desktop.Documenting;
 using CodeDocumenter.Desktop.Importing;
 using CodeDocumenter.Desktop.Running;
 using CodeDocumenter.Shared.Files;
-using CodeDocumenter.Shared.Importing;
+using CodeDocumenter.Workbooks.Importing;
 using PqCli = PowerQueryDocumenter.Cli;
 using VbaCli = VbaDocumenter.Cli;
 

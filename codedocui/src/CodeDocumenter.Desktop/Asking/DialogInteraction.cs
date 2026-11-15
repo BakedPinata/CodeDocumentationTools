@@ -1,5 +1,5 @@
 using CodeDocumenter.Shared.Files;
-using CodeDocumenter.Shared.Importing;
+using CodeDocumenter.Workbooks.Importing;
 
 namespace CodeDocumenter.Desktop.Asking;
 
@@ -7,7 +7,7 @@ namespace CodeDocumenter.Desktop.Asking;
 /// The tools' questions, asked through <see cref="IAsk"/>: in the window, a dialog for each. The tools see someone to ask,
 /// so they ask rather than stop with exit code 4, and each answer means what the console's does.
 /// </summary>
-internal sealed class DialogInteraction(IAsk ask) : IUserInteraction
+internal sealed class DialogInteraction(IAsk ask) : IImportInteraction
 {
   /// <summary>Someone is always there to answer.</summary>
   public bool IsInteractive => true;

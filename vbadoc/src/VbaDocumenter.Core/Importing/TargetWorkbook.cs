@@ -1,6 +1,7 @@
+using CodeDocumenter.Shared;
 using System.Text;
 using System.Xml.Linq;
-using CodeDocumenter.Shared.Workbooks;
+using CodeDocumenter.Workbooks;
 using OpenMcdf;
 using VbaDocumenter.Core.Extraction;
 

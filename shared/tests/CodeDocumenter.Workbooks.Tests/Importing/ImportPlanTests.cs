@@ -1,6 +1,6 @@
-using CodeDocumenter.Shared.Importing;
+using CodeDocumenter.Workbooks.Importing;
 
-namespace CodeDocumenter.Shared.Tests.Importing;
+namespace CodeDocumenter.Workbooks.Tests.Importing;
 
 /// <summary>What a choice of items comes to: what it brings, what it relies on, and what may be wanted too.</summary>
 public class ImportPlanTests

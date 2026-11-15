@@ -1,3 +1,4 @@
+using CodeDocumenter.Workbooks.Importing;
 using CodeDocumenter.Shared;
 using CodeDocumenter.Shared.Files;
 using Serilog;
@@ -32,7 +33,7 @@ public sealed class CliRunnerTests : IDisposable
   }
 
   // Like a script: nobody to ask. Tests that answer the prompt set their own.
-  IUserInteraction _interaction = new FakeUserInteraction(isInteractive: false);
+  IImportInteraction _interaction = new FakeUserInteraction(isInteractive: false);
 
   // The pages the tool said it put in place, for the desktop app.
   readonly List<string> _pages = [];

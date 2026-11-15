@@ -1,8 +1,9 @@
+using CodeDocumenter.Shared;
 using System.IO.Compression;
-using CodeDocumenter.Shared.Workbooks;
+using CodeDocumenter.Workbooks;
 using OpenMcdf;
 
-namespace CodeDocumenter.Shared.Tests.Workbooks;
+namespace CodeDocumenter.Workbooks.Tests;
 
 public sealed class WorkbookFileTests : IDisposable
 {

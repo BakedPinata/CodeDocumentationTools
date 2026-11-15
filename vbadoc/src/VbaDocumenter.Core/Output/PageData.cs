@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using CodeDocumenter.Shared.Importing;
+using CodeDocumenter.Workbooks.Importing;
 using VbaDocumenter.Core.Analysis;
 using VbaDocumenter.Core.Extraction;
 using VbaDocumenter.Core.Importing;

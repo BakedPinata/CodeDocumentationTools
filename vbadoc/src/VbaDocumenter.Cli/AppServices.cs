@@ -1,3 +1,5 @@
+using CodeDocumenter.Workbooks.CommandLine;
+using CodeDocumenter.Workbooks.Importing;
 using CodeDocumenter.Shared.CommandLine;
 using CodeDocumenter.Shared.Files;
 using Serilog;
@@ -20,7 +22,7 @@ public sealed class AppServices
   public required TextWriter Error { get; init; }
 
   /// <summary>Asks whether to overwrite the page, when the session can.</summary>
-  public required IUserInteraction Interaction { get; init; }
+  public required IImportInteraction Interaction { get; init; }
 
   /// <summary>Whether what a library reference points at is on this machine, or null if it can't be told.</summary>
   public Func<VbaReference, bool?> IsLibraryInstalled { get; init; } = ReferenceChoice.IsInstalled;
@@ -35,7 +37,7 @@ public sealed class AppServices
   {
     Output = Console.Out,
     Error = Console.Error,
-    Interaction = new ConsoleUserInteraction(),
+    Interaction = new ConsoleImportInteraction(),
     CreateLogger = verbosity =>
     {
       var useColour = LoggingSetup.UseColour(Environment.GetEnvironmentVariable("NO_COLOR"), Console.IsErrorRedirected);

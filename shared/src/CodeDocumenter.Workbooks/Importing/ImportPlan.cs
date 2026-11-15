@@ -1,4 +1,4 @@
-namespace CodeDocumenter.Shared.Importing;
+namespace CodeDocumenter.Workbooks.Importing;
 
 /// <summary>Something an item relies on that doesn't come with it, so the target may need it.</summary>
 /// <param name="What">What it relies on, such as a sheet's code name or a data source.</param>

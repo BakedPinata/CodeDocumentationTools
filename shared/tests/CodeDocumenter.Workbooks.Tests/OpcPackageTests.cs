@@ -1,9 +1,10 @@
+using CodeDocumenter.Shared;
 using System.IO.Compression;
 using System.Text;
 using System.Xml.Linq;
-using CodeDocumenter.Shared.Workbooks;
+using CodeDocumenter.Workbooks;
 
-namespace CodeDocumenter.Shared.Tests.Workbooks;
+namespace CodeDocumenter.Workbooks.Tests;
 
 public sealed class OpcPackageTests
 {

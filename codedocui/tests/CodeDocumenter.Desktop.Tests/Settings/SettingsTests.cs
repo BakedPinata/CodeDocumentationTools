@@ -3,7 +3,7 @@ using CodeDocumenter.Desktop.Importing;
 using CodeDocumenter.Desktop.Running;
 using CodeDocumenter.Desktop.Settings;
 using CodeDocumenter.Shared.Files;
-using CodeDocumenter.Shared.Importing;
+using CodeDocumenter.Workbooks.Importing;
 using PowerQueryDocumenter.Core.Configuration;
 
 namespace CodeDocumenter.Desktop.Tests.Settings;

@@ -1,4 +1,4 @@
-using CodeDocumenter.Shared.Importing;
+using CodeDocumenter.Workbooks.Importing;
 using Microsoft.Playwright;
 
 namespace PowerQueryDocumenter.BrowserTests;

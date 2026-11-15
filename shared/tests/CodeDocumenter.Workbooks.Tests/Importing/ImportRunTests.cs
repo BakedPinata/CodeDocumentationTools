@@ -1,9 +1,10 @@
+using CodeDocumenter.Shared;
 using CodeDocumenter.Shared.Files;
-using CodeDocumenter.Shared.Importing;
-using CodeDocumenter.Shared.Workbooks;
+using CodeDocumenter.Workbooks.Importing;
+using CodeDocumenter.Workbooks;
 using Serilog.Events;
 
-namespace CodeDocumenter.Shared.Tests.Importing;
+namespace CodeDocumenter.Workbooks.Tests.Importing;
 
 /// <summary>Writing a workbook, new or in place of the target.</summary>
 public sealed class ImportRunTests : IDisposable

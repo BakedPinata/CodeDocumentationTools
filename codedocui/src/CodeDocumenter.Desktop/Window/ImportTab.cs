@@ -1,10 +1,11 @@
+using CodeDocumenter.Workbooks.CommandLine;
 using System.CommandLine;
 using CodeDocumenter.Desktop.Documenting;
 using CodeDocumenter.Desktop.Importing;
 using CodeDocumenter.Desktop.Running;
 using CodeDocumenter.Shared.CommandLine;
 using CodeDocumenter.Shared.Files;
-using CodeDocumenter.Shared.Importing;
+using CodeDocumenter.Workbooks.Importing;
 using PqCli = PowerQueryDocumenter.Cli;
 using VbaCli = VbaDocumenter.Cli;
 using static CodeDocumenter.Desktop.Window.TabParts;

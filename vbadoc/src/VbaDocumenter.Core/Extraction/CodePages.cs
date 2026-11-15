@@ -1,5 +1,6 @@
+using CodeDocumenter.Shared;
 using System.Text;
-using CodeDocumenter.Shared.Workbooks;
+using CodeDocumenter.Workbooks;
 
 namespace VbaDocumenter.Core.Extraction;
 

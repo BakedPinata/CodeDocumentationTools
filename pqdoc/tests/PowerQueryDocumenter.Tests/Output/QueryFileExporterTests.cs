@@ -1,5 +1,6 @@
+using CodeDocumenter.Shared;
 using CodeDocumenter.Shared.Files;
-using CodeDocumenter.Shared.Workbooks;
+using CodeDocumenter.Workbooks;
 using PowerQueryDocumenter.Core.Extraction;
 using PowerQueryDocumenter.Core.Output;
 using PowerQueryDocumenter.Tests.TestSupport;

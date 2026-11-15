@@ -1,3 +1,4 @@
+using CodeDocumenter.Workbooks.CommandLine;
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using CodeDocumenter.Shared.CommandLine;

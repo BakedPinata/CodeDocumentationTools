@@ -1,8 +1,9 @@
+using CodeDocumenter.Workbooks.CommandLine;
 using CodeDocumenter.Shared.CommandLine;
-using CodeDocumenter.Shared.Importing;
+using CodeDocumenter.Workbooks.Importing;
 using Serilog.Events;
 
-namespace CodeDocumenter.Shared.Tests.Importing;
+namespace CodeDocumenter.Workbooks.Tests.Importing;
 
 public sealed class ClashResolverTests
 {
@@ -131,7 +132,7 @@ public sealed class ClashResolverTests
   [InlineData("quit", ClashAnswer.Quit)]
   public void Typed_answers_are_read_ignoring_case_and_spacing(string typed, ClashAnswer expected)
   {
-    Assert.Equal(expected, ConsoleUserInteraction.ReadClashAnswer(typed, canOverwrite: true));
+    Assert.Equal(expected, ConsoleImportInteraction.ReadClashAnswer(typed, canOverwrite: true));
   }
 
   [Theory]
@@ -141,7 +142,7 @@ public sealed class ClashResolverTests
   [InlineData("", false)]
   public void Overwrite_means_nothing_where_it_isnt_offered(string typed, bool whenOffered)
   {
-    Assert.Null(ConsoleUserInteraction.ReadClashAnswer(typed, canOverwrite: false));
-    Assert.Equal(whenOffered, ConsoleUserInteraction.ReadClashAnswer(typed, canOverwrite: true) is not null);
+    Assert.Null(ConsoleImportInteraction.ReadClashAnswer(typed, canOverwrite: false));
+    Assert.Equal(whenOffered, ConsoleImportInteraction.ReadClashAnswer(typed, canOverwrite: true) is not null);
   }
 }

@@ -1,8 +1,9 @@
+using CodeDocumenter.Shared.CommandLine;
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using CodeDocumenter.Shared.Files;
 
-namespace CodeDocumenter.Shared.CommandLine;
+namespace CodeDocumenter.Workbooks.CommandLine;
 
 /// <summary>What an <c>import</c> command was asked to do.</summary>
 /// <param name="Source">The workbook (or pqdoc's folder) to read, as a full path.</param>

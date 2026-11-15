@@ -5,7 +5,7 @@ using CodeDocumenter.Shared;
 using CodeDocumenter.Shared.CommandLine;
 using CodeDocumenter.Shared.Files;
 using CodeDocumenter.Shared.Pages;
-using CodeDocumenter.Shared.Workbooks;
+using CodeDocumenter.Workbooks;
 using Serilog;
 using VbaDocumenter.Core.Analysis;
 using VbaDocumenter.Core.Extraction;

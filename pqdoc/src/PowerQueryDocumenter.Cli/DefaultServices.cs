@@ -1,3 +1,4 @@
+using CodeDocumenter.Workbooks.CommandLine;
 using CodeDocumenter.Shared.CommandLine;
 using PowerQueryDocumenter.Core.Application;
 using PowerQueryDocumenter.Core.Configuration;
@@ -16,7 +17,7 @@ public static class DefaultServices
     return new AppServices
     {
       HttpClient = httpClient,
-      Interaction = new ConsoleUserInteraction(),
+      Interaction = new ConsoleImportInteraction(),
       Environment = environment,
       Output = Console.Out,
       Error = Console.Error,

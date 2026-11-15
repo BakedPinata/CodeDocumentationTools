@@ -1,7 +1,8 @@
+using CodeDocumenter.Shared;
 using System.Text.Json;
-using CodeDocumenter.Shared.Workbooks;
+using CodeDocumenter.Workbooks;
 
-namespace CodeDocumenter.Shared.Importing;
+namespace CodeDocumenter.Workbooks.Importing;
 
 /// <summary>
 /// What the page's Export tab chose, as a file: the items picked, not what they bring, so running it again after the

@@ -1,9 +1,11 @@
+using CodeDocumenter.Shared;
 using CodeDocumenter.Shared.CommandLine;
+using CodeDocumenter.Workbooks.CommandLine;
 using CodeDocumenter.Shared.Files;
-using CodeDocumenter.Shared.Workbooks;
+using CodeDocumenter.Workbooks;
 using Serilog;
 
-namespace CodeDocumenter.Shared.Importing;
+namespace CodeDocumenter.Workbooks.Importing;
 
 /// <summary>A workbook to be written, for <c>--on-exists</c>.</summary>
 /// <param name="Path">The file.</param>
@@ -17,7 +19,7 @@ public sealed record PlannedWorkbook(string Path) : IPlannedOutput
 /// What's the same in every tool's <c>import</c>: reading the choice, saying what it comes to, and writing a bundle or a
 /// workbook. The source is never changed, and nor is a target unless <c>--in-place</c> says so.
 /// </summary>
-public sealed class ImportRun(ILogger logger, IUserInteraction interaction, string tool)
+public sealed class ImportRun(ILogger logger, IImportInteraction interaction, string tool)
 {
   /// <summary>The items asked for, and the references to leave out.</summary>
   /// <param name="request">What was asked for.</param>
