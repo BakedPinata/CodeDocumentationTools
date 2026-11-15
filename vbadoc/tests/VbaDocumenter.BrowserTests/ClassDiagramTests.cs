@@ -11,7 +11,7 @@ public class ClassDiagramTests(PageFixture fixture)
 
   static Task<string?> Selection(IPage page) => page.EvaluateAsync<string?>("() => window.vbadoc.selection()");
 
-  static string Box(string module) => $"#classes-svg g.class-box[data-module='{module}']";
+  static string Box(string module) => $"#classes-svg g.class-box[data-unit='{module}']";
 
   static string Line(string member) => $"#classes-svg g.class-line[data-member='{member}']";
 
@@ -22,7 +22,7 @@ public class ClassDiagramTests(PageFixture fixture)
       page.Locator(Box(module)).EvaluateAsync<string>("n => [...n.querySelectorAll('text')].map(t => t.textContent).join('\\n')");
 
   static Task<double[]> Position(IPage page, string module) =>
-      page.EvaluateAsync<double[]>("id => { const p = window.vbadocClasses.position(id); return [p.x, p.y]; }", module);
+      page.EvaluateAsync<double[]>("id => { const p = window.codeViewsClasses.position(id); return [p.x, p.y]; }", module);
 
   /// <summary>Clicks a spot of the diagram where nothing is drawn, searching up from its bottom right corner.</summary>
   static async Task ClickBackground(IPage page)
@@ -40,7 +40,7 @@ public class ClassDiagramTests(PageFixture fixture)
   }
 
   static Task WaitUntilDrawn(IPage page, int timeoutMs = 30000) =>
-      page.WaitForFunctionAsync("() => window.vbadocClasses.drawn()", null, new() { Timeout = timeoutMs });
+      page.WaitForFunctionAsync("() => window.codeViewsClasses.drawn()", null, new() { Timeout = timeoutMs });
 
   static async Task<OpenedPage> OpenClasses(PageFixture fixture, string folder, int timeoutMs = 30000)
   {
@@ -60,15 +60,15 @@ public class ClassDiagramTests(PageFixture fixture)
     await opened.Page.WaitForFunctionAsync(@"id => {
             const view = document.getElementById('classes-svg').getBoundingClientRect();
             const legend = document.getElementById('classes-legend').getBoundingClientRect();
-            const box = document.querySelector(`#classes-svg g.class-box[data-module='${id}']`).getBoundingClientRect();
-            return !window.vbadocClasses.moving() &&
+            const box = document.querySelector(`#classes-svg g.class-box[data-unit='${id}']`).getBoundingClientRect();
+            return !window.codeViewsClasses.moving() &&
                 box.left >= view.left && box.right <= view.right && box.top >= view.top && box.bottom <= legend.top;
         }", module);
     await opened.Page.EvaluateAsync("() => window.vbadoc.select(null)");
   }
 
   static Task<string[]> ShownModules(IPage page) =>
-      page.Locator("#classes-svg g.class-box").EvaluateAllAsync<string[]>("ns => ns.map(n => n.dataset.module).sort()");
+      page.Locator("#classes-svg g.class-box").EvaluateAllAsync<string[]>("ns => ns.map(n => n.dataset.unit).sort()");
 
   /// <summary>Drags from the middle of an element by (dx, dy) screen pixels in small steps, like a person would.</summary>
   static async Task Drag(IPage page, string selector, float dx, float dy)
@@ -121,7 +121,7 @@ public class ClassDiagramTests(PageFixture fixture)
   {
     await using var first = await OpenClasses(fixture, fixture.SampleEmbedded);
     await using var second = await OpenClasses(fixture, fixture.SampleEmbedded);
-    var positions = "() => [...document.querySelectorAll('#classes-svg g.class-box')].map(n => n.dataset.module + n.getAttribute('transform')).sort()";
+    var positions = "() => [...document.querySelectorAll('#classes-svg g.class-box')].map(n => n.dataset.unit + n.getAttribute('transform')).sort()";
     Assert.Equal(await first.Page.EvaluateAsync<string[]>(positions), await second.Page.EvaluateAsync<string[]>(positions));
 
     // Main uses OrderService, which uses Logger, which nothing below it uses.
@@ -136,7 +136,7 @@ public class ClassDiagramTests(PageFixture fixture)
 
   /// <summary>Pairs of boxes that overlap, as "A/B".</summary>
   const string Overlaps = @"() => {
-        const boxes = [...document.querySelectorAll('#classes-svg g.class-box')].map(n => ({ id: n.dataset.module, r: n.getBBox(), p: window.vbadocClasses.position(n.dataset.module) }));
+        const boxes = [...document.querySelectorAll('#classes-svg g.class-box')].map(n => ({ id: n.dataset.unit, r: n.getBBox(), p: window.codeViewsClasses.position(n.dataset.unit) }));
         const clashes = [];
         for (let i = 0; i < boxes.length; i++)
             for (let j = i + 1; j < boxes.length; j++) {
@@ -187,7 +187,7 @@ public class ClassDiagramTests(PageFixture fixture)
     var start = await Position(page, "Logger");
     var edge = $"{Edges}[data-to='Logger']";
     var path = await page.GetAttributeAsync(edge, "d");
-    var zoom = await page.EvaluateAsync<double>("() => window.vbadocClasses.zoom()");
+    var zoom = await page.EvaluateAsync<double>("() => window.codeViewsClasses.zoom()");
 
     await Drag(page, $"{Box("Logger")} .box-name", 150, -60);
 
@@ -283,10 +283,10 @@ public class ClassDiagramTests(PageFixture fixture)
   {
     await using var opened = await OpenClasses(fixture, fixture.SampleEmbedded);
     var page = opened.Page;
-    var before = await page.EvaluateAsync<double>("() => window.vbadocClasses.zoom()");
+    var before = await page.EvaluateAsync<double>("() => window.codeViewsClasses.zoom()");
 
     await page.ClickAsync("#classes-zoom-in");
-    await page.WaitForFunctionAsync("z => window.vbadocClasses.zoom() > z * 1.2", before);
+    await page.WaitForFunctionAsync("z => window.codeViewsClasses.zoom() > z * 1.2", before);
 
     await page.ClickAsync("#classes-fit");
     await page.WaitForFunctionAsync(@"() => {
@@ -344,7 +344,7 @@ public class ClassDiagramTests(PageFixture fixture)
 
     // Every box has a real position and size, and none overlaps another.
     Assert.True(await page.EvaluateAsync<bool>(@"() => [...document.querySelectorAll('#classes-svg g.class-box')].every(n => {
-            const p = window.vbadocClasses.position(n.dataset.module), r = n.getBBox();
+            const p = window.codeViewsClasses.position(n.dataset.unit), r = n.getBBox();
             return isFinite(p.x) && isFinite(p.y) && r.width > 0 && r.height > 0; })"));
     Assert.Empty(await page.EvaluateAsync<string[]>(Overlaps));
 
@@ -352,14 +352,14 @@ public class ClassDiagramTests(PageFixture fixture)
     await opened.SelectAsync("Mod299");
     await page.WaitForFunctionAsync(@"() => {
             const c = document.getElementById('classes-svg').getBoundingClientRect();
-            const r = document.querySelector(""#classes-svg g.class-box[data-module='Mod299']"").getBoundingClientRect();
+            const r = document.querySelector(""#classes-svg g.class-box[data-unit='Mod299']"").getBoundingClientRect();
             return r.right > c.left && r.left < c.right && r.bottom > c.top && r.top < c.bottom;
         }");
     Assert.Empty(opened.Errors);
   }
 
   static Task<string[]> LitBoxes(IPage page) =>
-      page.Locator("#classes-svg g.class-box:not(.dim)").EvaluateAllAsync<string[]>("bs => bs.map(b => b.dataset.module).sort()");
+      page.Locator("#classes-svg g.class-box:not(.dim)").EvaluateAllAsync<string[]>("bs => bs.map(b => b.dataset.unit).sort()");
 
   [Fact]
   public async Task Legend_items_light_up_what_they_stand_for_and_add_to_each_other()

@@ -20,9 +20,9 @@ public class FilterTests(PageFixture fixture)
       page.Locator("#graph-svg g.node").EvaluateAllAsync<string[]>("ns => ns.map(n => n.dataset.id).sort()");
 
   static Task<string[]> ClassBoxes(IPage page) =>
-      page.Locator("#classes-svg g.class-box").EvaluateAllAsync<string[]>("ns => ns.map(n => n.dataset.module).sort()");
+      page.Locator("#classes-svg g.class-box").EvaluateAllAsync<string[]>("ns => ns.map(n => n.dataset.unit).sort()");
 
-  static Task<int> ModuleCount(IPage page) => page.EvaluateAsync<int>("() => window.vbadoc.data.modules.length");
+  static Task<int> ModuleCount(IPage page) => page.EvaluateAsync<int>("() => window.vbadoc.data.units.length");
 
   static async Task ShowClasses(IPage page, int boxes)
   {
@@ -54,7 +54,7 @@ public class FilterTests(PageFixture fixture)
 
     // At member level, only that member of Utils, and every member of the ticked modules.
     await page.ClickAsync("[data-level='members']");
-    await page.WaitForFunctionAsync("() => window.vbadocGraph.level() === 'members'");
+    await page.WaitForFunctionAsync("() => window.codeViewsGraph.level() === 'members'");
     var members = await GraphNodes(page);
     Assert.Contains("Utils.FormatMoney", members);
     Assert.DoesNotContain("Utils.UnusedHelper", members);
@@ -111,7 +111,7 @@ public class FilterTests(PageFixture fixture)
     Assert.Equal(["AppInit", "Main", "Settings"], await GraphNodes(page));
 
     await page.ReloadAsync();
-    await page.WaitForFunctionAsync("() => !!window.vbadocGraph");
+    await page.WaitForFunctionAsync("() => !!window.codeViewsGraph");
     Assert.Equal(["AppInit", "Main", "Settings"], await GraphNodes(page));
     Assert.True(await page.IsVisibleAsync("#explorer-filter-bar"));
     Assert.True(await page.IsCheckedAsync(GroupBox("Startup")));

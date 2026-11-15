@@ -11,12 +11,12 @@ namespace VbaDocumenter.BrowserTests;
 public class SpeedTests(PageFixture fixture)
 {
   static Task WaitUntilStill(IPage page) =>
-      page.WaitForFunctionAsync("() => window.vbadocGraph.nodeCount() > 0 && !window.vbadocGraph.moving()", null, new() { Timeout = 60000 });
+      page.WaitForFunctionAsync("() => window.codeViewsGraph.nodeCount() > 0 && !window.codeViewsGraph.moving()", null, new() { Timeout = 60000 });
 
   static async Task ShowMembers(IPage page)
   {
     await page.ClickAsync("[data-level='members']");
-    await page.WaitForFunctionAsync("() => window.vbadocGraph.level() === 'members'", null, new() { Timeout = 60000 });
+    await page.WaitForFunctionAsync("() => window.codeViewsGraph.level() === 'members'", null, new() { Timeout = 60000 });
     await WaitUntilStill(page);
   }
 
@@ -24,7 +24,7 @@ public class SpeedTests(PageFixture fixture)
   static Task<Dictionary<string, double[]>> Positions(IPage page) => page.EvaluateAsync<Dictionary<string, double[]>>(@"() => {
       const all = {};
       document.querySelectorAll('#graph-svg g.node').forEach(n => {
-        const p = window.vbadocGraph.position(n.dataset.id);
+        const p = window.codeViewsGraph.position(n.dataset.id);
         all[n.dataset.id] = [Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10];
       });
       return all;
@@ -114,7 +114,7 @@ public class SpeedTests(PageFixture fixture)
     Assert.NotEqual(starting, moved);
 
     await ShowMembers(page);
-    await page.ClickAsync("[data-level='modules']");
+    await page.ClickAsync("[data-level='units']");
     await WaitUntilStill(page);
     Assert.Equal(moved, await Positions(page));
 
@@ -137,7 +137,7 @@ public class SpeedTests(PageFixture fixture)
     await WaitUntilStill(page);
     await ShowMembers(page);
     const string spread = @"() => {
-      const ps = [...document.querySelectorAll('#graph-svg g.node')].map(n => window.vbadocGraph.position(n.dataset.id));
+      const ps = [...document.querySelectorAll('#graph-svg g.node')].map(n => window.codeViewsGraph.position(n.dataset.id));
       const cx = ps.reduce((s, p) => s + p.x, 0) / ps.length, cy = ps.reduce((s, p) => s + p.y, 0) / ps.length;
       return ps.reduce((s, p) => s + Math.hypot(p.x - cx, p.y - cy), 0) / ps.length;
     }";

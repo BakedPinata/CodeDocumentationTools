@@ -13,7 +13,7 @@ public class ShowChoicesTests(PageFixture fixture)
       page.Locator("#graph-svg g.node").EvaluateAllAsync<string[]>("ns => ns.map(n => n.dataset.id).sort()");
 
   static Task<string[]> ClassBoxes(IPage page) =>
-      page.Locator("#classes-svg g.class-box").EvaluateAllAsync<string[]>("ns => ns.map(n => n.dataset.module).sort()");
+      page.Locator("#classes-svg g.class-box").EvaluateAllAsync<string[]>("ns => ns.map(n => n.dataset.unit).sort()");
 
   static string Group(string label) => $"#explorer-tree li.group:has(> .tree-row .tree-label:text-is('{label}'))";
 
@@ -25,7 +25,7 @@ public class ShowChoicesTests(PageFixture fixture)
     Assert.Equal(0, await page.Locator("#view-graph [id^='graph-filters'], #view-classes [id^='classes-filters']").CountAsync());
 
     await page.ClickAsync("#explorer-show summary");
-    await page.UncheckAsync("#explorer-show [data-choice='module:document']");
+    await page.UncheckAsync("#explorer-show [data-choice='unit:document']");
     await page.Keyboard.PressAsync("Escape");
 
     Assert.DoesNotContain("Sheet1", await GraphNodes(page));
@@ -35,7 +35,7 @@ public class ShowChoicesTests(PageFixture fixture)
     Assert.Equal("Show… (1)", await page.Locator("#view-graph .view-show-note [data-show-open]").TextContentAsync());
 
     await page.ClickAsync("#tab-classes");
-    await page.WaitForFunctionAsync("() => window.vbadocClasses.drawn()");
+    await page.WaitForFunctionAsync("() => window.codeViewsClasses.drawn()");
     var boxes = await ClassBoxes(page);
     Assert.DoesNotContain("Sheet1", boxes);
     Assert.Contains("Order", boxes);
@@ -58,7 +58,7 @@ public class ShowChoicesTests(PageFixture fixture)
     Assert.False(await page.IsVisibleAsync("#explorer-tree li[data-id='Order.m_Id'] > .tree-row"));
     Assert.True(await page.IsVisibleAsync("#explorer-tree li[data-id='Order.Describe'] > .tree-row"));
     await page.ClickAsync("#tab-classes");
-    await page.WaitForFunctionAsync("() => window.vbadocClasses.drawn()");
+    await page.WaitForFunctionAsync("() => window.codeViewsClasses.drawn()");
     Assert.Equal(0, await page.Locator("#classes-svg g.class-line[data-member='Order.m_Id']").CountAsync());
     Assert.Equal(1, await page.Locator("#classes-svg g.class-line[data-member='Order.Describe']").CountAsync());
     Assert.Empty(opened.Errors);
@@ -68,7 +68,7 @@ public class ShowChoicesTests(PageFixture fixture)
   public async Task The_toolbars_note_opens_the_menu_in_the_explorer_and_Show_everything_puts_everything_back()
   {
     await using var opened = await OpenedPage.OpenAsync(fixture, fixture.SampleEmbedded, initScript: OpenedPage.WithoutExplorer +
-        "if (localStorage.getItem('vbadoc-show') === null) localStorage.setItem('vbadoc-show', JSON.stringify({ off: ['module:document', 'line:events'] }));");
+        "if (localStorage.getItem('vbadoc-show') === null) localStorage.setItem('vbadoc-show', JSON.stringify({ off: ['unit:document', 'line:events'] }));");
     var page = opened.Page;
     Assert.Equal("Show… (2)", await page.Locator("#view-graph .view-show-note [data-show-open]").TextContentAsync());
     Assert.Equal(10, (await GraphNodes(page)).Length);
@@ -76,7 +76,7 @@ public class ShowChoicesTests(PageFixture fixture)
     await page.ClickAsync("#view-graph .view-show-note [data-show-open]");
     Assert.True(await page.IsVisibleAsync("#explorer"));
     Assert.True(await page.EvaluateAsync<bool>("() => document.getElementById('explorer-show').open"));
-    Assert.False(await page.IsCheckedAsync("#explorer-show [data-choice='module:document']"));
+    Assert.False(await page.IsCheckedAsync("#explorer-show [data-choice='unit:document']"));
 
     await page.Keyboard.PressAsync("Escape");
     await page.ClickAsync("#view-graph .view-show-note [data-show-reset]");
@@ -94,12 +94,12 @@ public class ShowChoicesTests(PageFixture fixture)
     await page.ClickAsync("#explorer-show summary");
 
     await page.ClickAsync("#explorer-show section:has(h3 span:text-is('Modules')) [data-show-section-none]");
-    Assert.Equal(0, await page.Locator("#explorer-show [data-choice^='module:']:checked").CountAsync());
-    await page.CheckAsync("#explorer-show [data-choice='module:class']");
+    Assert.Equal(0, await page.Locator("#explorer-show [data-choice^='unit:']:checked").CountAsync());
+    await page.CheckAsync("#explorer-show [data-choice='unit:class']");
     Assert.Equal(["CsvOrderRepository", "Order", "OrderService", "ProgressReporter", "SheetOrderRepository"], await GraphNodes(page));
 
     await page.ClickAsync("#explorer-show section:has(h3 span:text-is('Modules')) [data-show-section-all]");
-    Assert.Equal(5, await page.Locator("#explorer-show [data-choice^='module:']:checked").CountAsync());
+    Assert.Equal(5, await page.Locator("#explorer-show [data-choice^='unit:']:checked").CountAsync());
 
     await page.ClickAsync("#explorer-show [data-show-nothing]");
     Assert.Equal(0, await page.Locator("#explorer-show [data-choice]:checked").CountAsync());

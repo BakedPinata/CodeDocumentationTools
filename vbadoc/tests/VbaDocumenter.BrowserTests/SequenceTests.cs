@@ -93,11 +93,11 @@ public class SequenceTests(PageFixture fixture)
 
     await page.ClickAsync(Diagram + " g.seq-message[data-id='OrderService.Init'] .seq-name");
     Assert.Equal("OrderService.Init", await page.EvaluateAsync<string?>("() => window.vbadoc.selection()"));
-    Assert.Null(await page.EvaluateAsync<string?>("() => window.vbadocCalls.root()"));
+    Assert.Null(await page.EvaluateAsync<string?>("() => window.codeViewsCalls.root()"));
     Assert.Equal(1, await page.Locator(Diagram + " g.seq-message.selected[data-id='OrderService.Init']").CountAsync());
 
     await page.ClickAsync(Diagram + " g.seq-message[data-id='OrderService.Process'] .seq-name", CtrlClick);
-    Assert.Equal("OrderService.Process", await page.EvaluateAsync<string?>("() => window.vbadocCalls.root()"));
+    Assert.Equal("OrderService.Process", await page.EvaluateAsync<string?>("() => window.codeViewsCalls.root()"));
     Assert.Equal("Calls from OrderService.Process", await page.TextContentAsync(Diagram + " .seq-title"));
     Assert.Empty(opened.Errors);
   }
@@ -114,8 +114,8 @@ public class SequenceTests(PageFixture fixture)
     Assert.Equal(11, (await Messages(page)).Length);
 
     await page.ReloadAsync();
-    await page.WaitForFunctionAsync("() => !!window.vbadocCalls");
-    Assert.Equal("sequence", await page.EvaluateAsync<string>("() => window.vbadocCalls.showing()"));
+    await page.WaitForFunctionAsync("() => !!window.codeViewsCalls");
+    Assert.Equal("sequence", await page.EvaluateAsync<string>("() => window.codeViewsCalls.showing()"));
 
     await page.ClickAsync("[data-calls-direction='calledBy']");
     Assert.True(await page.IsDisabledAsync("[data-calls-show='sequence']"));
@@ -226,7 +226,7 @@ public class SequenceTests(PageFixture fixture)
 
     // A participant in the strip selects its module, as the diagram's own does.
     await page.EvaluateAsync("() => { document.querySelector('#view-calls .calls-body').scrollLeft = 0; }");
-    await page.Locator("#calls-sequence .seq-sticky").Nth(1).Locator(".seq-lane-head[data-seq-module='Conditions']").ClickAsync();
+    await page.Locator("#calls-sequence .seq-sticky").Nth(1).Locator(".seq-lane-head[data-seq-unit='Conditions']").ClickAsync();
     Assert.Equal("Conditions", await page.EvaluateAsync<string?>("() => window.vbadoc.selection()"));
     Assert.Empty(opened.Errors);
   }

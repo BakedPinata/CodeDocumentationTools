@@ -44,16 +44,16 @@ public class HidingTests(PageFixture fixture)
 
     // Its members go with it at member level, and its box from the class diagram.
     await page.ClickAsync("[data-level='members']");
-    await page.WaitForFunctionAsync("() => window.vbadocGraph.level() === 'members'");
+    await page.WaitForFunctionAsync("() => window.codeViewsGraph.level() === 'members'");
     Assert.DoesNotContain(await GraphNodes(page), id => id.StartsWith("Logger.", StringComparison.Ordinal));
     await page.ClickAsync("#tab-classes");
-    await page.WaitForFunctionAsync("() => window.vbadocClasses.drawn()");
-    Assert.Equal(0, await page.Locator("#classes-svg g.class-box[data-module='Logger']").CountAsync());
+    await page.WaitForFunctionAsync("() => window.codeViewsClasses.drawn()");
+    Assert.Equal(0, await page.Locator("#classes-svg g.class-box[data-unit='Logger']").CountAsync());
     Assert.True(await page.IsVisibleAsync("#view-classes .view-hidden-note"));
 
     await page.ReloadAsync();
-    await page.WaitForFunctionAsync("() => window.vbadocClasses && window.vbadocClasses.drawn()");
-    Assert.Equal(0, await page.Locator("#classes-svg g.class-box[data-module='Logger']").CountAsync());
+    await page.WaitForFunctionAsync("() => window.codeViewsClasses && window.codeViewsClasses.drawn()");
+    Assert.Equal(0, await page.Locator("#classes-svg g.class-box[data-unit='Logger']").CountAsync());
     Assert.Equal(["Logger"], await Hidden(page));
     Assert.Empty(opened.Errors);
   }
@@ -93,14 +93,14 @@ public class HidingTests(PageFixture fixture)
 
     Assert.Contains("Order", await GraphNodes(page)); // at module level, the module stays
     await page.ClickAsync("[data-level='members']");
-    await page.WaitForFunctionAsync("() => window.vbadocGraph.level() === 'members'");
+    await page.WaitForFunctionAsync("() => window.codeViewsGraph.level() === 'members'");
     var members = await GraphNodes(page);
     Assert.DoesNotContain("Order.Describe", members);
     Assert.Contains(members, id => id.StartsWith("Order.", StringComparison.Ordinal));
 
     await page.ClickAsync("#tab-classes");
-    await page.WaitForFunctionAsync("() => window.vbadocClasses.drawn()");
-    var box = await page.Locator("#classes-svg g.class-box[data-module='Order']").TextContentAsync();
+    await page.WaitForFunctionAsync("() => window.codeViewsClasses.drawn()");
+    var box = await page.Locator("#classes-svg g.class-box[data-unit='Order']").TextContentAsync();
     Assert.DoesNotContain("Describe", box);
     Assert.Empty(opened.Errors);
   }
@@ -146,15 +146,15 @@ public class HidingTests(PageFixture fixture)
     Assert.Equal(expected, await GraphNodes(page));
     Assert.True(await page.IsVisibleAsync("#view-graph .view-favourites-note"));
     await page.ClickAsync("#tab-classes");
-    await page.WaitForFunctionAsync("() => window.vbadocClasses.drawn()");
-    Assert.Contains("Main", await page.Locator("#classes-svg g.class-box").EvaluateAllAsync<string[]>("ns => ns.map(n => n.dataset.module)"));
+    await page.WaitForFunctionAsync("() => window.codeViewsClasses.drawn()");
+    Assert.Contains("Main", await page.Locator("#classes-svg g.class-box").EvaluateAllAsync<string[]>("ns => ns.map(n => n.dataset.unit)"));
     Assert.True(await page.Locator("#classes-svg g.class-box").CountAsync() < 12);
 
     await page.ReloadAsync();
-    await page.WaitForFunctionAsync("() => window.vbadocClasses && window.vbadocClasses.drawn()");
+    await page.WaitForFunctionAsync("() => window.codeViewsClasses && window.codeViewsClasses.drawn()");
     Assert.Equal("true", await page.GetAttributeAsync("#explorer-tree > li.favourites [data-focus-favourites]", "aria-pressed"));
     await page.ClickAsync("#view-classes .view-favourites-note [data-focus-favourites-off]");
-    await page.WaitForFunctionAsync("() => window.vbadocClasses.drawn()");
+    await page.WaitForFunctionAsync("() => window.codeViewsClasses.drawn()");
     Assert.Equal(12, await page.Locator("#classes-svg g.class-box").CountAsync());
     Assert.Equal("false", await page.GetAttributeAsync("#explorer-tree > li.favourites [data-focus-favourites]", "aria-pressed"));
     Assert.Empty(opened.Errors);

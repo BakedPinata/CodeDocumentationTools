@@ -33,7 +33,7 @@ public class PanelControlsTests(PageFixture fixture)
   }
 
   static async Task WaitUntilStillAsync(IPage page) =>
-      await page.WaitForFunctionAsync("() => window.vbadocGraph && window.vbadocGraph.nodeCount() > 0 && !window.vbadocGraph.moving()");
+      await page.WaitForFunctionAsync("() => window.codeViewsGraph && window.codeViewsGraph.nodeCount() > 0 && !window.codeViewsGraph.moving()");
 
   [Fact]
   public async Task The_toggles_are_icons_at_the_two_ends_of_the_top_bar()
@@ -222,10 +222,10 @@ public class PanelControlsTests(PageFixture fixture)
           return r.left > view.left && r.left + 40 < view.right && r.top > view.top + 60 && r.top + 20 < view.bottom;
         });
         boxes.sort((a, b) => b.getBoundingClientRect().left - a.getBoundingClientRect().left);
-        return boxes.length && boxes[0].getBoundingClientRect().left > 1280 - 0.42 * 1280 ? boxes[0].dataset.module : null;
+        return boxes.length && boxes[0].getBoundingClientRect().left > 1280 - 0.42 * 1280 ? boxes[0].dataset.unit : null;
       }");
     Assert.NotNull(module);
-    var title = page.Locator($"#classes-svg g.class-box[data-module='{module}']");
+    var title = page.Locator($"#classes-svg g.class-box[data-unit='{module}']");
     var box = (await title.BoundingBoxAsync())!;
 
     await page.Mouse.ClickAsync(box.X + 20, box.Y + 10);

@@ -52,12 +52,13 @@ public class HtmlPageWriterTests
     var data = Data(Build(false, Fixtures.SampleVbaModules().Append(settings)));
     JsonElement Find(string list, string id) => data.GetProperty(list).EnumerateArray().Single(e => e.GetProperty("id").GetString() == id);
 
-    Assert.Equal(8, Find("modules", "Logger").GetProperty("usedBy").GetInt32());
+    Assert.Equal(8, Find("units", "Logger").GetProperty("usedBy").GetInt32());
     Assert.Equal(7, Find("members", "Logger.LogInfo").GetProperty("usedBy").GetInt32());
-    Assert.False(Find("modules", "ThisWorkbook").TryGetProperty("usedBy", out _)); // nothing uses it
-    Assert.True(Find("modules", "Settings").GetProperty("predeclared").GetBoolean());
-    Assert.False(Find("modules", "Order").TryGetProperty("predeclared", out _));
-    Assert.False(Find("modules", "Sheet1").TryGetProperty("predeclared", out _)); // only classes are marked
+    Assert.False(Find("units", "ThisWorkbook").TryGetProperty("usedBy", out _)); // nothing uses it
+    Assert.Equal("Predeclared class", Find("units", "Settings").GetProperty("kindLabel").GetString());
+    Assert.Equal("Predeclared", Find("units", "Settings").GetProperty("note").GetString());
+    Assert.False(Find("units", "Order").TryGetProperty("kindLabel", out _));
+    Assert.False(Find("units", "Sheet1").TryGetProperty("kindLabel", out _)); // only classes are marked
   }
 
   [Fact]
@@ -136,9 +137,12 @@ public class HtmlPageWriterTests
 
     var data = Data(Build(embed: false, modules));
 
-    var byId = data.GetProperty("modules").EnumerateArray().ToDictionary(m => m.GetProperty("id").GetString()!);
-    Assert.Equal("Import.Parsing", byId["Parser"].GetProperty("folder").GetString());
-    Assert.False(byId["Loose"].TryGetProperty("folder", out _));
+    var byId = data.GetProperty("units").EnumerateArray().ToDictionary(m => m.GetProperty("id").GetString()!);
+    Assert.Equal("Import.Parsing", byId["Parser"].GetProperty("group").GetString());
+    Assert.False(byId["Loose"].TryGetProperty("group", out _));
+    // A folder inside a folder is a group inside a group.
+    Assert.Equal(["Import|Import|", "Import.Parsing|Parsing|Import"], data.GetProperty("groups").EnumerateArray().Select(g =>
+        $"{g.GetProperty("id").GetString()}|{g.GetProperty("name").GetString()}|{(g.TryGetProperty("parent", out var parent) ? parent.GetString() : "")}"));
   }
 
   [Fact]
@@ -146,11 +150,14 @@ public class HtmlPageWriterTests
   {
     var data = Data(Build(embed: false));
 
-    Assert.Equal("windows-1252", data.GetProperty("project").GetProperty("encoding").GetString());
-    Assert.Equal("folder", data.GetProperty("project").GetProperty("sourceMode").GetString());
-    var order = data.GetProperty("modules").EnumerateArray().Single(m => m.GetProperty("id").GetString() == "Order");
+    Assert.Equal("windows-1252", data.GetProperty("extra").GetProperty("encoding").GetString());
+    Assert.Equal("folder", data.GetProperty("source").GetProperty("sourceMode").GetString());
+    var order = data.GetProperty("units").EnumerateArray().Single(m => m.GetProperty("id").GetString() == "Order");
     Assert.Equal("Order.cls", order.GetProperty("file").GetString());
-    Assert.Matches("^[0-9a-f]{16}$", order.GetProperty("hash").GetString()!);
+    var file = data.GetProperty("files").EnumerateArray().Single(f => f.GetProperty("id").GetString() == "Order.cls");
+    Assert.Equal("Order.cls", file.GetProperty("name").GetString());
+    Assert.Matches("^[0-9a-f]{16}$", file.GetProperty("hash").GetString()!);
+    Assert.Equal("VBA", data.GetProperty("language").GetProperty("name").GetString());
   }
 
   [Fact]
@@ -168,7 +175,7 @@ public class HtmlPageWriterTests
     var html = Build(embed: true);
 
     Assert.Equal(12, Regex.Matches(html, "<pre hidden class=\"vbadoc-source\"").Count);
-    Assert.Contains("<pre hidden class=\"vbadoc-source\" data-module=\"Order\">\nVERSION 1.0 CLASS\n", html);
+    Assert.Contains("<pre hidden class=\"vbadoc-source\" data-file=\"Order.cls\">\nVERSION 1.0 CLASS\n", html);
   }
 
   [Fact]

@@ -134,7 +134,7 @@ public class FocusTests(PageFixture fixture)
     await using var opened = await OpenedPage.OpenAsync(fixture, fixture.SampleEmbedded);
     var page = opened.Page;
     await page.ClickAsync("#tab-classes");
-    await page.WaitForFunctionAsync("() => window.vbadocClasses.drawn()");
+    await page.WaitForFunctionAsync("() => window.codeViewsClasses.drawn()");
     await opened.SelectAsync("Utils");
     await page.WaitForFunctionAsync("() => document.querySelectorAll('#classes-svg g.class-box').length === 3");
 

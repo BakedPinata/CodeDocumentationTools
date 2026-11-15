@@ -40,7 +40,7 @@ public class NavigationTests(PageFixture fixture)
     Assert.Equal(["Order"], await DrawnIds(page, "#graph-svg g.node.favourite")); // a member's module at module level
 
     await page.ReloadAsync();
-    await page.WaitForFunctionAsync("() => !!window.vbadocGraph");
+    await page.WaitForFunctionAsync("() => !!window.codeViewsGraph");
     Assert.Equal(["Order.Describe"], await Favourites(page));
     Assert.Equal(["Order.Describe"], await FavouritesListed(page));
     await page.ClickAsync("[data-level='members']");
@@ -105,7 +105,7 @@ public class NavigationTests(PageFixture fixture)
     await page.ClickAsync("[data-level='members']");
 
     Assert.Equal("★ Utils", await page.TextContentAsync("#graph-svg g.hull-group.favourite text.hull-label"));
-    Assert.Equal(0, await page.Locator("#graph-svg g.node.favourite:not(.module-node)").CountAsync());
+    Assert.Equal(0, await page.Locator("#graph-svg g.node.favourite:not(.unit-node)").CountAsync());
   }
 
   [Fact]
@@ -166,7 +166,7 @@ public class NavigationTests(PageFixture fixture)
     await page.ClickAsync("#explorer-show [data-show-reset]");
     await page.Keyboard.PressAsync("Escape");
     await page.ClickAsync("[data-level='members']");
-    await page.WaitForFunctionAsync("() => window.vbadocGraph.level() === 'members'");
+    await page.WaitForFunctionAsync("() => window.codeViewsGraph.level() === 'members'");
     await opened.SelectAsync("Utils.FormatMoney");
     if (await page.GetAttributeAsync("#graph-path", "aria-pressed") != "true") await page.ClickAsync("#graph-path");
 
@@ -206,7 +206,7 @@ public class NavigationTests(PageFixture fixture)
 
     await page.GotoAsync(PageFixture.PageUrl(fixture.SampleEmbedded) + "#Order.Describe");
     await page.ReloadAsync();
-    await page.WaitForFunctionAsync("() => !!window.vbadocGraph");
+    await page.WaitForFunctionAsync("() => !!window.codeViewsGraph");
 
     Assert.Equal("Order.Describe", await Selection(page));
     Assert.Contains("Describe", await page.InnerTextAsync("#side-panel-header h2"));
@@ -215,7 +215,7 @@ public class NavigationTests(PageFixture fixture)
     // An unknown name is ignored.
     await page.GotoAsync(PageFixture.PageUrl(fixture.SampleEmbedded) + "#NoSuchThing");
     await page.ReloadAsync();
-    await page.WaitForFunctionAsync("() => !!window.vbadocGraph");
+    await page.WaitForFunctionAsync("() => !!window.codeViewsGraph");
     Assert.Null(await Selection(page));
     Assert.Empty(opened.Errors);
   }

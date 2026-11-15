@@ -36,8 +36,8 @@ public sealed class BuiltInViewsTests(PageFixture fixture) : IDisposable
 
   static async Task<string[]> ClassBoxes(IPage page)
   {
-    await page.WaitForFunctionAsync("() => window.vbadocClasses.drawn()");
-    return await page.Locator("#classes-svg g.class-box").EvaluateAllAsync<string[]>("ns => ns.map(n => n.dataset.module).sort()");
+    await page.WaitForFunctionAsync("() => window.codeViewsClasses.drawn()");
+    return await page.Locator("#classes-svg g.class-box").EvaluateAllAsync<string[]>("ns => ns.map(n => n.dataset.unit).sort()");
   }
 
   [Fact]

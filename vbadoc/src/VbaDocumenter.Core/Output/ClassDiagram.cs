@@ -7,7 +7,7 @@ namespace VbaDocumenter.Core.Output;
 
 /// <summary>
 /// Works out the class diagram's box contents and relationships from the parsed project, as the code views library
-/// draws them (<see cref="PageClassLine"/>, <see cref="PageClassEdge"/>): how VBA's members read as lines of a box.
+/// draws them (<see cref="CodeClassLine"/>, <see cref="CodeClassEdge"/>): how VBA's members read as lines of a box.
 /// </summary>
 public static class ClassDiagram
 {
@@ -19,15 +19,15 @@ public static class ClassDiagram
   /// repeated that would give exactly the same line. (A name declared again under #If is already one member, with its
   /// types joined: "-m_Dictionary : Scripting.Dictionary | Object".)
   /// </summary>
-  public static Dictionary<Member, PageClassLine> Lines(ModuleModel module)
+  public static Dictionary<Member, CodeClassLine> Lines(ModuleModel module)
   {
-    var lines = new Dictionary<Member, PageClassLine>();
+    var lines = new Dictionary<Member, CodeClassLine>();
     var propertiesSeen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-    var linesSeen = new HashSet<PageClassLine>();
+    var linesSeen = new HashSet<CodeClassLine>();
     foreach (var m in module.Members)
     {
       if (m.Kind == MemberKind.EnumMember) continue;
-      PageClassLine line;
+      CodeClassLine line;
       if (IsProperty(m))
       {
         if (!propertiesSeen.Add(m.Name)) continue;
@@ -53,7 +53,7 @@ public static class ClassDiagram
 
   static string? TypeText(string? type, bool isArray) => type == null ? null : type + (isArray ? "()" : "");
 
-  static PageClassLine Line(Member m)
+  static CodeClassLine Line(Member m)
   {
     string v = Visibility(m);
     string parameters = MemberFormatter.Parameters(m);
@@ -77,7 +77,7 @@ public static class ClassDiagram
   // A property is shown once, with the accessors it has: "+Property Status : String «Get/Let»". The type is
   // the Get's return type, or else the value parameter of the Let or Set. An indexed property (one with
   // parameters other than the value) is drawn as a method so its parameters can be shown.
-  static PageClassLine PropertyLine(Member first, List<Member> accessors)
+  static CodeClassLine PropertyLine(Member first, List<Member> accessors)
   {
     var get = accessors.FirstOrDefault(a => a.Kind == MemberKind.PropertyGet);
     var setter = accessors.FirstOrDefault(a => a.Kind != MemberKind.PropertyGet);
@@ -101,10 +101,10 @@ public static class ClassDiagram
   /// variable typed as another module becomes an association labelled with the variable's name (marked for
   /// WithEvents). Every other module edge becomes a dependency, unless an association already links the two modules.
   /// </summary>
-  public static List<PageClassEdge> Edges(DependencyModel model)
+  public static List<CodeClassEdge> Edges(DependencyModel model)
   {
     var modulesByName = model.Modules.ToDictionary(m => m.Id, StringComparer.OrdinalIgnoreCase);
-    var associations = new List<PageClassEdge>();
+    var associations = new List<CodeClassEdge>();
     foreach (var node in model.Modules)
     {
       foreach (var v in node.Module.Members.Where(m => m.Kind == MemberKind.Variable))
@@ -116,21 +116,21 @@ public static class ClassDiagram
           var typeName = type[(type.LastIndexOf('.') + 1)..]; // "VBAProject.Order" names the same module as "Order"
           if (!modulesByName.TryGetValue(typeName, out var target) || target.Id == node.Id) continue;
           if (target.Module.Kind == VbaModuleKind.Standard) continue; // not a type you can hold
-          associations.Add(new PageClassEdge(node.Id, target.Id, "association", (v.IsWithEvents ? "WithEvents " : "") + v.Name));
+          associations.Add(new CodeClassEdge(node.Id, target.Id, "association", (v.IsWithEvents ? "WithEvents " : "") + v.Name));
           break;
         }
       }
     }
 
     var associated = associations.Select(a => (a.From, a.To)).ToHashSet();
-    var edges = new List<PageClassEdge>();
+    var edges = new List<CodeClassEdge>();
     var dependencies = new HashSet<(string, string)>();
     foreach (var e in model.ModuleEdges)
     {
       if (e.Kind == EdgeKind.Implements)
-        edges.Add(new PageClassEdge(e.From, e.To, "realization", null));
+        edges.Add(new CodeClassEdge(e.From, e.To, "realization", null));
       else if (!associated.Contains((e.From, e.To)) && dependencies.Add((e.From, e.To)))
-        edges.Add(new PageClassEdge(e.From, e.To, "dependency", null));
+        edges.Add(new CodeClassEdge(e.From, e.To, "dependency", null));
     }
     edges.AddRange(associations);
     return edges;

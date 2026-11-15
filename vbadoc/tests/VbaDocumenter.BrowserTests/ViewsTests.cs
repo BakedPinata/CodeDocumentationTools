@@ -27,10 +27,10 @@ public sealed class ViewsTests(PageFixture fixture) : IDisposable
       page.Locator("#views-list .views-name").EvaluateAllAsync<string[]>("ns => ns.map(n => n.textContent)");
 
   static Task<double[]> Position(IPage page, string id) =>
-      page.EvaluateAsync<double[]>("id => { const p = window.vbadocGraph.position(id); return [Math.round(p.x), Math.round(p.y)]; }", id);
+      page.EvaluateAsync<double[]>("id => { const p = window.codeViewsGraph.position(id); return [Math.round(p.x), Math.round(p.y)]; }", id);
 
   static Task WaitUntilStill(IPage page) =>
-      page.WaitForFunctionAsync("() => window.vbadocGraph.nodeCount() > 0 && !window.vbadocGraph.moving()", null, new() { Timeout = 30000 });
+      page.WaitForFunctionAsync("() => window.codeViewsGraph.nodeCount() > 0 && !window.codeViewsGraph.moving()", null, new() { Timeout = 30000 });
 
   static async Task OpenMenu(IPage page)
   {
@@ -112,7 +112,7 @@ public sealed class ViewsTests(PageFixture fixture) : IDisposable
     await page.ClickAsync("#explorer-filter-bar [data-filter-clear]");
     await page.ClickAsync("#explorer-tree > li.hidden-items [data-unhide-all]");
     await page.ClickAsync("#view-graph .view-show-note [data-show-reset]");
-    await page.ClickAsync("[data-level='modules']");
+    await page.ClickAsync("[data-level='units']");
     await page.ClickAsync("#tab-classes");
     await opened.SelectAsync("Utils");
 
@@ -120,7 +120,7 @@ public sealed class ViewsTests(PageFixture fixture) : IDisposable
     await WaitUntilStill(page);
 
     Assert.Equal("true", await page.GetAttributeAsync("#tab-graph", "aria-selected"));
-    Assert.Equal("members", await page.EvaluateAsync<string>("() => window.vbadocGraph.level()"));
+    Assert.Equal("members", await page.EvaluateAsync<string>("() => window.codeViewsGraph.level()"));
     Assert.Null(await page.EvaluateAsync<string?>("() => window.vbadoc.selection()"));
     Assert.Equal("Logger|Main|Order|OrderService", await page.EvaluateAsync<string>("() => window.vbadoc.filterKey()"));
     Assert.Equal(["Logger"], await page.EvaluateAsync<string[]>("() => window.vbadoc.hidden()"));
@@ -307,7 +307,7 @@ public sealed class ViewsTests(PageFixture fixture) : IDisposable
     Assert.Equal("Brought back “One”.", await page.InnerTextAsync("#views-status"));
 
     await page.ReloadAsync();
-    await page.WaitForFunctionAsync("() => !!window.vbadocGraph");
+    await page.WaitForFunctionAsync("() => !!window.codeViewsGraph");
     await OpenMenu(page);
     Assert.Equal(["One", "Three"], await ViewNames(page));
     Assert.Equal("Views", await page.TextContentAsync("#views > summary")); // which one was open isn't remembered
@@ -422,7 +422,7 @@ public sealed class ViewsTests(PageFixture fixture) : IDisposable
     Assert.Equal(["Order"], await GraphNodes(page));
     Assert.Equal(new double[] { 10, 20 }, await Position(page, "Order"));
     Assert.Equal(1, await page.Locator("#graph-svg g.node.pinned").CountAsync());
-    Assert.Equal("Filtered: 1 of " + await page.EvaluateAsync<int>("() => window.vbadoc.data.modules.length") + " modules",
+    Assert.Equal("Filtered: 1 of " + await page.EvaluateAsync<int>("() => window.vbadoc.data.units.length") + " modules",
         await page.InnerTextAsync("#explorer-filter-text"));
     Assert.Equal("The view “Before the rename” mentions 3 items that this workbook doesn't have, so they're left out: Billing, " +
         "Billing.Charge, Billing.Run.",
@@ -436,7 +436,7 @@ public sealed class ViewsTests(PageFixture fixture) : IDisposable
     Assert.Equal(new double[] { 400, -300 }, await Position(page, "Logger"));
     Assert.Equal(new double[] { -400, 300 }, await Position(page, "Utils"));
     Assert.True(await page.EvaluateAsync<bool>(@"() => [...document.querySelectorAll('#graph-svg g.node')]
-        .every(n => { const p = window.vbadocGraph.position(n.dataset.id); return isFinite(p.x) && isFinite(p.y); })"));
+        .every(n => { const p = window.codeViewsGraph.position(n.dataset.id); return isFinite(p.x) && isFinite(p.y); })"));
     Assert.True(await page.IsHiddenAsync("#page-notice"));
     Assert.Empty(opened.Errors);
   }
@@ -483,28 +483,28 @@ public sealed class ViewsTests(PageFixture fixture) : IDisposable
     await page.ClickAsync("#calls-collapse");
 
     await page.ClickAsync("#tab-classes");
-    await page.WaitForFunctionAsync("() => window.vbadocClasses.drawn()");
+    await page.WaitForFunctionAsync("() => window.codeViewsClasses.drawn()");
     await page.ClickAsync("#classes-members"); // first, as moves are kept for each setting of the switch
     Assert.Equal("false", await page.GetAttributeAsync("#classes-members", "aria-pressed"));
-    await Drag(page, "#classes-svg g.class-box[data-module='Order'] .box-outline", 80, 40);
-    var box = await page.GetAttributeAsync("#classes-svg g.class-box[data-module='Order']", "transform");
+    await Drag(page, "#classes-svg g.class-box[data-unit='Order'] .box-outline", 80, 40);
+    var box = await page.GetAttributeAsync("#classes-svg g.class-box[data-unit='Order']", "transform");
     await SaveAs(page, "Boxes");
     await page.Keyboard.PressAsync("Escape");
     await page.ClickAsync("#classes-relayout");
     await page.ClickAsync("#classes-members");
-    Assert.NotEqual(box, await page.GetAttributeAsync("#classes-svg g.class-box[data-module='Order']", "transform"));
+    Assert.NotEqual(box, await page.GetAttributeAsync("#classes-svg g.class-box[data-unit='Order']", "transform"));
 
     await OpenView(page, "Processing orders");
     Assert.Equal("true", await page.GetAttributeAsync("#tab-calls", "aria-selected"));
-    Assert.Equal("sequence", await page.EvaluateAsync<string>("() => window.vbadocCalls.showing()"));
+    Assert.Equal("sequence", await page.EvaluateAsync<string>("() => window.codeViewsCalls.showing()"));
     Assert.True(await page.IsVisibleAsync("#calls-sequence svg.calls-seq"));
     Assert.Equal("true", await page.GetAttributeAsync(processOrders, "aria-expanded"));
 
     await OpenView(page, "Boxes");
-    await page.WaitForFunctionAsync("() => window.vbadocClasses.drawn()");
+    await page.WaitForFunctionAsync("() => window.codeViewsClasses.drawn()");
     Assert.Equal("true", await page.GetAttributeAsync("#tab-classes", "aria-selected"));
     Assert.Equal("false", await page.GetAttributeAsync("#classes-members", "aria-pressed"));
-    Assert.Equal(box, await page.GetAttributeAsync("#classes-svg g.class-box[data-module='Order']", "transform"));
+    Assert.Equal(box, await page.GetAttributeAsync("#classes-svg g.class-box[data-unit='Order']", "transform"));
     Assert.Empty(opened.Errors);
   }
 
@@ -615,23 +615,23 @@ public sealed class ViewsTests(PageFixture fixture) : IDisposable
     await using var opened = await OpenedPage.OpenAsync(fixture, fixture.SampleEmbedded);
     var page = opened.Page;
     await page.ClickAsync("#tab-classes");
-    await page.WaitForFunctionAsync("() => window.vbadocClasses.drawn()");
+    await page.WaitForFunctionAsync("() => window.codeViewsClasses.drawn()");
     await opened.SelectAsync("OrderService"); // focused, as focus on click is on
-    await page.WaitForFunctionAsync("() => window.vbadocClasses.drawn() && !window.vbadocClasses.moving()");
+    await page.WaitForFunctionAsync("() => window.codeViewsClasses.drawn() && !window.codeViewsClasses.moving()");
     var boxes = await page.Locator("#classes-svg g.class-box").CountAsync();
-    Assert.True(boxes < await page.EvaluateAsync<int>("() => window.vbadoc.data.modules.length"));
-    await Drag(page, "#classes-svg g.class-box[data-module='OrderService'] .box-outline", 80, 40);
-    var box = await page.GetAttributeAsync("#classes-svg g.class-box[data-module='OrderService']", "transform");
+    Assert.True(boxes < await page.EvaluateAsync<int>("() => window.vbadoc.data.units.length"));
+    await Drag(page, "#classes-svg g.class-box[data-unit='OrderService'] .box-outline", 80, 40);
+    var box = await page.GetAttributeAsync("#classes-svg g.class-box[data-unit='OrderService']", "transform");
     await SaveAs(page, "Order service classes");
     await page.Keyboard.PressAsync("Escape");
 
     await page.Keyboard.PressAsync("Escape"); // clears the selection, and the focus
-    await page.WaitForFunctionAsync("() => window.vbadocClasses.drawn()");
+    await page.WaitForFunctionAsync("() => window.codeViewsClasses.drawn()");
     Assert.True(await page.Locator("#classes-svg g.class-box").CountAsync() > boxes);
     await OpenView(page, "Order service classes");
-    await page.WaitForFunctionAsync("() => window.vbadocClasses.drawn()");
+    await page.WaitForFunctionAsync("() => window.codeViewsClasses.drawn()");
     Assert.Equal(boxes, await page.Locator("#classes-svg g.class-box").CountAsync());
-    Assert.Equal(box, await page.GetAttributeAsync("#classes-svg g.class-box[data-module='OrderService']", "transform"));
+    Assert.Equal(box, await page.GetAttributeAsync("#classes-svg g.class-box[data-unit='OrderService']", "transform"));
     Assert.Empty(opened.Errors);
   }
 

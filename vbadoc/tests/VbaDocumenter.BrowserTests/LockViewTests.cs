@@ -15,7 +15,7 @@ public class LockViewTests(PageFixture fixture)
 
   static string Node(string id) => $"#graph-svg g.node[data-id='{id}']";
 
-  static string ClassBox(string module) => $"#classes-svg g.class-box[data-module='{module}']";
+  static string ClassBox(string module) => $"#classes-svg g.class-box[data-unit='{module}']";
 
   static string TreeBox(string id) => $"#explorer-tree li.item:not(.favourites li)[data-id='{id}'] > .tree-row > .tree-check";
 
@@ -32,15 +32,15 @@ public class LockViewTests(PageFixture fixture)
       """);
 
   static Task<string> ClassesPicture(IPage page) => page.EvaluateAsync<string>("""
-      () => [...document.querySelectorAll('#classes-svg g.class-box')].map(n => n.dataset.module + n.getAttribute('transform')).sort().join(';') +
+      () => [...document.querySelectorAll('#classes-svg g.class-box')].map(n => n.dataset.unit + n.getAttribute('transform')).sort().join(';') +
         ' | ' + document.querySelector('#classes-svg g.viewport').getAttribute('transform')
       """);
 
   static Task WaitUntilStill(IPage page) =>
-      page.WaitForFunctionAsync("() => window.vbadocGraph.nodeCount() > 0 && !window.vbadocGraph.moving() && !window.vbadocGraph.sliding()", null, new() { Timeout = 30000 });
+      page.WaitForFunctionAsync("() => window.codeViewsGraph.nodeCount() > 0 && !window.codeViewsGraph.moving() && !window.codeViewsGraph.sliding()", null, new() { Timeout = 30000 });
 
   static Task WaitForClasses(IPage page) =>
-      page.WaitForFunctionAsync("() => window.vbadocClasses.drawn() && !window.vbadocClasses.moving()", null, new() { Timeout = 30000 });
+      page.WaitForFunctionAsync("() => window.codeViewsClasses.drawn() && !window.codeViewsClasses.moving()", null, new() { Timeout = 30000 });
 
   /// <summary>Clicks the graph's background, in its bottom right corner, away from the toolbar, the legend and the nodes.</summary>
   static async Task ClickBackground(IPage page, string svg)
@@ -161,7 +161,7 @@ public class LockViewTests(PageFixture fixture)
     var member = await page.EvaluateAsync<string>("""
         () => {
           const vb = window.vbadoc;
-          const edge = vb.data.memberEdges.find(e => vb.membersById.has(e.from) && vb.modulesById.has(e.to) && vb.membersById.get(e.from).module !== e.to);
+          const edge = vb.data.memberEdges.find(e => vb.membersById.has(e.from) && vb.unitsById.has(e.to) && vb.membersById.get(e.from).unit !== e.to);
           return edge.from;
         }
         """);
@@ -192,7 +192,7 @@ public class LockViewTests(PageFixture fixture)
     await WaitForClasses(page);
     await page.ClickAsync(ClassBox("Order") + " .box-name");
     await WaitForClasses(page);
-    var boxes = await page.Locator("#classes-svg g.class-box").EvaluateAllAsync<string[]>("ns => ns.map(n => n.dataset.module).sort()");
+    var boxes = await page.Locator("#classes-svg g.class-box").EvaluateAllAsync<string[]>("ns => ns.map(n => n.dataset.unit).sort()");
     Assert.True(boxes.Length > 1);
     var before = await ClassesPicture(page);
 
@@ -247,7 +247,7 @@ public class LockViewTests(PageFixture fixture)
     Assert.Equal(["Logger", "Order", "Utils"], await ShownNodes(page));
 
     await page.ReloadAsync();
-    await page.WaitForFunctionAsync("() => !!window.vbadoc && window.vbadocGraph.nodeCount() > 0");
+    await page.WaitForFunctionAsync("() => !!window.vbadoc && window.codeViewsGraph.nodeCount() > 0");
     Assert.Equal("true", await page.GetAttributeAsync(GraphLock, "aria-pressed"));
     Assert.Equal(["Logger", "Order", "Utils"], await ShownNodes(page));
 

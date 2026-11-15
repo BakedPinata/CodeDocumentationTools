@@ -101,7 +101,7 @@ public class ExplorerTests(PageFixture fixture)
     Assert.Equal("Function", await page.Locator(Item("Settings.Current") + " > .tree-row .tree-detail").TextContentAsync());
 
     var order = await page.EvaluateAsync<string[]>(
-        "() => window.vbadoc.data.members.filter(m => m.module === 'Order').sort((a, b) => a.start - b.start || a.declaration - b.declaration).map(m => m.name)");
+        "() => window.vbadoc.data.members.filter(m => m.unit === 'Order').sort((a, b) => a.start - b.start || a.declaration - b.declaration).map(m => m.name)");
     Assert.Equal(order, await Texts(page, ChildLabels(Item("Order"))));
   }
 
@@ -117,7 +117,7 @@ public class ExplorerTests(PageFixture fixture)
     Assert.Equal(1, await page.Locator("#graph-svg g.node.selected[data-id='OrderService']").CountAsync());
     Assert.StartsWith("OrderService", await page.InnerTextAsync("#side-panel-header h2"));
     await page.ClickAsync("#tab-classes");
-    await page.WaitForSelectorAsync("#classes-svg g.class-box[data-module='OrderService'].selected");
+    await page.WaitForSelectorAsync("#classes-svg g.class-box[data-unit='OrderService'].selected");
   }
 
   [Fact]

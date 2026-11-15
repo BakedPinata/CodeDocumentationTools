@@ -2,8 +2,8 @@
     <div class="view-toolbar" role="toolbar" aria-label="Graph options">
       <button type="button" class="button" id="graph-focus" aria-pressed="true" title="Focus on click: selecting something shows only it and what it's connected to, in every view. Ctrl+click does the other.">Focus</button>
       <div class="segmented" role="radiogroup" aria-label="Level">
-        <button type="button" role="radio" data-level="modules" aria-checked="true">Modules</button>
-        <button type="button" role="radio" data-level="members" aria-checked="false">Members</button>
+        <button type="button" role="radio" data-level="units" aria-checked="true"></button>
+        <button type="button" role="radio" data-level="members" aria-checked="false"></button>
       </div>
       <div class="segmented" role="radiogroup" aria-label="Direction">
         <button type="button" role="radio" data-direction="all" aria-checked="true" title="Highlight dependencies and dependents">All</button>
@@ -32,13 +32,10 @@
       </div>
       <button type="button" class="button" id="classes-fit" title="Zoom to fit">Fit</button>
       <button type="button" class="button" id="classes-relayout" title="Forget where boxes were moved, and lay the diagram out again">Re-run layout</button>
-      <button type="button" class="button" id="classes-members" aria-pressed="true" title="List each module's members in its box">Members</button>
+      <button type="button" class="button" id="classes-members" aria-pressed="true"></button>
     </div>
     <svg class="classes-svg" id="classes-svg" aria-label="Class diagram">
       <defs>
-        <marker id="classes-arrow-realization" viewBox="0 -6 12 12" refX="11" refY="0" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,-5.5 L11,0 L0,5.5 Z"></path></marker>
-        <marker id="classes-arrow-association" viewBox="0 -6 12 12" refX="11" refY="0" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1,-4.5 L11,0 L1,4.5"></path></marker>
-        <marker id="classes-arrow-dependency" viewBox="0 -6 12 12" refX="11" refY="0" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1,-4.5 L11,0 L1,4.5"></path></marker>
       </defs>
       <g class="viewport"><g class="edges"></g><g class="boxes"></g><g class="edge-labels"></g></g>
     </svg>
@@ -48,8 +45,8 @@
     <div class="view-toolbar" role="toolbar" aria-label="Calls options">
       <button type="button" class="button" id="calls-focus" aria-pressed="true" title="Focus on click, shared with the other views. Here a click only selects, so the tree stays as it is; Ctrl+click starts the tree from what you click.">Focus</button>
       <div class="segmented" role="radiogroup" aria-label="Direction">
-        <button type="button" role="radio" data-calls-direction="calls" aria-checked="true" title="What each procedure calls, in the order of its code">Calls</button>
-        <button type="button" role="radio" data-calls-direction="calledBy" aria-checked="false" title="What calls each procedure">Called by</button>
+        <button type="button" role="radio" data-calls-direction="calls" aria-checked="true" title="What each one calls, in the order of its code">Calls</button>
+        <button type="button" role="radio" data-calls-direction="calledBy" aria-checked="false" title="What calls each one">Called by</button>
       </div>
       <div class="segmented" role="radiogroup" aria-label="Show as">
         <button type="button" role="radio" data-calls-show="tree" aria-checked="true" title="Show the calls as a tree">Tree</button>
@@ -60,7 +57,7 @@
       <span class="toolbar-note" id="calls-root-note" hidden><span></span> <button type="button" class="link-button" id="calls-entry-points" title="Start from the entry points and favourites again">Entry points</button></span>
     </div>
     <div class="calls-body">
-      <p class="calls-note muted">Calls the code makes directly, in its order. The tree can't see Application.Run, OnAction or other calls made by name, and a late-bound call shows only its expression.</p>
+      <p class="calls-note muted">Calls the code makes directly, in its order.<span id="calls-note-more"></span></p>
       <p class="view-message calls-message" id="calls-message" hidden></p>
       <ul class="tree calls-tree" id="calls-tree" role="tree" aria-label="Calls"></ul>
       <div class="calls-sequence" id="calls-sequence" hidden></div>

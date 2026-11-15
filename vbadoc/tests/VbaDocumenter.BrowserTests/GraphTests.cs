@@ -14,7 +14,7 @@ public class GraphTests(PageFixture fixture)
   static async Task ShowMembers(IPage page)
   {
     await page.ClickAsync("[data-level='members']");
-    await page.WaitForFunctionAsync("() => window.vbadocGraph.level() === 'members'");
+    await page.WaitForFunctionAsync("() => window.codeViewsGraph.level() === 'members'");
   }
 
   [Fact]
@@ -157,7 +157,7 @@ public class GraphTests(PageFixture fixture)
     await ShowMembers(page);
 
     Assert.Equal(12, await Count(page, "#graph-svg g.hull-group"));
-    Assert.Equal(1, await Count(page, "#graph-svg g.hull-group[data-module='Order'] text.hull-label"));
+    Assert.Equal(1, await Count(page, "#graph-svg g.hull-group[data-unit='Order'] text.hull-label"));
     Assert.Equal(1, await Count(page, "#graph-svg g.node[data-id='Order.Status[Let]']"));
     Assert.Equal(1, await Count(page, "#graph-svg path.edge.self-loop[data-from='Main.Factorial']"));
     Assert.Equal(1, await Count(page, "#graph-svg path.edge.events[data-from='ProgressReporter.m_svc_Progress'][data-to='OrderService.Progress']"));
@@ -198,10 +198,10 @@ public class GraphTests(PageFixture fixture)
     await page.WaitForSelectorAsync("#graph-settings-menu", new() { State = WaitForSelectorState.Visible });
   }
 
-  static Task WaitUntilStill(IPage page) => page.WaitForFunctionAsync("() => !window.vbadocGraph.moving()", null, new() { Timeout = 20000 });
+  static Task WaitUntilStill(IPage page) => page.WaitForFunctionAsync("() => !window.codeViewsGraph.moving()", null, new() { Timeout = 20000 });
 
   static Task<double[]> Position(IPage page, string id) =>
-      page.EvaluateAsync<double[]>("id => { const p = window.vbadocGraph.position(id); return [p.x, p.y]; }", id);
+      page.EvaluateAsync<double[]>("id => { const p = window.codeViewsGraph.position(id); return [p.x, p.y]; }", id);
 
   /// <summary>Drags from the middle of an element by (dx, dy) screen pixels in small steps, like a person would.</summary>
   static async Task Drag(IPage page, string selector, float dx, float dy)
@@ -223,7 +223,7 @@ public class GraphTests(PageFixture fixture)
   static async Task<float[]> OutlinePoint(IPage page, string module)
   {
     var point = await page.EvaluateAsync<float[]?>(@"module => {
-            const hull = document.querySelector(`#graph-svg g.hull-group[data-module='${module}'] path.hull`);
+            const hull = document.querySelector(`#graph-svg g.hull-group[data-unit='${module}'] path.hull`);
             const r = hull.getBoundingClientRect();
             for (let y = r.top + 2; y < r.bottom; y += 3)
                 for (let x = r.left + 2; x < r.right; x += 3)
@@ -238,7 +238,7 @@ public class GraphTests(PageFixture fixture)
       page.EvaluateAsync<Dictionary<string, double[]>>(@"() => {
             const positions = {};
             for (const node of document.querySelectorAll('#graph-svg g.node')) {
-                const p = window.vbadocGraph.position(node.dataset.id);
+                const p = window.codeViewsGraph.position(node.dataset.id);
                 positions[node.dataset.id] = [p.x, p.y];
             }
             return positions;
@@ -258,7 +258,7 @@ public class GraphTests(PageFixture fixture)
     Assert.False(await label.IsVisibleAsync());
 
     await page.ReloadAsync(); // remembered per browser
-    await page.WaitForFunctionAsync("() => window.vbadocGraph && window.vbadocGraph.level() === 'members'");
+    await page.WaitForFunctionAsync("() => window.codeViewsGraph && window.codeViewsGraph.level() === 'members'");
     Assert.False(await label.IsVisibleAsync());
 
     await OpenSettings(page);
@@ -391,7 +391,7 @@ public class GraphTests(PageFixture fixture)
     await page.Mouse.UpAsync();
     Assert.Equal("Order.Describe", await Selection(page));
 
-    Assert.False(await page.EvaluateAsync<bool>("() => window.vbadocGraph.moving()"), "A click woke the layout");
+    Assert.False(await page.EvaluateAsync<bool>("() => window.codeViewsGraph.moving()"), "A click woke the layout");
     var after = await AllPositions(page);
     foreach (var (id, p) in before)
     {
@@ -469,7 +469,7 @@ public class GraphTests(PageFixture fixture)
     Assert.Equal(new[] { 42, 43, 44 }, await opened.ShownLinesAsync());
     Assert.Equal(1, await Count(page, "#graph-svg g.node.related[data-id='Utils.FormatMoney']"));
 
-    await page.ClickAsync("[data-level='modules']");
+    await page.ClickAsync("[data-level='units']");
     Assert.Equal(1, await Count(page, "#graph-svg g.node.selected[data-id='Order']"));
     Assert.Equal("Order.Describe", await Selection(page)); // the selection itself is unchanged
   }
@@ -484,7 +484,7 @@ public class GraphTests(PageFixture fixture)
     await opened.SelectAsync("Logger");
 
     Assert.Equal(3, await Count(page, "#graph-svg g.node.selected")); // LogInfo, LogError, WriteLine
-    Assert.Equal(0, await Count(page, "#graph-svg g.hull-group.dim[data-module='Logger']"));
+    Assert.Equal(0, await Count(page, "#graph-svg g.hull-group.dim[data-unit='Logger']"));
   }
 
   [Fact]
@@ -544,13 +544,13 @@ public class GraphTests(PageFixture fixture)
     var page = opened.Page;
     await page.ClickAsync("#explorer-show summary");
 
-    await page.UncheckAsync("#explorer-show [data-choice='module:document']");
+    await page.UncheckAsync("#explorer-show [data-choice='unit:document']");
     var modules = await DrawnIds(page);
     Assert.DoesNotContain("ThisWorkbook", modules);
     Assert.DoesNotContain("Sheet1", modules);
     Assert.Contains("Main", modules);
 
-    await page.CheckAsync("#explorer-show [data-choice='module:document']");
+    await page.CheckAsync("#explorer-show [data-choice='unit:document']");
     await page.UncheckAsync("#explorer-show [data-choice='line:uses']");
     Assert.Equal(0, await Count(page, "#graph-svg path.edge.uses"));
     Assert.Equal(2, await Count(page, "#graph-svg path.edge.implements"));
@@ -572,22 +572,22 @@ public class GraphTests(PageFixture fixture)
     await using var opened = await OpenedPage.OpenAsync(fixture, fixture.SampleEmbedded);
     var page = opened.Page;
     await page.ClickAsync("#explorer-show summary");
-    await page.UncheckAsync("#explorer-show [data-choice='module:document']");
+    await page.UncheckAsync("#explorer-show [data-choice='unit:document']");
     await page.UncheckAsync("#explorer-show [data-choice='line:events']");
 
     await page.ReloadAsync();
-    await page.WaitForFunctionAsync("() => !!window.vbadocGraph");
+    await page.WaitForFunctionAsync("() => !!window.codeViewsGraph");
 
     Assert.Equal("Show… (2)", await page.InnerTextAsync("#explorer-show summary"));
     Assert.Equal(10, await Count(page, "#graph-svg g.node"));
     Assert.Equal(0, await Count(page, "#graph-svg path.edge.events"));
 
     await page.ClickAsync("#explorer-show summary");
-    Assert.False(await page.IsCheckedAsync("#explorer-show [data-choice='module:document']"));
+    Assert.False(await page.IsCheckedAsync("#explorer-show [data-choice='unit:document']"));
     await page.ClickAsync("#explorer-show [data-show-reset]");
     Assert.Equal("Show…", await page.InnerTextAsync("#explorer-show summary"));
     Assert.Equal(12, await Count(page, "#graph-svg g.node"));
-    Assert.True(await page.IsCheckedAsync("#explorer-show [data-choice='module:document']"));
+    Assert.True(await page.IsCheckedAsync("#explorer-show [data-choice='unit:document']"));
   }
 
   [Fact]
@@ -614,19 +614,19 @@ public class GraphTests(PageFixture fixture)
     await using var opened = await OpenedPage.OpenAsync(fixture, fixture.SampleEmbedded);
     var page = opened.Page;
 
-    await page.ClickAsync("#graph-legend [data-legend='module:interface']");
+    await page.ClickAsync("#graph-legend [data-legend='unit:interface']");
 
-    Assert.Equal("true", await page.GetAttributeAsync("#graph-legend [data-legend='module:interface']", "aria-pressed"));
+    Assert.Equal("true", await page.GetAttributeAsync("#graph-legend [data-legend='unit:interface']", "aria-pressed"));
     Assert.Equal(new[] { "IOrderRepository" }, await DrawnIds(page, "#graph-svg g.node:not(.dim)"));
     Assert.Equal(29, await Count(page, "#graph-svg path.edge.dim")); // no edge has both ends lit
     Assert.Null(await Selection(page));                               // the legend doesn't select anything
 
     // Items add to each other.
-    await page.ClickAsync("#graph-legend [data-legend='module:document']");
+    await page.ClickAsync("#graph-legend [data-legend='unit:document']");
     Assert.Equal(new[] { "IOrderRepository", "Sheet1", "ThisWorkbook" }, (await DrawnIds(page, "#graph-svg g.node:not(.dim)")).Order());
 
     // Clicking again turns an item off; Clear turns them all off.
-    await page.ClickAsync("#graph-legend [data-legend='module:interface']");
+    await page.ClickAsync("#graph-legend [data-legend='unit:interface']");
     Assert.Equal(new[] { "Sheet1", "ThisWorkbook" }, (await DrawnIds(page, "#graph-svg g.node:not(.dim)")).Order());
     await page.ClickAsync("#graph-legend-clear");
     Assert.Equal(0, await Count(page, "#graph-svg .dim"));
@@ -689,10 +689,10 @@ public class GraphTests(PageFixture fixture)
     await opened.SelectAsync("Order");
     Assert.Equal(1, await Count(page, "#graph-svg g.node.selected[data-id='Order.Load']"));
     Assert.Equal(1, await Count(page, "#graph-svg g.node.dim[data-id='Order.m_Id']"));
-    Assert.Equal(0, await Count(page, "#graph-svg g.hull-group.dim[data-module='Order']"));
+    Assert.Equal(0, await Count(page, "#graph-svg g.hull-group.dim[data-unit='Order']"));
 
     // Switching level clears the legend, whose items differ between levels.
-    await page.ClickAsync("[data-level='modules']");
+    await page.ClickAsync("[data-level='units']");
     Assert.Equal(0, await Count(page, "#graph-legend [aria-pressed='true']"));
     Assert.Equal(7, await Count(page, "#graph-svg g.node:not(.dim)")); // just Order and its 6 neighbours
   }

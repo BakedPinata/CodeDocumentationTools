@@ -1,54 +1,51 @@
 // graph.js: the dependency graph view, drawn with d3.
 //
-// Two levels: one node per module, or one node per member with each module's members drawn as a cluster
-// inside a shaded outline. Edges are Uses (solid), Implements (dashed, hollow arrow) and Events (dotted).
-// Clicking a node selects it through window.vbadoc, which shows its source; the graph then highlights what
+// Two levels: one node per unit, or one node per member with each unit's members drawn as a cluster
+// inside a shaded outline. What a unit is called, the kinds of unit, member and edge, and how each is drawn
+// are the language's (page.language). Clicking a node selects it through window.codeViews, which shows its
+// source; the graph then highlights what
 // the selection depends on and what depends on it (or only one of the two), directly or transitively.
 //
 // The starting layout is computed in one go before anything is drawn. d3-force starts from fixed positions,
 // so the same project and settings always give the same first picture. After that the force simulation is
-// kept: dragging a node (or a module's outline) wakes it up so the rest of the graph rearranges around it,
+// kept: dragging a node (or a unit's outline) wakes it up so the rest of the graph rearranges around it,
 // and the settings panel changes its forces live.
 (function () {
   "use strict";
 
-  var vb = window.vbadoc;
-  var data = vb.data;
+  var page = window.codeViews;
+  var data = page.data;
 
   // ---- What things look like ----
 
-  // Colour carries three groups (validated as a palette); shape tells the five module kinds apart.
-  var MODULE_STYLES = {
-    standard: { group: "code", shape: d3.symbolSquare, label: "Standard module" },
-    "class": { group: "class", shape: d3.symbolCircle, label: "Class" },
-    "interface": { group: "class", shape: d3.symbolCircle, label: "Interface", hollow: true },
-    form: { group: "host", shape: d3.symbolDiamond, label: "UserForm" },
-    document: { group: "host", shape: d3.symbolTriangle, label: "Document module" }
+  // What a unit, a member and a line look like is the language's to say (data.language): colour carries a few groups
+  // of unit kinds, validated as a palette, and shape tells the kinds apart.
+  var language = page.language;
+  var SHAPES = {
+    circle: d3.symbolCircle, square: d3.symbolSquare, diamond: d3.symbolDiamond, triangle: d3.symbolTriangle,
+    star: d3.symbolStar, cross: d3.symbolCross, wye: d3.symbolWye
   };
+  function shapeOf(name) { return SHAPES[name] || d3.symbolCircle; }
 
-  // The kinds of member are the page's (they're Show… choices too); the graph gives each a shape.
-  var CATEGORY_SHAPES = {
-    procedure: d3.symbolCircle, property: d3.symbolDiamond, data: d3.symbolSquare, type: d3.symbolTriangle,
-    enumValue: d3.symbolTriangle, event: d3.symbolStar, declare: d3.symbolCross
-  };
-  var MEMBER_CATEGORIES = vb.memberCategories.map(function (c) { return Object.assign({ shape: CATEGORY_SHAPES[c.id] }, c); });
-
-  var EDGE_KINDS = [
-    { id: "uses", label: "Uses" },
-    { id: "implements", label: "Implements" },
-    { id: "events", label: "Events" }
-  ];
-
-  var KIND_LABELS = {
-    sub: "Sub", "function": "Function", propertyGet: "Property Get", propertyLet: "Property Let",
-    propertySet: "Property Set", variable: "Variable", constant: "Const", "enum": "Enum", enumMember: "Enum value",
-    type: "Type", event: "Event", declare: "Declare"
-  };
+  // The kinds of member are the page's (they're Show… choices too); the graph gives each its shape.
+  var MEMBER_CATEGORIES = page.memberCategories.map(function (c) { return Object.assign({}, c, { shape: shapeOf(c.shape) }); });
+  var EDGE_KINDS = language.relationships;
 
   var categoryOfKind = {};
   MEMBER_CATEGORIES.forEach(function (c) { c.kinds.forEach(function (k) { categoryOfKind[k] = c; }); });
+  var UNKNOWN_CATEGORY = { id: "other", shape: d3.symbolCircle, under: null };
 
-  function moduleStyle(module) { return MODULE_STYLES[module.isInterface ? "interface" : module.kind] || MODULE_STYLES["class"]; }
+  function unitStyle(unit) {
+    var kind = page.unitKind(unit);
+    return { group: kind.colour, shape: shapeOf(kind.shape), hollow: !!kind.hollow, label: page.unitKindLabel(unit) };
+  }
+
+  // The language's words in text written here: "{unit}", "{units}", "{member}", "{members}", and each with a capital.
+  var WORDS = {
+    unit: language.unit.one, units: language.unit.many, member: language.member.one, members: language.member.many
+  };
+  Object.keys(WORDS).forEach(function (key) { WORDS[page.capital(key)] = page.capital(WORDS[key]); });
+  function worded(text) { return text.replace(/\{(\w+)\}/g, function (all, key) { return WORDS[key] || all; }); }
 
   // ---- Settings (remembered per browser; storage can fail on file://) ----
 
@@ -56,12 +53,12 @@
   function saveSetting(key, value) { try { localStorage.setItem(key, value); } catch (e) { /* not remembered */ } }
 
   function loadDirection() {
-    var direction = loadSetting("vbadoc-graph-direction", "all");
+    var direction = loadSetting(page.tool + "-graph-direction", "all");
     return direction === "dependencies" || direction === "dependents" ? direction : "all";
   }
 
   var state = {
-    level: loadSetting("vbadoc-graph-level", "modules") === "members" ? "members" : "modules",
+    level: loadSetting(page.tool + "-graph-level", "units") === "members" ? "members" : "units",
     direction: loadDirection(), // "all", or only "dependencies" or "dependents" of the selection
     focused: false,     // whether what's drawn is only the focused selection's neighbourhood
     path: false,        // showing the path from the nearest favourite instead of the selection's neighbourhood
@@ -73,7 +70,7 @@
   var DEFAULTS = {
     reach: "direct",       // highlight (and focus on) the selection's direct neighbours, or the whole chain each way
     labels: "always",      // member names: "always", "zoom" (when zoomed in) or "selection"
-    labelSize: 10.5,       // member names, px; module names are 1.5px bigger
+    labelSize: 10.5,       // member names, px; unit names are 1.5px bigger
     nodeSize: 1,
     edgeOpacity: 1,
     curvedEdges: true,
@@ -83,10 +80,10 @@
     pinDragged: false,     // dragged nodes stay where they're dropped
     linkStrength: 1,
     memberSpacing: 12,     // px between neighbouring member names
-    moduleSpacing: 40,     // px between module outlines
+    unitSpacing: 40,     // px between unit outlines
     cohesion: 1,
-    linkDistance: 150,     // module level
-    repulsion: 1           // module level
+    linkDistance: 150,     // unit level
+    repulsion: 1           // unit level
   };
 
   var CONTROLS = [
@@ -95,22 +92,22 @@
       help: "What a selection lights up, and what Focus shows: only what it uses and what uses it directly, or everything along each chain.",
       options: [["direct", "Direct neighbours"], ["transitive", "The whole chain each way"]] },
     { section: "Names" },
-    { key: "labels", type: "select", label: "Member names",
-      help: "When member names are drawn at member level: always, only once you've zoomed in far enough to read them, or only for the selection and its neighbours.",
+    { key: "labels", type: "select", label: "{Member} names",
+      help: "When {member} names are drawn at {member} level: always, only once you've zoomed in far enough to read them, or only for the selection and its neighbours.",
       options: [["always", "Always"], ["zoom", "When zoomed in"], ["selection", "Selection and neighbours only"]] },
     { key: "labelSize", type: "range", label: "Text size", min: 8, max: 18, step: 0.5, unit: "px", layout: true,
-      help: "The size of member names; module names are a little bigger. Bigger names need more room, so the layout makes it." },
+      help: "The size of {member} names; {unit} names are a little bigger. Bigger names need more room, so the layout makes it." },
     { section: "Look" },
     { key: "nodeSize", type: "range", label: "Node size", min: 0.5, max: 2.5, step: 0.1, unit: "×", layout: true,
-      help: "How big nodes are drawn. A module's node also grows with how many members it has." },
+      help: "How big nodes are drawn. A {unit}'s node also grows with how many {members} it has." },
     { key: "edgeOpacity", type: "range", label: "Edge opacity", min: 0.1, max: 1, step: 0.05,
       help: "How solid edges are. Lower it to see the nodes through a dense web of edges." },
     { key: "curvedEdges", type: "checkbox", label: "Curved edges",
       help: "Draw edges as gentle curves, so two edges between the same nodes don't lie on top of each other. Off draws straight lines." },
-    { key: "bundleEdges", type: "checkbox", label: "Bundle edges between modules", note: "member level",
-      help: "Gather edges running between the same two modules into one bundle. Tidier on a busy graph, but harder to see which member each edge leaves from." },
-    { key: "showHulls", type: "checkbox", label: "Module outlines", note: "member level",
-      help: "Draw an outline around each module's members, named after the module. Drag an outline to move the whole module." },
+    { key: "bundleEdges", type: "checkbox", label: "Bundle edges between {units}", note: "{member} level",
+      help: "Gather edges running between the same two {units} into one bundle. Tidier on a busy graph, but harder to see which {member} each edge leaves from." },
+    { key: "showHulls", type: "checkbox", label: "{Unit} outlines", note: "{member} level",
+      help: "Draw an outline around each {unit}'s {members}, named after the {unit}. Drag an outline to move the whole {unit}." },
     { section: "Dragging" },
     { key: "live", type: "checkbox", label: "Rearrange while dragging",
       help: "While you drag, the rest of the graph gently rearranges around what you're moving, and settles again once you let go, so nothing overlaps. Off, only what you drag moves." },
@@ -119,25 +116,32 @@
     { section: "Layout" },
     { key: "linkStrength", type: "range", label: "Edge pull", min: 0, max: 3, step: 0.1, unit: "×", layout: true,
       help: "How strongly edges pull the nodes they join towards each other. Higher keeps neighbours close; lower lets the other forces spread them out." },
-    { key: "memberSpacing", type: "range", label: "Space between members", min: 0, max: 40, step: 1, unit: "px", layout: true, note: "member level",
-      help: "The room kept between neighbouring members' names, so they don't overlap." },
-    { key: "moduleSpacing", type: "range", label: "Space between modules", min: 0, max: 200, step: 5, unit: "px", layout: true, note: "member level",
-      help: "The room kept between module outlines." },
-    { key: "cohesion", type: "range", label: "Module compactness", min: 0.1, max: 3, step: 0.1, unit: "×", layout: true, note: "member level",
-      help: "How tightly each module's members are drawn together. Higher keeps a module in a tight group; lower lets its members drift towards what they use." },
-    { key: "linkDistance", type: "range", label: "Edge length", min: 40, max: 400, step: 10, unit: "px", layout: true, note: "module level",
-      help: "The length edges try to keep between the modules they join." },
-    { key: "repulsion", type: "range", label: "Repulsion", min: 0.1, max: 3, step: 0.1, unit: "×", layout: true, note: "module level",
-      help: "How strongly modules push each other apart. Higher spreads the graph out; lower lets it pull in." }
+    { key: "memberSpacing", type: "range", label: "Space between {members}", min: 0, max: 40, step: 1, unit: "px", layout: true, note: "{member} level",
+      help: "The room kept between neighbouring {members}' names, so they don't overlap." },
+    { key: "unitSpacing", type: "range", label: "Space between {units}", min: 0, max: 200, step: 5, unit: "px", layout: true, note: "{member} level",
+      help: "The room kept between {unit} outlines." },
+    { key: "cohesion", type: "range", label: "{Unit} compactness", min: 0.1, max: 3, step: 0.1, unit: "×", layout: true, note: "{member} level",
+      help: "How tightly each {unit}'s {members} are drawn together. Higher keeps a {unit} in a tight group; lower lets its {members} drift towards what they use." },
+    { key: "linkDistance", type: "range", label: "Edge length", min: 40, max: 400, step: 10, unit: "px", layout: true, note: "{unit} level",
+      help: "The length edges try to keep between the {units} they join." },
+    { key: "repulsion", type: "range", label: "Repulsion", min: 0.1, max: 3, step: 0.1, unit: "×", layout: true, note: "{unit} level",
+      help: "How strongly {units} push each other apart. Higher spreads the graph out; lower lets it pull in." }
   ];
+
+  CONTROLS.forEach(function (control) {
+    ["section", "label", "help", "note"].forEach(function (key) { if (control[key]) control[key] = worded(control[key]); });
+  });
+
+  // A saved view's layout for a level. A view saved before the code model (step M3) calls the unit level "modules".
+  function layoutAt(layouts, level) { return layouts[level] || (level === "units" ? layouts.modules : undefined); }
 
   var settings = loadSettings();
 
   function loadSettings() {
     var stored = {};
-    try { stored = JSON.parse(loadSetting("vbadoc-graph-settings", "{}")) || {}; } catch (e) { stored = {}; }
+    try { stored = JSON.parse(loadSetting(page.tool + "-graph-settings", "{}")) || {}; } catch (e) { stored = {}; }
     // Direct / Transitive was a toolbar switch, stored on its own, before it moved into the settings.
-    if (stored.reach === undefined && loadSetting("vbadoc-graph-reach", null) === "transitive") stored.reach = "transitive";
+    if (stored.reach === undefined && loadSetting(page.tool + "-graph-reach", null) === "transitive") stored.reach = "transitive";
     if (stored.reach !== "direct" && stored.reach !== "transitive") delete stored.reach;
     var result = {};
     Object.keys(DEFAULTS).forEach(function (key) {
@@ -177,57 +181,55 @@
 
   // ---- Building the graph for the current level and filters ----
 
-  var memberCountByModule = new Map();
-  data.members.forEach(function (m) { memberCountByModule.set(m.module, (memberCountByModule.get(m.module) || 0) + 1); });
-
-  function moduleKindOf(module) { return module.isInterface ? "interface" : module.kind; }
+  var memberCountByUnit = new Map();
+  data.members.forEach(function (m) { memberCountByUnit.set(m.unit, (memberCountByUnit.get(m.unit) || 0) + 1); });
 
   function buildFullGraph() {
     var nodes = [];
     var edges;
     var size = settings.nodeSize;
-    var unconnected = vb.choice("unconnected");
-    if (state.level === "modules") {
-      data.modules.forEach(function (m) {
-        if (!vb.kept(m.id) || !vb.shows(m.id)) return;
-        var style = moduleStyle(m);
+    var unconnected = page.choice("unconnected");
+    if (state.level === "units") {
+      data.units.forEach(function (m) {
+        if (!page.kept(m.id) || !page.shows(m.id)) return;
+        var style = unitStyle(m);
         nodes.push({
-          id: m.id, module: m.id, label: m.id, group: style.group, shape: style.shape, hollow: !!style.hollow,
-          r: size * Math.min(20, 7 + 1.6 * Math.sqrt(memberCountByModule.get(m.id) || 0)), title: m.predeclared ? "Predeclared class" : style.label, isModule: true,
-          moduleKind: moduleKindOf(m)
+          id: m.id, unit: m.id, label: m.id, group: style.group, shape: style.shape, hollow: !!style.hollow,
+          r: size * Math.min(20, 7 + 1.6 * Math.sqrt(memberCountByUnit.get(m.id) || 0)), title: style.label, isUnit: true,
+          unitKind: m.kind
         });
       });
-      edges = data.moduleEdges;
+      edges = data.unitEdges;
     } else {
       data.members.forEach(function (m) {
-        var category = categoryOfKind[m.kind];
-        if (!vb.kept(m.id) || !vb.shows(m.id)) return;
-        var module = vb.modulesById.get(m.module);
+        var category = categoryOfKind[m.kind] || UNKNOWN_CATEGORY;
+        if (!page.kept(m.id) || !page.shows(m.id)) return;
+        var unit = page.unitsById.get(m.unit);
         nodes.push({
-          id: m.id, module: m.module, label: m.name, group: moduleStyle(module).group, shape: category.shape,
-          r: size * (m.kind === "enumMember" ? 4 : 5.5), title: (KIND_LABELS[m.kind] || m.kind) + " in " + m.module,
-          unreferenced: m.unreferenced, minor: true, category: category.id
+          id: m.id, unit: m.unit, label: m.name, group: unitStyle(unit).group, shape: category.shape,
+          r: size * (m.parent ? 4 : 5.5), title: page.memberKindLabel(m.kind) + " in " + m.unit,
+          unreferenced: m.unreferenced, minor: true, category: category.id, categoryUnder: category.under
         });
       });
-      // Each module also has a node for references to the module itself (e.g. "As Order", "Sheet1.Range").
-      data.modules.forEach(function (m) {
-        if (!vb.kept(m.id) || !vb.showsItself(m.id)) return;
+      // Each unit also has a node for references to the unit itself (e.g. "As Order", "Sheet1.Range").
+      data.units.forEach(function (m) {
+        if (!page.kept(m.id) || !page.showsItself(m.id)) return;
         nodes.push({
-          id: m.id, module: m.id, label: m.id, group: moduleStyle(m).group, shape: d3.symbolCircle, r: size * 7,
-          title: moduleStyle(m).label + " (the module itself)", isModuleNode: true, minor: true
+          id: m.id, unit: m.id, label: m.id, group: unitStyle(m).group, shape: d3.symbolCircle, r: size * 7,
+          title: unitStyle(m).label + " (the " + language.unit.one + " itself)", isUnitNode: true, minor: true
         });
       });
       edges = data.memberEdges;
     }
 
     var ids = new Set(nodes.map(function (n) { return n.id; }));
-    edges = edges.filter(function (e) { return ids.has(e.from) && ids.has(e.to) && vb.choice("line:" + e.kind); });
+    edges = edges.filter(function (e) { return ids.has(e.from) && ids.has(e.to) && page.choice("line:" + e.kind); });
     // A self-loop (recursion) doesn't connect a node to anything else, so it doesn't count here.
     var connected = new Set();
     edges.forEach(function (e) { if (e.from !== e.to) { connected.add(e.from); connected.add(e.to); } });
     nodes = nodes.filter(function (n) {
-      if (n.isModuleNode) return connected.has(n.id); // only module nodes that are referenced
-      return unconnected || connected.has(n.id) || vb.filterActive(); // what's ticked is shown, linked or not
+      if (n.isUnitNode) return connected.has(n.id); // only unit nodes that are referenced
+      return unconnected || connected.has(n.id) || page.filterActive(); // what's ticked is shown, linked or not
     });
     if (!unconnected) edges = edges.filter(function (e) { return connected.has(e.from); });
     return indexGraph(nodes, edges);
@@ -249,29 +251,29 @@
     return { nodes: nodes, edges: edges, byId: byId, outgoing: outgoing, incoming: incoming };
   }
 
-  // The node ids that stand for a module or member (the selection, or a favourite) at this level. At module level a
-  // member stands for its module; at member level a module stands for all of its members.
+  // The node ids that stand for a unit or member (the selection, or a favourite) at this level. At unit level a
+  // member stands for its unit; at member level a unit stands for all of its members.
   function idsAtLevel(graph, id) {
     if (!id) return [];
-    if (state.level === "modules") {
-      var member = vb.membersById.get(id);
-      var moduleId = member ? member.module : id;
-      return graph.byId.has(moduleId) ? [moduleId] : [];
+    if (state.level === "units") {
+      var member = page.membersById.get(id);
+      var unitId = member ? member.unit : id;
+      return graph.byId.has(unitId) ? [unitId] : [];
     }
-    if (vb.membersById.has(id)) return graph.byId.has(id) ? [id] : [];
-    return graph.nodes.filter(function (n) { return n.module === id; }).map(function (n) { return n.id; });
+    if (page.membersById.has(id)) return graph.byId.has(id) ? [id] : [];
+    return graph.nodes.filter(function (n) { return n.unit === id; }).map(function (n) { return n.id; });
   }
 
-  function selectedIds(graph) { return idsAtLevel(graph, vb.selection()); }
+  function selectedIds(graph) { return idsAtLevel(graph, page.selection()); }
 
   // What to highlight: the selection, what it depends on (downstream) and what depends on it (upstream).
   // Direct goes one step each way; transitive follows the whole chain. Direction "dependencies" or
   // "dependents" follows only one of the two ways.
   //
-  // Edges between selected nodes are always highlighted, whatever the direction: when a module is selected
+  // Edges between selected nodes are always highlighted, whatever the direction: when a unit is selected
   // at member level its members are all selected, so its internal edges stay visible and the direction
-  // only applies to edges leaving or entering the module. A single selected member has no such edges
-  // (apart from recursion), so there the direction applies even to members of the same module.
+  // only applies to edges leaving or entering the unit. A single selected member has no such edges
+  // (apart from recursion), so there the direction applies even to members of the same unit.
   function reach(graph, start, transitive, direction) {
     var selected = new Set(start);
     function walk(edgesOf, endOf) {
@@ -327,16 +329,16 @@
   // Forces can leave small overlaps where they balance; remove them outright (member level only).
   function removeOverlaps(graph) {
     if (state.level !== "members") return;
-    var groupList = Array.from(d3.group(graph.nodes, function (n) { return n.module; }).values());
+    var groupList = Array.from(d3.group(graph.nodes, function (n) { return n.unit; }).values());
     for (var pass = 0; pass < 100 && separateBoxes(groupList, 1, true); pass++) { /* until nothing overlaps */ }
-    for (pass = 0; pass < 200 && separateModules(groupList, 1, true); pass++) { /* likewise for modules */ }
+    for (pass = 0; pass < 200 && separateUnits(groupList, 1, true); pass++) { /* likewise for units */ }
   }
 
   function configureForces(graph) {
     var links = graph.edges.filter(function (e) { return e.from !== e.to; }).map(function (e) { return { source: e.from, target: e.to }; });
     graph.nodes.forEach(setBox);
 
-    if (state.level === "modules") {
+    if (state.level === "units") {
       // Labels sit to the right of each node, so leave room for them when keeping nodes apart.
       simulation
         .force("link", d3.forceLink(links).id(function (d) { return d.id; }).distance(settings.linkDistance).strength(0.3 * settings.linkStrength))
@@ -348,39 +350,39 @@
     }
 
     // Member level. Each member takes up a rectangle (its mark plus its name, which sits to the right), and
-    // rectangles in the same module are kept apart so names never overlap. Members are pulled towards their
-    // module's middle, modules are kept apart as whole rectangles, and edges pull linked members together:
-    // strongly inside a module, gently between modules, which draws related modules near each other and
-    // moves linked members to the side facing the module they're linked with.
-    var groupList = Array.from(d3.group(graph.nodes, function (n) { return n.module; }).values());
+    // rectangles in the same unit are kept apart so names never overlap. Members are pulled towards their
+    // unit's middle, units are kept apart as whole rectangles, and edges pull linked members together:
+    // strongly inside a unit, gently between units, which draws related units near each other and
+    // moves linked members to the side facing the unit they're linked with.
+    var groupList = Array.from(d3.group(graph.nodes, function (n) { return n.unit; }).values());
     simulation
       .force("link", d3.forceLink(links).id(function (d) { return d.id; })
-        .distance(function (l) { return l.source.module === l.target.module ? 30 : 80; })
-        .strength(function (l) { return (l.source.module === l.target.module ? 0.05 : 0.003) * settings.linkStrength; }))
+        .distance(function (l) { return l.source.unit === l.target.unit ? 30 : 80; })
+        .strength(function (l) { return (l.source.unit === l.target.unit ? 0.05 : 0.003) * settings.linkStrength; }))
       .force("charge", null)
       .force("collide", null)
       .force("cohesion", cohesionForce(groupList))
       .force("boxes", function () { separateBoxes(groupList, 0.7, false); })
-      .force("modules", function () { separateModules(groupList, 0.5, false); })
+      .force("units", function () { separateUnits(groupList, 0.5, false); })
       .force("x", d3.forceX(0).strength(0.01))
       .force("y", d3.forceY(0).strength(0.01));
   }
 
-  // The starting layout: module places first, then members around them, then the simulation settles it all.
+  // The starting layout: unit places first, then members around them, then the simulation settles it all.
   function initialLayout(graph) {
     if (state.level === "members") {
-      var groups = d3.group(graph.nodes, function (n) { return n.module; });
+      var groups = d3.group(graph.nodes, function (n) { return n.unit; });
       var estimates = new Map();
       groups.forEach(function (members, id) {
         var area = d3.sum(members, function (n) { setBox(n); return (n.x1 - n.x0) * (n.y1 - n.y0); });
         estimates.set(id, Math.sqrt(area / Math.PI / 0.6)); // rectangles fill about 60% of the circle
       });
       var centres = clusterCentres(graph, estimates);
-      var placedInModule = new Map();
+      var placedInUnit = new Map();
       graph.nodes.forEach(function (n) {
-        var c = centres.get(n.module);
-        var k = placedInModule.get(n.module) || 0;
-        placedInModule.set(n.module, k + 1);
+        var c = centres.get(n.unit);
+        var k = placedInUnit.get(n.unit) || 0;
+        placedInUnit.set(n.unit, k + 1);
         var angle = k * 2.39996; // golden angle: an even, fixed spiral, wider than tall like the rectangles
         var radius = 12 * Math.sqrt(k);
         n.x = c.x + 2 * radius * Math.cos(angle);
@@ -426,8 +428,8 @@
     n.y1 = -n.y0;
   }
 
-  // Pulls each member towards the middle of its module. Rectangles are wide and short, so most pushes
-  // between them are vertical; a weaker horizontal pull stops modules turning into tall single columns.
+  // Pulls each member towards the middle of its unit. Rectangles are wide and short, so most pushes
+  // between them are vertical; a weaker horizontal pull stops units turning into tall single columns.
   function cohesionForce(groupList) {
     return function (alpha) {
       var kx = 0.02 * settings.cohesion * alpha;
@@ -443,7 +445,7 @@
     };
   }
 
-  // Pushes overlapping rectangles in the same module apart, along whichever axis needs the smaller move.
+  // Pushes overlapping rectangles in the same unit apart, along whichever axis needs the smaller move.
   // d3's own collide force only knows circles, and a circle big enough for a long name wastes a lot of space.
   // As a force it nudges velocities; otherwise it moves nodes directly. Returns whether anything overlapped.
   function separateBoxes(groupList, strength, direct) {
@@ -474,8 +476,8 @@
     return overlapped;
   }
 
-  // A module's extent: the rectangles of all its members.
-  function moduleBox(members) {
+  // A unit's extent: the rectangles of all its members.
+  function unitBox(members) {
     var box = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
     members.forEach(function (n) {
       box.x0 = Math.min(box.x0, n.x + n.x0);
@@ -486,16 +488,16 @@
     return box;
   }
 
-  // Keeps modules apart as whole rectangles (with the module name above), moving all of a module's members.
+  // Keeps units apart as whole rectangles (with the unit name above), moving all of a unit's members.
   // Like separateBoxes, it either nudges velocities or moves nodes directly, and returns whether anything
   // overlapped.
-  function separateModules(groupList, strength, direct) {
+  function separateUnits(groupList, strength, direct) {
     var overlapped = false;
-    var gap = settings.moduleSpacing;
+    var gap = settings.unitSpacing;
     var boxes = groupList.map(function (members) {
-      var b = moduleBox(members);
-      // A module holding a dragged or pinned node stays put and pushes the other module away instead;
-      // otherwise its other members would be pushed away from the held one and the module torn apart.
+      var b = unitBox(members);
+      // A unit holding a dragged or pinned node stays put and pushes the other unit away instead;
+      // otherwise its other members would be pushed away from the held one and the unit torn apart.
       var held = members.some(function (n) { return n.fx != null; });
       return { members: members, held: held, x0: b.x0 - gap / 2, x1: b.x1 + gap / 2, y0: b.y0 - gap / 2 - 18, y1: b.y1 + gap / 2 };
     });
@@ -526,14 +528,14 @@
     return overlapped;
   }
 
-  // Places one circle per module (radius from `radii`), with linked modules drawn towards each other.
+  // Places one circle per unit (radius from `radii`), with linked units drawn towards each other.
   function clusterCentres(graph, radii) {
     var clusters = Array.from(radii.keys()).map(function (id) { return { id: id, r: radii.get(id) }; });
     var seen = new Set();
     var links = [];
     graph.edges.forEach(function (e) {
-      var a = graph.byId.get(e.from).module;
-      var b = graph.byId.get(e.to).module;
+      var a = graph.byId.get(e.from).unit;
+      var b = graph.byId.get(e.to).unit;
       var key = a < b ? a + "\u0000" + b : b + "\u0000" + a;
       if (a !== b && !seen.has(key)) { seen.add(key); links.push({ source: a, target: b }); }
     });
@@ -541,7 +543,7 @@
       .force("link", d3.forceLink(links).id(function (d) { return d.id; })
         .distance(function (l) { return l.source.r + l.target.r + 60; }).strength(0.2))
       .force("charge", d3.forceManyBody().strength(-150))
-      .force("collide", d3.forceCollide(function (d) { return d.r + settings.moduleSpacing; }))
+      .force("collide", d3.forceCollide(function (d) { return d.r + settings.unitSpacing; }))
       .force("x", d3.forceX(0).strength(0.04))
       .force("y", d3.forceY(0).strength(0.04))
       .stop();
@@ -577,7 +579,8 @@
     applyLabelMode();
   }
 
-  var KIND_ORDER = { uses: 0, implements: 1, events: 2 };
+  var KIND_ORDER = {};
+  EDGE_KINDS.forEach(function (kind, i) { KIND_ORDER[kind.id] = i; });
 
   // An edge. Curved, edges of different kinds between the same two nodes, and edges in opposite directions,
   // bend apart instead of overlapping. A node's edge to itself (recursion) is a loop.
@@ -591,7 +594,7 @@
         " C" + (s.x - r * 4) + "," + (s.y - r * 4) + " " + (s.x - r * 4.5) + "," + (s.y + r * 1.5) +
         " " + (s.x - r - 1) + "," + (s.y + r * 0.4);
     }
-    if (settings.bundleEdges && graph.clusters && s.module !== t.module) return bundledPath(e, s, t);
+    if (settings.bundleEdges && graph.clusters && s.unit !== t.unit) return bundledPath(e, s, t);
     var dx = t.x - s.x;
     var dy = t.y - s.y;
     var bend = settings.curvedEdges ? 0.12 + 0.14 * KIND_ORDER[e.kind] : 0;
@@ -603,14 +606,14 @@
     return "M" + start.x + "," + start.y + " Q" + cx + "," + cy + " " + end.x + "," + end.y;
   }
 
-  // Optional, at member level: an edge between two modules leaves its cluster at the edge facing the other
-  // module and enters the other cluster the same way. All edges between the same two modules share those
+  // Optional, at member level: an edge between two units leaves its cluster at the edge facing the other
+  // unit and enters the other cluster the same way. All edges between the same two units share those
   // two points, so they run together as one bundle between the clusters and only fan out inside them. Each
   // direction and edge kind gets its own lane, a few pixels to the side.
   var bundleLine = d3.line().curve(d3.curveBundle.beta(0.95));
   function bundledPath(e, s, t) {
-    var a = graph.clusters.get(s.module);
-    var b = graph.clusters.get(t.module);
+    var a = graph.clusters.get(s.unit);
+    var b = graph.clusters.get(t.unit);
     var ux = b.x - a.x;
     var uy = b.y - a.y;
     var length = Math.hypot(ux, uy) || 1;
@@ -640,7 +643,7 @@
     return { x: node.x + dx / length * distance, y: node.y + dy / length * distance };
   }
 
-  // A smooth outline around a module's members and their names.
+  // A smooth outline around a unit's members and their names.
   function hullPath(points) {
     var padded = [];
     points.forEach(function (p) {
@@ -662,7 +665,7 @@
   // layout and Reset to defaults start afresh.
   var keptLayouts = new Map();
 
-  function layoutKey(level) { return (level || state.level) + "\u0000" + vb.choicesKey() + "\u0000" + vb.shownKey(); }
+  function layoutKey(level) { return (level || state.level) + "\u0000" + page.choicesKey() + "\u0000" + page.shownKey(); }
 
   function keepLayout() {
     if (!graph || !graph.layoutKey) return;
@@ -692,7 +695,7 @@
   // (dragged, let go, or spaced out differently in the settings), every node's position in the whole graph and which
   // are pinned. A level where nothing was moved isn't kept: it's laid out afresh, as it would be anyway. When the graph
   // shows a focus and something in it was moved, that layout is kept too, with what decided the focus. Opening a view
-  // puts its positions back when that graph is next drawn. Nodes it doesn't know of (the workbook has changed since)
+  // puts its positions back when that graph is next drawn. Nodes it doesn't know of (the source has changed since)
   // are placed beside what they're linked to, and the layout settles them while the rest is held still.
 
   var movedLayouts = new Set(); // keys of layouts that have been moved
@@ -718,7 +721,7 @@
       if (sound && settings[c.key] !== value) { settings[c.key] = value; changed = true; }
     });
     if (!changed) return;
-    saveSetting("vbadoc-graph-settings", JSON.stringify(settings));
+    saveSetting(page.tool + "-graph-settings", JSON.stringify(settings));
     buildSettingsMenu();
   }
 
@@ -732,7 +735,7 @@
     var favourites = Array.isArray(focus.favourites) ? focus.favourites.filter(function (id) { return typeof id === "string"; }) : [];
     if (selection === null && favourites.length === 0) return null;
     return {
-      level: raw.level === "members" ? "members" : "modules",
+      level: raw.level === "members" ? "members" : "units",
       focus: { selection: selection, direction: selection === null ? null : direction, favourites: favourites, reach: focus.reach },
       layout: layout
     };
@@ -803,22 +806,22 @@
   // While the page's view is locked (the shell's Lock view), the graph keeps its nodes where they are and its zoom:
   // a click only outlines what's selected, nothing is focused, lit, dimmed or brought into view, and when the
   // explorer's ticks or the Show… choices change, the nodes still shown stay put. Dragging moves only what's dragged.
-  // Locking ticks what the graph shows; at member level a module's own node is kept on its own, since a tick on the
-  // module would bring every member.
+  // Locking ticks what the graph shows; at member level a unit's own node is kept on its own, since a tick on the
+  // unit would bring every member.
 
   var skipCarry = false; // a saved view's positions come before what's on screen
 
-  vb.lockSource("graph", function () {
+  page.lockSource("graph", function () {
     if (!graph) return null;
     var ids = [];
     var alone = [];
-    graph.nodes.forEach(function (n) { (n.isModuleNode ? alone : ids).push(n.id); });
+    graph.nodes.forEach(function (n) { (n.isUnitNode ? alone : ids).push(n.id); });
     return { ids: ids, alone: alone };
   });
 
   // Where the nodes on screen are, to carry into the next drawing while locked; null when there's nothing to carry.
   function carriedPositions(fresh) {
-    var carry = !fresh && !skipCarry && vb.locked() && graph && graph.level === state.level;
+    var carry = !fresh && !skipCarry && page.locked() && graph && graph.level === state.level;
     skipCarry = false;
     if (!carry) return null;
     var positions = new Map();
@@ -826,7 +829,7 @@
     return positions;
   }
 
-  // New nodes start beside the known members of their module, or what they're linked to, or else to the right of the
+  // New nodes start beside the known members of their unit, or what they're linked to, or else to the right of the
   // graph; then the layout settles them with the known nodes held where the view put them.
   function placeNewNodes(graph, known, unknown) {
     var placed = new Map(known.map(function (n) { return [n.id, n]; }));
@@ -834,7 +837,7 @@
     var top = d3.min(known, function (n) { return n.y; });
     var spare = 0;
     unknown.forEach(function (n, k) {
-      var near = known.filter(function (m) { return state.level === "members" && m.module === n.module; });
+      var near = known.filter(function (m) { return state.level === "members" && m.unit === n.unit; });
       if (near.length === 0) {
         graph.outgoing.get(n.id).concat(graph.incoming.get(n.id)).forEach(function (e) {
           var other = placed.get(e.from === n.id ? e.to : e.from);
@@ -858,11 +861,11 @@
     graph.nodes.forEach(function (n) { n.vx = 0; n.vy = 0; });
   }
 
-  vb.viewPart("graph", {
+  page.viewPart("graph", {
     save: function () {
       keepLayout();
       var layouts = {};
-      ["modules", "members"].forEach(function (level) {
+      ["units", "members"].forEach(function (level) {
         var key = layoutKey(level);
         if (movedLayouts.has(key) && keptLayouts.has(key)) layouts[level] = layoutForView(keptLayouts.get(key));
         else if (viewLayouts.has(key)) layouts[level] = viewLayouts.get(key);
@@ -879,11 +882,11 @@
     },
     apply: function (value) {
       value = value && typeof value === "object" ? value : {};
-      state.level = value.level === "members" ? "members" : "modules";
-      saveSetting("vbadoc-graph-level", state.level);
+      state.level = value.level === "members" ? "members" : "units";
+      saveSetting(page.tool + "-graph-level", state.level);
       if (value.direction === "all" || value.direction === "dependencies" || value.direction === "dependents") {
         state.direction = value.direction;
-        saveSetting("vbadoc-graph-direction", state.direction);
+        saveSetting(page.tool + "-graph-direction", state.direction);
       }
       applyViewSettings(value.settings);
       state.legend = new Set(Array.isArray(value.legend) ? value.legend.filter(function (key) { return typeof key === "string"; }) : []);
@@ -897,8 +900,8 @@
       if (graph) graph.layoutKey = null;
       skipCarry = true;
       var layouts = value.layouts && typeof value.layouts === "object" ? value.layouts : {};
-      ["modules", "members"].forEach(function (level) {
-        var layout = cleanLayout(layouts[level]);
+      ["units", "members"].forEach(function (level) {
+        var layout = cleanLayout(layoutAt(layouts, level));
         if (layout) viewLayouts.set(layoutKey(level), layout);
       });
       var focused = cleanFocused(value.focused);
@@ -911,8 +914,8 @@
     ids: function (value) {
       var ids = [];
       var layouts = value && value.layouts && typeof value.layouts === "object" ? value.layouts : {};
-      ["modules", "members"].forEach(function (level) {
-        var layout = cleanLayout(layouts[level]);
+      ["units", "members"].forEach(function (level) {
+        var layout = cleanLayout(layoutAt(layouts, level));
         if (layout) ids = ids.concat(Object.keys(layout.positions));
       });
       var focused = cleanFocused(value && value.focused);
@@ -937,10 +940,10 @@
     if (focusing()) {
       // The focused selection and what it's connected to, and with Focus on favourites, the favourites and what they use.
       var transitive = settings.reach === "transitive";
-      var start = vb.focused() ? selectedIds(full) : [];
+      var start = page.focused() ? selectedIds(full) : [];
       var favourites = [];
-      if (vb.focusFavourites()) {
-        vb.favourites().forEach(function (id) {
+      if (page.focusFavourites()) {
+        page.favourites().forEach(function (id) {
           idsAtLevel(full, id).forEach(function (nodeId) { if (favourites.indexOf(nodeId) < 0) favourites.push(nodeId); });
         });
       }
@@ -976,8 +979,8 @@
     graph.level = state.level;
     svg.classed("members", state.level === "members");
 
-    // Module outlines (member level only).
-    var groups = state.level === "members" ? d3.groups(graph.nodes, function (n) { return n.module; }) : [];
+    // Unit outlines (member level only).
+    var groups = state.level === "members" ? d3.groups(graph.nodes, function (n) { return n.unit; }) : [];
     drawn.hulls = hullLayer.selectAll("g.hull-group").data(groups, function (g) { return g[0]; })
       .join(function (enter) {
         var g = enter.append("g").attr("class", "hull-group");
@@ -985,9 +988,9 @@
         g.append("text").attr("class", "hull-label").attr("text-anchor", "middle");
         return g;
       });
-    drawn.hulls.attr("data-module", function (g) { return g[0]; });
+    drawn.hulls.attr("data-unit", function (g) { return g[0]; });
     drawn.hulls.select("path.hull")
-      .on("click", function (event, g) { event.stopPropagation(); vb.select(g[0], event.ctrlKey || event.metaKey); })
+      .on("click", function (event, g) { event.stopPropagation(); page.select(g[0], event.ctrlKey || event.metaKey); })
       .call(dragBehaviour(function (g) { return g[1]; }));
     drawn.hulls.select("text.hull-label");
 
@@ -1000,7 +1003,8 @@
       .style("stroke-width", function (e) { return (1.25 + Math.min(1.5, Math.log2(e.count) * 0.4)) + "px"; });
     drawn.edges.selectAll("title").data(function (e) { return [e]; }).join("title")
       .text(function (e) {
-        var verb = e.kind === "implements" ? " implements " : e.kind === "events" ? " handles or raises events of " : " uses ";
+        var relationship = page.relationship(e.kind);
+        var verb = " " + (relationship ? relationship.verb : e.kind) + " ";
         return e.from + verb + e.to + (e.count > 1 ? " (" + e.count + " references)" : "");
       });
 
@@ -1015,11 +1019,11 @@
       });
     drawn.nodes
       .attr("class", function (n) {
-        return "node group-" + n.group + (n.hollow ? " hollow" : "") + (n.isModuleNode ? " module-node" : "") +
+        return "node group-" + n.group + (n.hollow ? " hollow" : "") + (n.isUnitNode ? " unit-node" : "") +
           (n.unreferenced ? " unreferenced" : "");
       })
       .attr("data-id", function (n) { return n.id; })
-      .on("click", function (event, n) { event.stopPropagation(); vb.select(n.id, event.ctrlKey || event.metaKey); })
+      .on("click", function (event, n) { event.stopPropagation(); page.select(n.id, event.ctrlKey || event.metaKey); })
       .on("dblclick", function (event, n) { event.stopPropagation(); release([n]); })
       .on("mouseenter", function (event, n) { if (!dragging) showTooltip(event, n); })
       .on("mousemove", function (event) { moveTooltip(event); })
@@ -1047,22 +1051,22 @@
     highlight();
   }
 
-  // Stars the favourites: their nodes (at module level, the module holding a favourite member) and, at member level,
-  // the name of a favourite module's outline, since the module's own node is only drawn when something refers to it.
+  // Stars the favourites: their nodes (at unit level, the unit holding a favourite member) and, at member level,
+  // the name of a favourite unit's outline, since the unit's own node is only drawn when something refers to it.
   function updateFavourites() {
     if (!graph || !drawn.nodes) return;
     var starred = new Set();
-    var modules = new Set();
-    vb.favourites().forEach(function (id) {
-      var isModule = state.level === "members" && vb.modulesById.has(id);
-      if (isModule) modules.add(id);
+    var units = new Set();
+    page.favourites().forEach(function (id) {
+      var isUnit = state.level === "members" && page.unitsById.has(id);
+      if (isUnit) units.add(id);
       idsAtLevel(graph, id).forEach(function (nodeId) {
-        if (!isModule || graph.byId.get(nodeId).isModuleNode) starred.add(nodeId);
+        if (!isUnit || graph.byId.get(nodeId).isUnitNode) starred.add(nodeId);
       });
     });
     drawn.nodes.classed("favourite", function (n) { return starred.has(n.id); });
-    drawn.hulls.classed("favourite", function (g) { return modules.has(g[0]); })
-      .select("text.hull-label").text(function (g) { return (modules.has(g[0]) ? "★ " : "") + g[0]; });
+    drawn.hulls.classed("favourite", function (g) { return units.has(g[0]); })
+      .select("text.hull-label").text(function (g) { return (units.has(g[0]) ? "★ " : "") + g[0]; });
   }
 
   // Moves everything to the nodes' current positions: after the starting layout and on every tick.
@@ -1070,8 +1074,8 @@
     if (!graph || !drawn.nodes) return;
     if (state.level === "members") {
       graph.clusters = new Map();
-      d3.group(graph.nodes, function (n) { return n.module; }).forEach(function (members, id) {
-        var b = moduleBox(members);
+      d3.group(graph.nodes, function (n) { return n.unit; }).forEach(function (members, id) {
+        var b = unitBox(members);
         graph.clusters.set(id, { x: (b.x0 + b.x1) / 2, y: (b.y0 + b.y1) / 2, w: (b.x1 - b.x0) / 2, h: (b.y1 - b.y0) / 2, top: b.y0 });
       });
       drawn.hulls.select("path.hull").attr("d", function (g) { return hullPath(g[1]); });
@@ -1087,13 +1091,13 @@
 
   // ---- Dragging ----
   //
-  // Dragging a node moves it; dragging a module's outline moves all its members. With "Rearrange while
+  // Dragging a node moves it; dragging a unit's outline moves all its members. With "Rearrange while
   // dragging" on, the simulation runs so everything else makes room and follows its edges.
   //
   // A press that moves less than the click distance is a click, which selects and must leave the layout alone.
   // d3 fires "start" as soon as the button goes down, so nothing is pinned and the simulation isn't woken until
   // the pointer has moved further than that. Waking it on every click let the forces, which only remove overlaps
-  // fully once the graph comes to rest, pull the modules together for a moment. pqdoc's graph works the same way.
+  // fully once the graph comes to rest, pull the units together for a moment. pqdoc's graph works the same way.
 
   var CLICK_DISTANCE = 4; // screen pixels, as d3's clickDistance
   var dragging = false;
@@ -1145,7 +1149,7 @@
   }
 
   // Whether the rest makes room for what's dragged: the setting, but never while the view is locked.
-  function rearranging() { return settings.live && !vb.locked(); }
+  function rearranging() { return settings.live && !page.locked(); }
 
   function release(nodes) {
     nodes.forEach(function (n) { n.fx = null; n.fy = null; n.pinned = false; });
@@ -1157,18 +1161,18 @@
     if (drawn.nodes) drawn.nodes.classed("pinned", function (n) { return !!n.pinned; });
   }
 
-  // Whether a node matches a legend item. Item keys are "module:<kind>", "category:<id>", "group:<colour group>",
-  // "moduleNode", "unreferenced" and "edge:<kind>".
+  // Whether a node matches a legend item. Item keys are "unit:<kind>", "category:<id>", "group:<colour group>",
+  // "unitNode", "unreferenced" and "edge:<kind>".
   function matchesLegendItem(key, n) {
     var colon = key.indexOf(":");
     var type = colon < 0 ? key : key.slice(0, colon);
     var value = key.slice(colon + 1);
     switch (type) {
-      case "module": return n.moduleKind === value;
-      // The legend has no entry of its own for enum values, which share the Enums and types triangle.
-      case "category": return n.category === value || (value === "type" && n.category === "enumValue");
-      case "group": return n.group === value;
-      case "moduleNode": return !!n.isModuleNode;
+      case "unit": return n.unitKind === value;
+      // A category that goes under another has no entry of its own, and lights with the one it's under.
+      case "category": return n.category === value || n.categoryUnder === value;
+      case "group": return String(n.group) === value;
+      case "unitNode": return !!n.isUnitNode;
       case "unreferenced": return !!n.unreferenced;
       default: return false;
     }
@@ -1232,7 +1236,7 @@
   function favouriteIds(graph) {
     var start = selectedIds(graph);
     var ids = [];
-    vb.favourites().forEach(function (id) {
+    page.favourites().forEach(function (id) {
       idsAtLevel(graph, id).forEach(function (nodeId) { if (start.indexOf(nodeId) < 0 && ids.indexOf(nodeId) < 0) ids.push(nodeId); });
     });
     return ids;
@@ -1240,11 +1244,11 @@
 
   // Why the path can't be shown right now, or null if it can.
   function pathUnavailable(graph) {
-    if (vb.favourites().length === 0) return "Star a favourite first: the ☆ in the explorer or the source panel";
-    if (!vb.selection()) return "Select something to find the path to it from the nearest favourite";
+    if (page.favourites().length === 0) return "Star a favourite first: the ☆ in the explorer or the source panel";
+    if (!page.selection()) return "Select something to find the path to it from the nearest favourite";
     if (selectedIds(graph).length === 0) return "The selection isn't in the graph as drawn";
     if (favouriteIds(graph).length === 0) {
-      var anyShown = vb.favourites().some(function (id) { return idsAtLevel(graph, id).length > 0; });
+      var anyShown = page.favourites().some(function (id) { return idsAtLevel(graph, id).length > 0; });
       return anyShown ? "The selection is the only favourite, at this level" : "No favourite is in the graph as drawn";
     }
     return null;
@@ -1261,16 +1265,16 @@
     return down || up;
   }
 
-  // A node's name as the graph shows it: Module.Member at member level.
+  // A node's name as the graph shows it: Unit.Member at member level.
   function nodeName(id) {
     var n = graph.byId.get(id);
-    return state.level === "members" && !n.isModuleNode ? n.module + "." + n.label : n.label;
+    return state.level === "members" && !n.isUnitNode ? n.unit + "." + n.label : n.label;
   }
 
   function describePath(path) {
     if (!path) {
       return "No chain of dependencies links a favourite and the selection" +
-        (vb.choicesCount() > 0 ? " with the current Show… choices" : "") + ".";
+        (page.choicesCount() > 0 ? " with the current Show… choices" : "") + ".";
     }
     var steps = path.edges.length;
     var how = steps === 1 ? "directly" : "through " + (steps - 1) + " other node" + (steps === 2 ? "" : "s");
@@ -1281,23 +1285,23 @@
 
   // Highlights the selection's neighbourhood and whatever the legend items light up. With both, each narrows
   // the other: e.g. a selected class plus the Implements item shows only the class's Implements links.
-  // The selected node always stays lit, so it's clear what the highlight is around. A module selected at member
-  // level selects all of its members; then the legend narrows those too, and the module's outline stays lit.
+  // The selected node always stays lit, so it's clear what the highlight is around. A unit selected at member
+  // level selects all of its members; then the legend narrows those too, and the unit's outline stays lit.
   //
   // With the path on, it replaces all that: only the favourite, the selection and the chain between them stay lit.
   function highlight() {
     if (!graph) return;
     var start = selectedIds(graph);
-    var selection = vb.selection();
+    var selection = page.selection();
     // While the view is locked the selection is only outlined: nothing is lit or dimmed for it, or brought into view.
-    var held = vb.locked();
+    var held = page.locked();
     if (state.path && (held || pathUnavailable(graph))) state.path = false;
     var path = state.path ? findPath(graph) : null;
     var active, litEdges, isSelected, isLit;
 
     if (state.path) {
       // Without a path, the favourites stay lit so it's clear what was looked for. With one, only the path does: a
-      // favourite module at member level stands for all its members, but the path starts or ends at just one of them.
+      // favourite unit at member level stands for all its members, but the path starts or ends at just one of them.
       var pathNodes = new Set(path ? path.nodes : favouriteIds(graph));
       active = true;
       litEdges = new Set(path ? path.edges : []);
@@ -1335,7 +1339,7 @@
     updateLegendButtons();
     updateToolbar();
     // A hidden view has no size, and moving it then would give d3-zoom a NaN transform.
-    if (vb.activeView() !== "graph") return;
+    if (page.activeView() !== "graph") return;
     if (path) fit(true, path.nodes.map(function (id) { return graph.byId.get(id); }));
     else if (start.length === 1 && !held) bringIntoView(graph.byId.get(start[0]));
   }
@@ -1348,10 +1352,10 @@
     if (nodes.length === 0) return;
     var width = view.clientWidth || 800;
     var height = view.clientHeight || 600;
-    // Member-level nodes know their label's extent; module-level ones get room for a label on the right.
+    // Member-level nodes know their label's extent; unit-level ones get room for a label on the right.
     var x0 = d3.min(nodes, function (n) { return n.x - n.r; }) - 40;
     var x1 = d3.max(nodes, function (n) { return state.level === "members" ? n.x + n.x1 : n.x + n.r + 140; }) + 20;
-    var y0 = d3.min(nodes, function (n) { return n.y - n.r; }) - 60;   // and module names above
+    var y0 = d3.min(nodes, function (n) { return n.y - n.r; }) - 60;   // and unit names above
     var y1 = d3.max(nodes, function (n) { return n.y + n.r; }) + 40;
     var top = view.querySelector(".view-toolbar").offsetHeight + 16; // keep clear of the toolbar, which can wrap
     var legend = document.getElementById("graph-legend");
@@ -1382,7 +1386,7 @@
     var usedBy = graph.incoming.get(n.id).length;
     tooltip.innerHTML = "";
     var name = document.createElement("strong");
-    name.textContent = state.level === "members" && !n.isModuleNode ? n.module + "." + n.label : n.label;
+    name.textContent = state.level === "members" && !n.isUnitNode ? n.unit + "." + n.label : n.label;
     var kind = document.createElement("span");
     kind.textContent = n.title;
     var counts = document.createElement("span");
@@ -1430,27 +1434,23 @@
   function renderLegend() {
     var html = "<p class=\"legend-hint muted\">Click an item to highlight it." +
       " <button type=\"button\" class=\"link-button\" id=\"graph-legend-clear\" hidden>Clear</button></p>";
-    if (state.level === "modules") {
-      html += "<ul>" +
-        item(legendIcon(d3.symbolSquare, "group-code"), "Standard module", "module:standard") +
-        item(legendIcon(d3.symbolCircle, "group-class"), "Class", "module:class") +
-        item(legendIcon(d3.symbolCircle, "group-class hollow"), "Interface", "module:interface") +
-        item(legendIcon(d3.symbolDiamond, "group-host"), "UserForm", "module:form") +
-        item(legendIcon(d3.symbolTriangle, "group-host"), "Document module", "module:document") +
-        "</ul><p class=\"muted\" style=\"margin:4px 0 0\">Size: number of members</p>";
+    if (state.level === "units") {
+      html += "<ul>" + language.unitKinds.map(function (k) {
+        return item(legendIcon(shapeOf(k.shape), "group-" + k.colour + (k.hollow ? " hollow" : "")), page.escapeHtml(k.label), "unit:" + k.id);
+      }).join("") + "</ul><p class=\"muted\" style=\"margin:4px 0 0\">Size: number of " + page.escapeHtml(language.member.many) + "</p>";
     } else {
-      html += "<h3>Member</h3><ul>" + MEMBER_CATEGORIES.filter(function (c) { return c.id !== "enumValue"; }).map(function (c) {
-        return item(legendIcon(c.shape, "group-neutral"), c.label, "category:" + c.id);
+      var firstColour = language.colourLabels.length > 0 ? language.colourLabels[0].slot : 1;
+      html += "<h3>" + page.escapeHtml(page.capital(language.member.one)) + "</h3><ul>" + MEMBER_CATEGORIES.filter(function (c) { return !c.under; }).map(function (c) {
+        return item(legendIcon(c.shape, "group-neutral"), page.escapeHtml(c.label), "category:" + c.id);
       }).join("") +
-        item(legendIcon(d3.symbolCircle, "group-code module-node", 5), "The module itself", "moduleNode") +
-        item(legendIcon(d3.symbolCircle, "group-code unreferenced", 5), "Unreferenced", "unreferenced") +
-        "</ul><h3>Module (colour and outline)</h3><ul>" +
-        item(legendIcon(d3.symbolSquare, "group-code"), "Standard module", "group:code") +
-        item(legendIcon(d3.symbolSquare, "group-class"), "Class or interface", "group:class") +
-        item(legendIcon(d3.symbolSquare, "group-host"), "UserForm or document", "group:host") +
-        "</ul>";
+        item(legendIcon(d3.symbolCircle, "group-" + firstColour + " unit-node", 5), page.escapeHtml("The " + language.unit.one + " itself"), "unitNode") +
+        item(legendIcon(d3.symbolCircle, "group-" + firstColour + " unreferenced", 5), "Unreferenced", "unreferenced") +
+        "</ul><h3>" + page.escapeHtml(page.capital(language.unit.one)) + " (colour and outline)</h3><ul>" +
+        language.colourLabels.map(function (c) {
+          return item(legendIcon(d3.symbolSquare, "group-" + c.slot), page.escapeHtml(c.label), "group:" + c.slot);
+        }).join("") + "</ul>";
     }
-    html += "<h3>Edges</h3><ul>" + EDGE_KINDS.map(function (k) { return item(edgeIcon(k.id), k.label, "edge:" + k.id); }).join("") + "</ul>";
+    html += "<h3>Edges</h3><ul>" + EDGE_KINDS.map(function (k) { return item(edgeIcon(k.id), page.escapeHtml(k.label), "edge:" + k.id); }).join("") + "</ul>";
     legendBody.innerHTML = html;
     updateLegendButtons();
   }
@@ -1476,18 +1476,18 @@
   // Clicking the background, or Escape, clears the legend highlight, the path and the selection.
   function clearHighlights() {
     // Locked, a click on the background only clears the selection: the legend's picks are part of what's shown.
-    if (!vb.locked()) {
+    if (!page.locked()) {
       state.legend.clear();
       state.path = false;
     }
-    vb.select(null);
+    page.select(null);
     highlight();
   }
 
-  // Escape is also how the drop-downs close (see page.js), so it only clears when none of them is open, and
-  // not while typing in a field. This runs in the capture phase, before page.js closes them.
+  // Escape is also how the drop-downs close (see shell.js), so it only clears when none of them is open, and
+  // not while typing in a field. This runs in the capture phase, before shell.js closes them.
   document.addEventListener("keydown", function (event) {
-    if (event.key !== "Escape" || vb.activeView() !== "graph" || !started) return;
+    if (event.key !== "Escape" || page.activeView() !== "graph" || !started) return;
     if (document.querySelector("details.dropdown[open]")) return;
     if (event.target.closest && event.target.closest("input, select, textarea")) return;
     clearHighlights();
@@ -1504,20 +1504,21 @@
   function updateToolbar() {
     setChecked("[data-level]", "data-level", state.level);
     setChecked("[data-direction]", "data-direction", state.direction);
-    focusButton.setAttribute("aria-pressed", vb.focusOnClick() ? "true" : "false");
-    focusButton.disabled = vb.locked();
-    var unavailable = vb.locked() ? "Unlock the view to show a path" : graph ? pathUnavailable(graph) : "";
+    focusButton.setAttribute("aria-pressed", page.focusOnClick() ? "true" : "false");
+    focusButton.disabled = page.locked();
+    var unavailable = page.locked() ? "Unlock the view to show a path" : graph ? pathUnavailable(graph) : "";
     pathButton.disabled = !!unavailable && !state.path;
     pathButton.title = unavailable || "Show the shortest chain of dependencies between the nearest favourite and the selection";
     pathButton.setAttribute("aria-pressed", state.path ? "true" : "false");
   }
 
   view.querySelectorAll("[data-level]").forEach(function (button) {
+    button.textContent = worded(button.getAttribute("data-level") === "units" ? "{Units}" : "{Members}");
     button.addEventListener("click", function () {
       if (state.level === button.getAttribute("data-level")) return;
       state.level = button.getAttribute("data-level");
       state.legend.clear(); // the legend's items differ between levels
-      saveSetting("vbadoc-graph-level", state.level);
+      saveSetting(page.tool + "-graph-level", state.level);
       render();
     });
   });
@@ -1525,17 +1526,17 @@
   view.querySelectorAll("[data-direction]").forEach(function (button) {
     button.addEventListener("click", function () {
       state.direction = button.getAttribute("data-direction");
-      saveSetting("vbadoc-graph-direction", state.direction);
+      saveSetting(page.tool + "-graph-direction", state.direction);
       if (focusKey() !== state.focusKey) render(); else highlight();
     });
   });
 
   // Focus is the page's Focus on click setting, shared by every view; turning it on focuses on the selection now too.
-  focusButton.addEventListener("click", function () { vb.setFocusOnClick(!vb.focusOnClick()); });
+  focusButton.addEventListener("click", function () { page.setFocusOnClick(!page.focusOnClick()); });
 
   // Whether to draw only the selection's neighbourhood: when the selection is focused, unless the path is shown,
   // which is found in the whole graph.
-  function focusing() { return (vb.focused() || vb.focusFavourites()) && !state.path; }
+  function focusing() { return (page.focused() || page.focusFavourites()) && !state.path; }
 
   // What decides the focused graph, so it's drawn again only when that changes.
   function focusKey() { return keyOfFocus(focusState()); }
@@ -1543,10 +1544,10 @@
   // What decides the focused graph, or null when nothing is focused: as a saved view keeps it with a focused layout.
   function focusState() {
     if (!focusing()) return null;
-    var on = vb.focused();
+    var on = page.focused();
     return {
-      selection: on ? vb.selection() : null, direction: on ? state.direction : null,
-      favourites: vb.focusFavourites() ? vb.favourites().slice() : [], reach: settings.reach
+      selection: on ? page.selection() : null, direction: on ? state.direction : null,
+      favourites: page.focusFavourites() ? page.favourites().slice() : [], reach: settings.reach
     };
   }
 
@@ -1605,7 +1606,7 @@
 
   function applySetting(control, value) {
     settings[control.key] = value;
-    saveSetting("vbadoc-graph-settings", JSON.stringify(settings));
+    saveSetting(page.tool + "-graph-settings", JSON.stringify(settings));
     if (!graph) return;
     if (control.relight) {
       if (focusKey() !== state.focusKey) render(); else highlight();
@@ -1649,7 +1650,7 @@
       render(true);
     } else if (id === "graph-reset-settings") {
       settings = Object.assign({}, DEFAULTS);
-      saveSetting("vbadoc-graph-settings", JSON.stringify(settings));
+      saveSetting(page.tool + "-graph-settings", JSON.stringify(settings));
       buildSettingsMenu();
       if (graph) render(true);
     }
@@ -1663,33 +1664,33 @@
   var needsDrawing = false; // the filter changed while the graph was hidden
 
   function drawIfVisible() {
-    if (vb.activeView() !== "graph") return;
+    if (page.activeView() !== "graph") return;
     if (started && needsDrawing) { needsDrawing = false; render(); return; }
     if (started) { highlight(); return; } // catch up with a selection made in the other view
     started = true;
     render();
   }
 
-  vb.onSelectionChange(function () {
+  page.onSelectionChange(function () {
     if (!started) return;
     if (focusKey() !== state.focusKey) render(); else highlight();
   });
   // The Focus button shows the page's setting even before the graph is first drawn.
-  focusButton.setAttribute("aria-pressed", vb.focusOnClick() ? "true" : "false");
-  focusButton.disabled = vb.locked();
+  focusButton.setAttribute("aria-pressed", page.focusOnClick() ? "true" : "false");
+  focusButton.disabled = page.locked();
   // Locking or unlocking changes the filter too, so the graph is drawn through onShownChange, which follows.
-  vb.onLockChange(function () { focusButton.disabled = vb.locked(); });
-  vb.onFocusChange(function () {
-    if (!started) { focusButton.setAttribute("aria-pressed", vb.focusOnClick() ? "true" : "false"); return; }
+  page.onLockChange(function () { focusButton.disabled = page.locked(); });
+  page.onFocusChange(function () {
+    if (!started) { focusButton.setAttribute("aria-pressed", page.focusOnClick() ? "true" : "false"); return; }
     if (focusKey() !== state.focusKey) render(); else updateToolbar();
   });
-  vb.onViewChange(drawIfVisible);
+  page.onViewChange(drawIfVisible);
   // The explorer's filter, hiding and Show… choices change what's drawn.
-  function redrawForShown() { if (started && vb.activeView() === "graph") render(); else if (started) needsDrawing = true; }
-  vb.onShownChange(redrawForShown);
-  vb.onChoicesChange(redrawForShown);
+  function redrawForShown() { if (started && page.activeView() === "graph") render(); else if (started) needsDrawing = true; }
+  page.onShownChange(redrawForShown);
+  page.onChoicesChange(redrawForShown);
 
-  vb.onFavouritesChange(function () {
+  page.onFavouritesChange(function () {
     if (!started) return;
     updateFavourites();
     highlight();
@@ -1706,7 +1707,7 @@
       var width = view.clientWidth;
       var height = view.clientHeight;
       if (width === 0 || height === 0) { lastSize = null; return; }
-      if (started && lastSize && !vb.panelFollowing()) {
+      if (started && lastSize && !page.panelFollowing()) {
         var k = d3.zoomTransform(svg.node()).k;
         svg.call(zoom.translateBy, (width - lastSize.width) / 2 / k, (height - lastSize.height) / 2 / k);
       }
@@ -1714,7 +1715,7 @@
     }).observe(view);
   }
 
-  window.vbadocGraph = {
+  window.codeViewsGraph = {
     level: function () { return state.level; },
     nodeCount: function () { return graph ? graph.nodes.length : 0; },
     edgeCount: function () { return graph ? graph.edges.length : 0; },

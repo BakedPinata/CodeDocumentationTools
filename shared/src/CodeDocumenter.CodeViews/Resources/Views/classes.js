@@ -1,27 +1,39 @@
 // classes.js: the class diagram view, drawn with d3.
 //
-// One box per module: a stereotype for its kind and its name, then its attributes and its methods, as the C# side
+// One box per unit: a stereotype for its kind and its name, then its attributes and its methods, as the C# side
 // (ClassDiagram) lists them. Relationships come from the page data: realisation (implements), association (held
-// in a module-level variable, labelled with the variable) and dependency (any other use). All text is set with
+// in a unit-level variable, labelled with the variable) and dependency (any other use). All text is set with
 // textContent, so no name or value can be read as markup.
 //
 // The layout is worked out before anything is drawn, so the same project and Show… choices always give the same
-// first picture. Each module sits in a layer above the modules it uses, so arrows point down and modules used
-// almost everywhere sink to the bottom; modules that use each other in a circle share a layer. Within a layer,
-// modules are ordered to keep related boxes near each other, and a very wide layer wraps onto more rows. Modules
+// first picture. Each unit sits in a layer above the units it uses, so arrows point down and units used
+// almost everywhere sink to the bottom; units that use each other in a circle share a layer. Within a layer,
+// units are ordered to keep related boxes near each other, and a very wide layer wraps onto more rows. Units
 // with no relationships are set out in a grid underneath.
 //
-// Boxes can then be dragged. Where they're dropped is remembered per workbook and Show… choice, until
+// Boxes can then be dragged. Where they're dropped is remembered per source and Show… choice, until
 // "Re-run layout". When the selection is focused (the page's focus on click), the smaller diagram starts from its own
 // layout, and moves in it are remembered while the page is open, for that focus.
 (function () {
   "use strict";
 
-  var vb = window.vbadoc;
-  var data = vb.data;
+  var page = window.codeViews;
+  var data = page.data;
 
-  var STEREOTYPES = { standard: "module", "class": "class", form: "form", document: "document" };
-  function stereotype(module) { return module.isInterface ? "interface" : STEREOTYPES[module.kind] || "class"; }
+  var language = page.language;
+
+  // Each relationship's arrowhead: a hollow triangle, or an open one.
+  language.classRelationships.forEach(function (r) {
+    d3.select("#classes-svg defs").append("marker").attr("id", "classes-arrow-" + r.id).attr("viewBox", "0 -6 12 12")
+      .attr("refX", 11).attr("refY", 0).attr("markerWidth", 12).attr("markerHeight", 12).attr("markerUnits", "userSpaceOnUse")
+      .attr("orient", "auto").append("path").attr("d", r.arrow === "triangle" ? "M0,-5.5 L11,0 L0,5.5 Z" : "M1,-4.5 L11,0 L1,4.5");
+  });
+  var membersButton = document.getElementById("classes-members");
+  membersButton.textContent = page.capital(language.member.many);
+  membersButton.title = "List each " + language.unit.one + "'s " + language.member.many + " in its box";
+
+  // What a box says above its name, and what kind it's drawn as, are its unit's kind's (the language's).
+  function stereotype(unit) { return page.unitKind(unit).stereotype; }
 
   // ---- Settings (remembered per browser; storage can fail on file://) ----
 
@@ -33,26 +45,31 @@
   }
 
   var state = {
-    focusIds: null,     // the modules focus shows, or null when it shows every module
+    focusIds: null,     // the units focus shows, or null when it shows every unit
     focusKey: null,     // what decided focusIds
     resetView: true,    // the next drawing starts from the starting view rather than keeping the current one
-    members: loadSetting("vbadoc-classes-members", true), // whether boxes list their members
+    members: loadSetting(page.tool + "-classes-members", true), // whether boxes list their members
     legend: new Set()   // legend items clicked to light up what they stand for (not remembered)
   };
 
-  // Moved boxes, per workbook (every page opened from disk shares one localStorage), per Members switch and per set
+  // Moved boxes, per source (every page opened from disk shares one localStorage), per Members switch and per set
   // of Show… choices, since those change the boxes and their sizes, and so the layout.
   function positionsKey() {
-    return "vbadoc-classes-positions|" + data.project.title + "|m" + (state.members ? 1 : 0) + "|" + vb.choicesKey();
+    return page.tool + "-classes-positions|" + data.source.title + "|m" + (state.members ? 1 : 0) + "|" + page.choicesKey();
   }
 
   // Which Show… choice each relationship follows.
-  var RELATIONSHIP_CHOICES = { realization: "line:implements", association: "line:holds", dependency: "line:uses" };
+  var RELATIONSHIP_CHOICES = {};
+  var EDGE_VERBS = {};
+  language.classRelationships.forEach(function (r) {
+    RELATIONSHIP_CHOICES[r.id] = r.choice;
+    EDGE_VERBS[r.id] = " " + r.verb + " ";
+  });
 
   // ---- Sizes (px). Text is measured in the font it's drawn in, so boxes fit their lines. ----
 
   var FONT_SIZE = 12;      // member lines
-  var NAME_SIZE = 13;      // the module's name
+  var NAME_SIZE = 13;      // the unit's name
   var STEREO_SIZE = 11;    // «class» and the like
   var LINE_HEIGHT = 17;
   var PAD_X = 10;          // between the box's sides and its text
@@ -97,14 +114,14 @@
   var focusButton = document.getElementById("classes-focus");
   var membersButton = document.getElementById("classes-members");
 
-  var membersByModule = new Map();
+  var membersByUnit = new Map();
   data.members.forEach(function (m) {
     if (!m.class) return;
-    if (!membersByModule.has(m.module)) membersByModule.set(m.module, []);
-    membersByModule.get(m.module).push(m);
+    if (!membersByUnit.has(m.unit)) membersByUnit.set(m.unit, []);
+    membersByUnit.get(m.unit).push(m);
   });
-  var moduleIndex = new Map();
-  data.modules.forEach(function (m, i) { moduleIndex.set(m.id, i); });
+  var unitIndex = new Map();
+  data.units.forEach(function (m, i) { unitIndex.set(m.id, i); });
 
   // A member's line as shown: an attribute's text, or a method's name, parameters and return type.
   function lineText(line) {
@@ -114,17 +131,17 @@
   // ---- What's shown ----
 
   function shownEdges() {
-    return data.classEdges.filter(function (e) { return e.from !== e.to && vb.choice(RELATIONSHIP_CHOICES[e.kind]); });
+    return data.classEdges.filter(function (e) { return e.from !== e.to && page.choice(RELATIONSHIP_CHOICES[e.kind]); });
   }
 
-  // The modules the views show (kept by the Show… choices, in the explorer's filter and not hidden), and of those, when
+  // The units the views show (kept by the Show… choices, in the explorer's filter and not hidden), and of those, when
   // focused, the ones focus shows. Without Items with no connections, a box with no relationship to another is left
   // out, unless it's ticked.
-  function shownModules() {
-    var ids = data.modules.filter(function (m) {
-      return vb.kept(m.id) && vb.shows(m.id) && (!state.focusIds || state.focusIds.has(m.id));
+  function shownUnits() {
+    var ids = data.units.filter(function (m) {
+      return page.kept(m.id) && page.shows(m.id) && (!state.focusIds || state.focusIds.has(m.id));
     }).map(function (m) { return m.id; });
-    if (vb.choice("unconnected") || vb.filterActive()) return ids;
+    if (page.choice("unconnected") || page.filterActive()) return ids;
     var shown = new Set(ids);
     var connected = new Set();
     shownEdges().forEach(function (e) {
@@ -133,12 +150,12 @@
     return ids.filter(function (id) { return connected.has(id); });
   }
 
-  // What focus shows: the focused selection's module and every module a shown relationship links it with, and with
-  // Focus on favourites, the favourites' modules and the modules they use. null when nothing is focused.
-  function focusModules() {
-    var selected = vb.focused() ? selectedModule() : null;
-    var favourites = vb.focusFavourites()
-      ? new Set(vb.favourites().map(function (id) { var member = vb.membersById.get(id); return member ? member.module : id; }))
+  // What focus shows: the focused selection's unit and every unit a shown relationship links it with, and with
+  // Focus on favourites, the favourites' units and the units they use. null when nothing is focused.
+  function focusUnits() {
+    var selected = page.focused() ? selectedUnit() : null;
+    var favourites = page.focusFavourites()
+      ? new Set(page.favourites().map(function (id) { var member = page.membersById.get(id); return member ? member.unit : id; }))
       : new Set();
     if (!selected && favourites.size === 0) return null;
     var ids = new Set(favourites);
@@ -155,17 +172,17 @@
   // Where boxes were moved is kept: in the browser for the whole diagram, and while the page is open (and in saved
   // views) for a filtered or focused one, since each filter and each focus makes a different diagram.
   var filteredMoves = new Map(); // positionsKey() and the filter -> { id: [x, y] }
-  var focusedMoves = new Map();  // the same, and the modules focus shows -> { id: [x, y] }
+  var focusedMoves = new Map();  // the same, and the units focus shows -> { id: [x, y] }
 
-  function filteredKey() { return positionsKey() + "|" + vb.filterKey(); }
+  function filteredKey() { return positionsKey() + "|" + page.filterKey(); }
 
   function focusedKey(focusKey) { return filteredKey() + "|" + focusKey; }
 
   // The unfocused diagram's moves.
-  function loadMoves() { return vb.filterActive() ? filteredMoves.get(filteredKey()) || {} : loadJson(positionsKey()) || {}; }
+  function loadMoves() { return page.filterActive() ? filteredMoves.get(filteredKey()) || {} : loadJson(positionsKey()) || {}; }
 
   function storeMoves(moved) {
-    if (vb.filterActive()) filteredMoves.set(filteredKey(), moved);
+    if (page.filterActive()) filteredMoves.set(filteredKey(), moved);
     else saveJson(positionsKey(), Object.keys(moved).length > 0 ? moved : null);
   }
 
@@ -177,7 +194,7 @@
   }
 
   // A saved view keeps the Members switch, the legend's picks, where boxes were moved in its diagram, and, when it's
-  // focused and boxes were moved in that, those too, with the modules focus showed.
+  // focused and boxes were moved in that, those too, with the units focus showed.
   function cleanMoves(raw) {
     var moved = {};
     if (raw && typeof raw === "object") {
@@ -189,26 +206,26 @@
     return moved;
   }
 
-  vb.viewPart("classes", {
+  page.viewPart("classes", {
     save: function () {
       var value = { members: state.members, positions: loadMoves() };
       if (state.legend.size > 0) value.legend = Array.from(state.legend).sort();
       // What focus shows now, which may not be drawn yet.
-      var focus = focusModules();
+      var focus = focusUnits();
       var moved = focus ? focusedMoves.get(focusedKey(keyOf(focus))) : null;
-      if (moved && Object.keys(moved).length > 0) value.focused = { modules: Array.from(focus).sort(), positions: moved };
+      if (moved && Object.keys(moved).length > 0) value.focused = { units: Array.from(focus).sort(), positions: moved };
       return value;
     },
     apply: function (value) {
       value = value && typeof value === "object" ? value : {};
       state.members = value.members !== false;
-      saveSetting("vbadoc-classes-members", state.members);
+      saveSetting(page.tool + "-classes-members", state.members);
       storeMoves(cleanMoves(value.positions));
       focusedMoves.clear();
       var focused = value.focused && typeof value.focused === "object" ? value.focused : null;
-      if (focused && Array.isArray(focused.modules)) {
-        var modules = focused.modules.filter(function (id) { return typeof id === "string"; });
-        focusedMoves.set(focusedKey(keyOf(modules)), cleanMoves(focused.positions));
+      if (focused && Array.isArray(focused.units || focused.modules)) { // "modules" in a view saved before step M3
+        var units = (focused.units || focused.modules).filter(function (id) { return typeof id === "string"; });
+        focusedMoves.set(focusedKey(keyOf(units)), cleanMoves(focused.positions));
       }
       state.legend = new Set(Array.isArray(value.legend) ? value.legend.filter(function (key) { return typeof key === "string"; }) : []);
       skipCarry = true;
@@ -216,22 +233,22 @@
     },
     ids: function (value) {
       var focused = value && value.focused && typeof value.focused === "object" ? value.focused : {};
-      var modules = Array.isArray(focused.modules) ? focused.modules.filter(function (id) { return typeof id === "string"; }) : [];
-      return Object.keys(cleanMoves(value && value.positions)).concat(modules, Object.keys(cleanMoves(focused.positions)));
+      var units = Array.isArray(focused.units || focused.modules) ? (focused.units || focused.modules).filter(function (id) { return typeof id === "string"; }) : [];
+      return Object.keys(cleanMoves(value && value.positions)).concat(units, Object.keys(cleanMoves(focused.positions)));
     }
   });
 
   // A box's contents and size. Lines keep their member id, for clicks and highlighting.
   function buildBox(id) {
-    var module = vb.modulesById.get(id);
-    var lines = !state.members ? [] : (membersByModule.get(id) || []).filter(function (m) {
-      return vb.kept(m.id) && !vb.isHidden(m.id);
+    var unit = page.unitsById.get(id);
+    var lines = !state.members ? [] : (membersByUnit.get(id) || []).filter(function (m) {
+      return page.kept(m.id) && !page.isHidden(m.id);
     }).map(function (m) { return { member: m.id, text: lineText(m.class), method: m.class.parameters != null }; });
     var box = {
       id: id,
-      index: moduleIndex.get(id),
-      stereotype: "«" + stereotype(module) + "»",
-      kind: stereotype(module),
+      index: unitIndex.get(id),
+      stereotype: "«" + stereotype(unit) + "»",
+      kind: unit.kind,
       attributes: lines.filter(function (l) { return !l.method; }),
       methods: lines.filter(function (l) { return l.method; })
     };
@@ -255,7 +272,7 @@
     var loose = boxes.filter(function (b) { return uses.get(b.id).length + usedBy.get(b.id).length === 0; });
     var byId = new Map(boxes.map(function (b) { return [b.id, b]; }));
 
-    // 1. Layers. Modules that use each other in a circle (a strongly connected group) share a layer, as queries
+    // 1. Layers. Units that use each other in a circle (a strongly connected group) share a layer, as queries
     //    in a circular dependency share a column in pqdoc. Between groups the uses can't go round in a circle, so
     //    each group goes one layer below the lowest group that uses it. Then a group that nothing uses moves down
     //    to just above the highest group it uses, so its edges stay short.
@@ -278,7 +295,7 @@
     });
 
     var layers = [], layerOf = new Map();
-    connected.forEach(function (b) { // in module order, which the ordering below starts from
+    connected.forEach(function (b) { // in unit order, which the ordering below starts from
       var l = groupLayer[groupOf.get(b.id)];
       (layers[l] = layers[l] || []).push(b.id);
     });
@@ -346,7 +363,7 @@
       });
     }
 
-    // 5. Modules with no relationships: a grid under everything else, in module order.
+    // 5. Units with no relationships: a grid under everything else, in unit order.
     if (loose.length) {
       var top = rows.length ? y + LAYER_GAP : 0;
       wrap(loose).forEach(function (row) {
@@ -357,8 +374,8 @@
     }
   }
 
-  // Tarjan's algorithm: groups of modules that can each reach all the others by following uses. Returns the groups
-  // with users before what they use, each group's modules in module order.
+  // Tarjan's algorithm: groups of units that can each reach all the others by following uses. Returns the groups
+  // with users before what they use, each group's units in unit order.
   function stronglyConnected(ids, uses) {
     var counter = 0, stack = [], onStack = new Set(), indexOf = new Map(), low = new Map(), found = [];
     function connect(v) {
@@ -371,7 +388,7 @@
       if (low.get(v) !== indexOf.get(v)) return;
       var group = [], w;
       do { w = stack.pop(); onStack.delete(w); group.push(w); } while (w !== v);
-      found.push(group.sort(function (a, b) { return moduleIndex.get(a) - moduleIndex.get(b); }));
+      found.push(group.sort(function (a, b) { return unitIndex.get(a) - unitIndex.get(b); }));
     }
     ids.forEach(function (v) { if (!indexOf.has(v)) connect(v); });
     return found.reverse(); // Tarjan finds a group only after everything it uses
@@ -441,7 +458,6 @@
     });
   }
 
-  var EDGE_VERBS = { realization: " implements ", association: " holds a ", dependency: " uses " };
 
   // ---- Drawing ----
 
@@ -453,12 +469,12 @@
   // them goes to their right. A saved view's positions come before what's on screen.
   var skipCarry = false;
 
-  vb.lockSource("classes", function () {
+  page.lockSource("classes", function () {
     return drawn && !stale ? { ids: drawn.boxes.map(function (b) { return b.id; }), alone: [] } : null;
   });
 
   function carriedPositions() {
-    var carry = vb.locked() && drawn && !skipCarry;
+    var carry = page.locked() && drawn && !skipCarry;
     skipCarry = false;
     if (!carry) return null;
     var positions = {};
@@ -469,9 +485,9 @@
   function render() {
     stale = false;
     var carried = carriedPositions();
-    state.focusIds = focusModules();
+    state.focusIds = focusUnits();
     state.focusKey = keyOf(state.focusIds);
-    var boxes = shownModules().map(buildBox);
+    var boxes = shownUnits().map(buildBox);
     var byId = new Map(boxes.map(function (b) { return [b.id, b]; }));
     var edges = shownEdges().filter(function (e) { return byId.has(e.from) && byId.has(e.to); }).map(function (e) {
       return { from: e.from, to: e.to, kind: e.kind, label: e.label, source: byId.get(e.from), target: byId.get(e.to) };
@@ -501,14 +517,14 @@
     drawEdges();
     if (state.resetView) { state.resetView = false; startingView(); }
     highlight();
-    if (!vb.locked()) bringSelectionIntoView(false);
+    if (!page.locked()) bringSelectionIntoView(false);
   }
 
   function drawBoxes() {
     var groups = boxLayer.selectAll("g.class-box").data(drawn.boxes, function (b) { return b.id; })
       .join("g")
       .attr("class", function (b) { return "class-box kind-" + b.kind; })
-      .attr("data-module", function (b) { return b.id; })
+      .attr("data-unit", function (b) { return b.id; })
       .attr("transform", function (b) { return "translate(" + b.x + "," + b.y + ")"; })
       .call(dragBehaviour());
     groups.each(function (b) { fillBox(d3.select(this), b); });
@@ -663,18 +679,18 @@
 
   // ---- Selection ----
 
-  function selectedModule() {
-    var selection = vb.selection();
+  function selectedUnit() {
+    var selection = page.selection();
     if (!selection) return null;
-    var member = vb.membersById.get(selection);
-    return member ? member.module : (vb.modulesById.has(selection) ? selection : null);
+    var member = page.membersById.get(selection);
+    return member ? member.unit : (page.unitsById.has(selection) ? selection : null);
   }
 
   function highlight() {
     if (!drawn) return;
-    var selection = vb.selection();
-    var moduleId = selectedModule();
-    boxLayer.selectAll("g.class-box").classed("selected", function (b) { return b.id === moduleId; });
+    var selection = page.selection();
+    var unitId = selectedUnit();
+    boxLayer.selectAll("g.class-box").classed("selected", function (b) { return b.id === unitId; });
     boxLayer.selectAll("g.class-line").classed("selected-line", function () { return isSameMember(this.getAttribute("data-member"), selection); });
     applyLegend();
     updateToolbar();
@@ -683,15 +699,15 @@
   // A property's line stands for all its accessors, so selecting the Let shows the line too.
   function isSameMember(lineId, selection) {
     if (!selection || lineId === selection) return lineId === selection;
-    var a = vb.membersById.get(lineId);
-    var b = vb.membersById.get(selection);
-    return !!a && !!b && a.module === b.module && a.name.toLowerCase() === b.name.toLowerCase() &&
+    var a = page.membersById.get(lineId);
+    var b = page.membersById.get(selection);
+    return !!a && !!b && a.unit === b.unit && a.name.toLowerCase() === b.name.toLowerCase() &&
       /^property/.test(a.kind) && /^property/.test(b.kind);
   }
 
   // Moves the selected box into view if any of it is out of sight: all of it, or its top if it's taller than the view.
   function bringSelectionIntoView(animate) {
-    var box = drawn && drawn.byId.get(selectedModule());
+    var box = drawn && drawn.byId.get(selectedUnit());
     if (!box) return;
     var t = d3.zoomTransform(svg.node()), r = room();
     var height = Math.min(box.height, r.height / t.k);
@@ -709,8 +725,8 @@
     var box = event.target.closest("g.class-box");
     clickedHere = true;
     var other = event.ctrlKey || event.metaKey;
-    if (line) vb.select(line.getAttribute("data-member"), other);
-    else if (box) vb.select(box.getAttribute("data-module"), other);
+    if (line) page.select(line.getAttribute("data-member"), other);
+    else if (box) page.select(box.getAttribute("data-unit"), other);
     else if (event.target === svg.node()) clearHighlights();
     clickedHere = false;
   });
@@ -718,15 +734,15 @@
   // Clicking the background, or Escape, clears the legend's highlight and the selection, as in the graph.
   function clearHighlights() {
     // Locked, a click on the background only clears the selection: the legend's picks are part of what's shown.
-    if (!vb.locked()) state.legend.clear();
-    vb.select(null);
+    if (!page.locked()) state.legend.clear();
+    page.select(null);
     highlight();
   }
 
-  // Escape also closes the drop-downs (see page.js), so it only clears when none of them is open, and not while typing
-  // in a field. This runs in the capture phase, before page.js closes them.
+  // Escape also closes the drop-downs (see shell.js), so it only clears when none of them is open, and not while typing
+  // in a field. This runs in the capture phase, before shell.js closes them.
   document.addEventListener("keydown", function (event) {
-    if (event.key !== "Escape" || vb.activeView() !== "classes" || !drawn) return;
+    if (event.key !== "Escape" || page.activeView() !== "classes" || !drawn) return;
     if (document.querySelector("details.dropdown[open]")) return;
     if (event.target.closest && event.target.closest("input, select, textarea")) return;
     clearHighlights();
@@ -735,13 +751,13 @@
   // ---- Toolbar ----
 
   function updateToolbar() {
-    focusButton.setAttribute("aria-pressed", vb.focusOnClick() ? "true" : "false");
-    focusButton.disabled = vb.locked();
+    focusButton.setAttribute("aria-pressed", page.focusOnClick() ? "true" : "false");
+    focusButton.disabled = page.locked();
     membersButton.setAttribute("aria-pressed", state.members ? "true" : "false");
   }
 
   // Focus is the page's Focus on click setting, shared by every view; turning it on focuses on the selection now too.
-  focusButton.addEventListener("click", function () { vb.setFocusOnClick(!vb.focusOnClick()); });
+  focusButton.addEventListener("click", function () { page.setFocusOnClick(!page.focusOnClick()); });
 
   document.getElementById("classes-relayout").addEventListener("click", function () {
     storeDrawnMoves({});
@@ -751,7 +767,7 @@
 
   membersButton.addEventListener("click", function () {
     state.members = !state.members;
-    saveSetting("vbadoc-classes-members", state.members);
+    saveSetting(page.tool + "-classes-members", state.members);
     updateToolbar();
     render();
   });
@@ -762,10 +778,8 @@
   // those boxes and the lines between them, and a relationship lights those lines and the boxes at their ends. Entries
   // add to each other, and Clear, the background or Escape turns them off.
 
-  var BOX_KINDS = [
-    ["module", "Standard module"], ["class", "Class"], ["interface", "Interface"], ["form", "UserForm"], ["document", "Document module"]
-  ];
-  var RELATIONSHIPS = [["realization", "Implements"], ["association", "Holds in a variable (labelled)"], ["dependency", "Uses"]];
+  var BOX_KINDS = language.unitKinds.map(function (k) { return [k.id, page.escapeHtml(k.label)]; });
+  var RELATIONSHIPS = language.classRelationships.map(function (r) { return [r.id, page.escapeHtml(r.label)]; });
 
   function boxIcon(kind) {
     return "<svg width=\"18\" height=\"14\" viewBox=\"0 0 18 14\" aria-hidden=\"true\"><g class=\"class-box kind-" + kind + "\">" +
@@ -788,7 +802,7 @@
     " <button type=\"button\" class=\"link-button\" id=\"classes-legend-clear\" hidden>Clear</button></p>" +
     "<h3>Boxes</h3><ul>" + BOX_KINDS.map(function (k) { return legendItem(boxIcon(k[0]), k[1], "box:" + k[0]); }).join("") + "</ul>" +
     "<h3>Relationships</h3><ul>" + RELATIONSHIPS.map(function (r) { return legendItem(arrow(r[0]), r[1], "edge:" + r[0]); }).join("") + "</ul>" +
-    "<p class=\"muted\" style=\"margin:4px 0 0\">+ public, − private, ~ friend. Click a box or a line to see its source; drag a box to move it.</p>";
+    "<p class=\"muted\" style=\"margin:4px 0 0\">" + page.escapeHtml(language.classMarks ? language.classMarks + " " : "") + "Click a box or a line to see its source; drag a box to move it.</p>";
 
   // What the clicked entries light up, or null when none is clicked.
   function legendLit() {
@@ -830,42 +844,42 @@
   // ---- Wiring to the rest of the page ----
 
   function drawIfNeeded() {
-    if (vb.activeView() !== "classes") return;
-    if (stale || !drawn) render(); else { highlight(); if (!vb.locked()) bringSelectionIntoView(false); }
+    if (page.activeView() !== "classes") return;
+    if (stale || !drawn) render(); else { highlight(); if (!page.locked()) bringSelectionIntoView(false); }
   }
 
-  vb.onViewChange(drawIfNeeded);
+  page.onViewChange(drawIfNeeded);
 
-  // A different module to focus on, or none, is a different diagram: it starts from its starting view.
+  // A different unit to focus on, or none, is a different diagram: it starts from its starting view.
   function refocusIfNeeded() {
-    if (keyOf(focusModules()) === state.focusKey) return false;
+    if (keyOf(focusUnits()) === state.focusKey) return false;
     state.resetView = true;
-    if (vb.activeView() === "classes") render(); else stale = true;
+    if (page.activeView() === "classes") render(); else stale = true;
     return true;
   }
 
-  vb.onFocusChange(function () { if (!refocusIfNeeded()) updateToolbar(); });
+  page.onFocusChange(function () { if (!refocusIfNeeded()) updateToolbar(); });
   // Locking or unlocking changes the filter too, so the diagram is drawn through onShownChange, which follows.
-  vb.onLockChange(updateToolbar);
+  page.onLockChange(updateToolbar);
 
   // A different filter, different items hidden or different Show… choices make a different diagram.
   function redrawForShown() {
     state.resetView = true;
-    if (vb.activeView() === "classes") render(); else stale = true;
+    if (page.activeView() === "classes") render(); else stale = true;
   }
-  vb.onShownChange(redrawForShown);
-  vb.onChoicesChange(redrawForShown);
+  page.onShownChange(redrawForShown);
+  page.onChoicesChange(redrawForShown);
 
-  vb.onSelectionChange(function () {
+  page.onSelectionChange(function () {
     if (refocusIfNeeded()) return;
     highlight();
     // A box clicked here is already in view, unless the side panel has just opened over it.
-    if ((!clickedHere || vb.panelFollowing()) && vb.activeView() === "classes" && !vb.locked()) bringSelectionIntoView(true);
+    if ((!clickedHere || page.panelFollowing()) && page.activeView() === "classes" && !page.locked()) bringSelectionIntoView(true);
   });
 
   // Colours come from the page's CSS variables, so a theme change needs no redrawing.
 
-  window.vbadocClasses = {
+  window.codeViewsClasses = {
     // For tests: whether a drawing is on screen, whether the view is still sliding or zooming into place, the
     // zoom, and a box's top left corner in diagram units.
     drawn: function () { return !!drawn && !stale; },

@@ -24,20 +24,18 @@
 (function () {
   "use strict";
 
-  var vb = window.vbadoc;
-  var data = vb.data;
-  var escapeHtml = vb.escapeHtml;
+  var page = window.codeViews;
+  var data = page.data;
+  var escapeHtml = page.escapeHtml;
 
-  var CALLABLE = { sub: true, "function": true, propertyGet: true, propertyLet: true, propertySet: true, event: true, declare: true };
-  var KIND_LABELS = {
-    sub: "Sub", "function": "Function", propertyGet: "Property Get", propertyLet: "Property Let", propertySet: "Property Set",
-    event: "Event", declare: "Declare"
-  };
-  var ENTRY_GROUPS = [
-    ["macro", "Macros"],
-    ["eventHandler", "Event handlers"],
-    ["worksheetFunction", "Worksheet functions"]
-  ];
+  // What can be called, what's called from outside the code, and what a call can't follow are the language's.
+  var language = page.language;
+  var CALLABLE = language.callable; // its word for what's called: { one, many }
+  var ENTRY_GROUPS = (language.entryGroups || []).map(function (g) { return [g.id, g.label]; });
+  var entryOfRole = {};
+  (language.roles || []).forEach(function (r) { if (r.entry) entryOfRole[r.id] = r.entry; });
+  function kindOfMember(m) { return page.memberKind(m.kind) || {}; }
+  if (language.callsNote) document.getElementById("calls-note-more").textContent = " " + language.callsNote;
 
   function loadSetting(key, fallback) { try { return localStorage.getItem(key) || fallback; } catch (e) { return fallback; } }
   function saveSetting(key, value) { try { localStorage.setItem(key, value); } catch (e) { /* not remembered */ } }
@@ -70,24 +68,30 @@
   function conditionWord(block) { return CONDITION_WORDS[block.kind] || "condition"; }
   function cut(text, length) { return text.length > length ? text.slice(0, length - 1) + "…" : text; }
 
-  // Interface members and their implementations, events and their WithEvents handlers.
-  var implementationsOf = new Map();
-  var implementedMember = new Map();
-  var handlersOf = new Map();
-  var handledEvent = new Map();
+  // A call to a member can run others the code doesn't name: an interface's member runs what implements it, an event
+  // what handles it. The language says which relationships do that (their dispatch), and how each is worded.
+  var reachedFrom = new Map(); // member -> [{ id, relation }]: what a call to it can run
+  var reaches = new Map();     // member -> [{ id, relation }]: the same, turned round
   function add(map, key, value) { if (!map.has(key)) map.set(key, []); map.get(key).push(value); }
-  data.memberEdges.forEach(function (e) {
-    var from = vb.membersById.get(e.from);
-    var to = vb.membersById.get(e.to);
-    if (!from || !to) return;
-    if (e.kind === "implements") { add(implementationsOf, e.to, e.from); implementedMember.set(e.from, e.to); }
-    if (e.kind === "events" && from.role === "withEventsHandler" && to.kind === "event") { add(handlersOf, e.to, e.from); handledEvent.set(e.from, e.to); }
+  language.relationships.forEach(function (relationship) {
+    var dispatch = relationship.dispatch;
+    if (!dispatch) return;
+    data.memberEdges.forEach(function (e) {
+      if (e.kind !== relationship.id) return;
+      var from = page.membersById.get(e.from);
+      var to = page.membersById.get(e.to);
+      if (!from || !to) return;
+      if (dispatch.fromRoles && dispatch.fromRoles.indexOf(from.role) < 0) return;
+      if (dispatch.toKinds && dispatch.toKinds.indexOf(to.kind) < 0) return;
+      add(reachedFrom, e.to, { id: e.from, relation: dispatch.down });
+      add(reaches, e.from, { id: e.to, relation: dispatch.up });
+    });
   });
 
-  function isProcedure(id) { var m = vb.membersById.get(id); return !!m && !!CALLABLE[m.kind]; }
-  function nameOf(id) { var m = vb.membersById.get(id); return m ? m.module + "." + m.name : id; }
-  function kindOf(id) { var m = vb.membersById.get(id); return m ? KIND_LABELS[m.kind] || m.kind : ""; }
-  function shown(id) { return vb.kept(id) && vb.shows(id); }
+  function isProcedure(id) { var m = page.membersById.get(id); return !!m && !!kindOfMember(m).callable; }
+  function nameOf(id) { var m = page.membersById.get(id); return m ? m.unit + "." + m.name : id; }
+  function kindOf(id) { var m = page.membersById.get(id); return m ? page.memberKindLabel(m.kind) : ""; }
+  function shown(id) { return page.kept(id) && page.shows(id); }
   function byName(a, b) { var x = nameOf(a).toLowerCase(), y = nameOf(b).toLowerCase(); return x < y ? -1 : x > y ? 1 : 0; }
 
   // A node's children, turned the way the tree is: { rows, leftOut }. Each row is { id, line, lineIn, relation, within },
@@ -98,8 +102,14 @@
     var leftOut = 0;
     function push(row) { if (row.id && !shown(row.id)) leftOut++; else rows.push(row); }
     if (direction === "calls") {
-      (implementationsOf.get(id) || []).slice().sort(byName).forEach(function (impl) { push({ id: impl, relation: "implemented by" }); });
-      (handlersOf.get(id) || []).slice().sort(byName).forEach(function (handler) { push({ id: handler, relation: "handled by" }); });
+      // In the relationships' order, each by name.
+      var reached = reachedFrom.get(id) || [];
+      var relations = [];
+      reached.forEach(function (r) { if (relations.indexOf(r.relation) < 0) relations.push(r.relation); });
+      relations.forEach(function (relation) {
+        reached.filter(function (r) { return r.relation === relation; }).map(function (r) { return r.id; }).sort(byName)
+          .forEach(function (other) { push({ id: other, relation: relation }); });
+      });
       // Each call goes in its block's row, made when its first call comes, so blocks are in the order of the code and a
       // block with no calls shown isn't there at all.
       var blocks = blocksOf.get(id) || [];
@@ -115,15 +125,14 @@
       }
       (callsFrom.get(id) || []).forEach(function (c) {
         if (c.to && !shown(c.to)) { leftOut++; return; }
-        var row = c.to ? { id: c.to, line: c.line, lineIn: id } : { lateBound: c.lateBound, line: c.line, lineIn: id };
+        var row = c.to ? { id: c.to, line: c.line, lineIn: id } : { lateBound: c.unfollowed, line: c.line, lineIn: id };
         // A call in a block's own statement goes in the block's row, which this makes if it's the block's first.
         var own = c.condition !== null && c.condition !== undefined ? blocks[c.condition] : null;
         if (own) row.condition = conditionWord(own);
         rowsOf(own ? own.id : c.block).push(row);
       });
     } else {
-      if (implementedMember.has(id)) push({ id: implementedMember.get(id), relation: "implements" });
-      if (handledEvent.has(id)) push({ id: handledEvent.get(id), relation: "handles" });
+      (reaches.get(id) || []).forEach(function (r) { push({ id: r.id, relation: r.relation }); });
       (callsTo.get(id) || []).forEach(function (c) {
         var blocks = blocksOf.get(c.from) || [];
         var own = c.condition !== null && c.condition !== undefined ? blocks[c.condition] : null;
@@ -135,8 +144,8 @@
   }
 
   function hasChildren(id) {
-    if (direction === "calls") return (callsFrom.get(id) || []).length > 0 || implementationsOf.has(id) || handlersOf.has(id);
-    return (callsTo.get(id) || []).length > 0 || implementedMember.has(id) || handledEvent.has(id);
+    if (direction === "calls") return (callsFrom.get(id) || []).length > 0 || reachedFrom.has(id);
+    return (callsTo.get(id) || []).length > 0 || reaches.has(id);
   }
 
   // ---- The view ----
@@ -146,8 +155,8 @@
   var message = document.getElementById("calls-message");
   var rootNote = document.getElementById("calls-root-note");
   var focusButton = document.getElementById("calls-focus");
-  var direction = loadSetting("vbadoc-calls-direction", "calls") === "calledBy" ? "calledBy" : "calls";
-  var root = null;            // the procedure (or module) the tree starts from, or null for the entry points
+  var direction = loadSetting(page.tool + "-calls-direction", "calls") === "calledBy" ? "calledBy" : "calls";
+  var root = null;            // the procedure (or unit) the tree starts from, or null for the entry points
   var open = new Set();       // keys of the open rows, kept while the tree is drawn again
   var drawn = false;
   var pathsByKey = new Map(); // a drawn row's key -> { id, path }: what it is and the procedures above it
@@ -197,21 +206,23 @@
   // What the tree starts from: the root's procedures, or the entry points and favourites in groups.
   function roots() {
     if (root) {
-      if (vb.membersById.has(root)) return [{ id: root, key: root }];
-      var procedures = data.members.filter(function (m) { return m.module === root && CALLABLE[m.kind] && m.kind !== "event" && m.kind !== "declare"; });
-      return [{ group: "Procedures in " + root, key: "g:" + root, children: procedures.map(function (m) { return m.id; }) }];
+      if (page.membersById.has(root)) return [{ id: root, key: root }];
+      var procedures = data.members.filter(function (m) { return m.unit === root && kindOfMember(m).hasBody; });
+      return [{ group: page.capital(CALLABLE.many) + " in " + root, key: "g:" + root, children: procedures.map(function (m) { return m.id; }) }];
     }
     var groups = [];
-    var favourites = vb.favourites().filter(isProcedure);
+    var favourites = page.favourites().filter(isProcedure);
     if (favourites.length) groups.push({ group: "Favourites", key: "g:favourites", children: favourites });
     if (direction === "calls") {
-      var byRole = { macro: [], eventHandler: [], worksheetFunction: [] };
+      var byEntry = {};
       data.members.forEach(function (m) {
-        var role = m.role === "builtInEventHandler" || m.role === "controlEventHandler" ? "eventHandler" : m.role;
-        if (byRole[role]) byRole[role].push(m.id);
+        var entry = entryOfRole[m.role];
+        if (!entry) return;
+        if (!byEntry[entry]) byEntry[entry] = [];
+        byEntry[entry].push(m.id);
       });
       ENTRY_GROUPS.forEach(function (g) {
-        if (byRole[g[0]].length) groups.push({ group: g[1], key: "g:" + g[0], children: byRole[g[0]].sort(byName) });
+        if (byEntry[g[0]]) groups.push({ group: g[1], key: "g:" + g[0], children: byEntry[g[0]].sort(byName) });
       });
     }
     return groups;
@@ -234,22 +245,22 @@
     }
     if (row.lateBound !== undefined) {
       return li + " class=\"calls-late\"><div class=\"tree-row\" style=\"--depth:" + depth + "\"><span class=\"tree-twisty\"></span>" +
-        conditionTag(row) + "<code class=\"tree-label\">" + escapeHtml(row.lateBound) + "</code> <span class=\"tree-detail\" title=\"Called on an Object or Variant, so what it calls can't be known without running the code\">late-bound</span>" +
+        conditionTag(row) + "<code class=\"tree-label\">" + escapeHtml(row.lateBound) + "</code> <span class=\"tree-detail\" title=\"" + escapeHtml(language.unfollowedWhy) + "\">" + escapeHtml(language.unfollowed) + "</span>" +
         lineButton(row) + "</div></li>";
     }
     var recursive = path.indexOf(row.id) >= 0;
     var expandable = !recursive && hasChildren(row.id);
     var isOpen = expandable && open.has(key);
-    var member = vb.membersById.get(row.id);
+    var member = page.membersById.get(row.id);
     pathsByKey.set(key, { id: row.id, path: path });
-    var html = li + " data-id=\"" + escapeHtml(row.id) + "\" aria-selected=\"" + (row.id === vb.selection()) + "\"" +
+    var html = li + " data-id=\"" + escapeHtml(row.id) + "\" aria-selected=\"" + (row.id === page.selection()) + "\"" +
       (expandable ? " aria-expanded=\"" + isOpen + "\"" : "") + (isOpen ? "" : " class=\"collapsed\"") + ">" +
       "<div class=\"tree-row\" style=\"--depth:" + depth + "\"><span class=\"tree-twisty\" aria-hidden=\"true\"></span>" +
       (row.relation ? "<span class=\"calls-relation\">" + escapeHtml(row.relation) + "</span> " : "") +
       (row.within === undefined ? conditionTag(row) : "") +
       "<a href=\"#\" class=\"tree-label calls-name\" data-call-select=\"" + escapeHtml(row.id) + "\">" + escapeHtml(nameOf(row.id)) + "</a>" +
       " <span class=\"tree-detail\">" + escapeHtml(kindOf(row.id)) + "</span>" +
-      (member && member.role !== "none" && depth === 0 ? " <span class=\"tree-badge\">" + escapeHtml(vb.roleLabel(member.role)) + "</span>" : "") +
+      (member && member.role !== "none" && depth === 0 ? " <span class=\"tree-badge\">" + escapeHtml(page.roleLabel(member.role)) + "</span>" : "") +
       (recursive ? " <span class=\"calls-recursion\" title=\"Already open above, on this branch: recursion\">↻</span>" : "") +
       lineButton(row) +
       (row.within ? " <span class=\"calls-within muted\" title=\"" + escapeHtml("The call is " + (row.condition ? "in the " + row.condition + " of " : "inside ") + row.within) + "\">in " +
@@ -302,8 +313,9 @@
       sequenceBox.innerHTML = "";
       message.hidden = false;
       message.textContent = direction === "calls"
-        ? "No macros, event handlers, worksheet functions or favourite procedures to start from. Ctrl+click a procedure to start from it."
-        : "Called by works back from one procedure: Ctrl+click one, here or in another view, or star it as a favourite.";
+        ? "No " + ENTRY_GROUPS.map(function (g) { return g[1].toLowerCase(); }).concat(["favourite " + CALLABLE.many]).join(", ").replace(/, ([^,]*)$/, " or $1") +
+          " to start from. Ctrl+click a " + CALLABLE.one + " to start from it."
+        : "Called by works back from one " + CALLABLE.one + ": Ctrl+click one, here or in another view, or star it as a favourite.";
       return;
     }
     message.hidden = true;
@@ -322,16 +334,16 @@
     view.querySelectorAll("[data-calls-direction]").forEach(function (b) {
       b.setAttribute("aria-checked", b.getAttribute("data-calls-direction") === direction ? "true" : "false");
     });
-    focusButton.setAttribute("aria-pressed", vb.focusOnClick() ? "true" : "false");
-    focusButton.disabled = vb.locked();
+    focusButton.setAttribute("aria-pressed", page.focusOnClick() ? "true" : "false");
+    focusButton.disabled = page.locked();
   }
 
-  function drawIfVisible() { if (vb.activeView() === "calls") draw(); else drawn = false; }
+  function drawIfVisible() { if (page.activeView() === "calls") draw(); else drawn = false; }
 
-  // A focused procedure (or module) becomes the root, and opens one level.
+  // A focused procedure (or unit) becomes the root, and opens one level.
   function followFocus() {
-    var selection = vb.selection();
-    if (!vb.focused() || !selection || (!isProcedure(selection) && !vb.modulesById.has(selection))) return false;
+    var selection = page.selection();
+    if (!page.focused() || !selection || (!isProcedure(selection) && !page.unitsById.has(selection))) return false;
     if (root === selection) return false;
     root = selection;
     open = new Set([root]);
@@ -357,7 +369,7 @@
 
   // ---- Sequence diagram (step E5) ----
   //
-  // What's open in the tree, drawn as a sequence diagram for each open starting procedure: modules as lifelines, in the
+  // What's open in the tree, drawn as a sequence diagram for each open starting procedure: units as lifelines, in the
   // order they first take part; calls as messages in the order of the code, dashed to an implementation or handler;
   // late-bound calls to a lifeline of their own; and the blocks around calls as frames. The tree and the diagram share
   // what's open: a message's ▸ opens its calls, a frame's label closes or opens it, and either narrows both. Drawn with
@@ -367,14 +379,14 @@
   // stays at the top of the view while that diagram is scrolled through, and moves sideways with it (step L3 of the
   // generalisation plan). A call made by a frame's own statement is the frame's first message, marked as its condition's.
 
-  var showing = loadSetting("vbadoc-calls-show", "tree") === "sequence" ? "sequence" : "tree";
+  var showing = loadSetting(page.tool + "-calls-show", "tree") === "sequence" ? "sequence" : "tree";
   var sequenceBox = document.getElementById("calls-sequence");
 
   var MIN_LANE = 170, MAX_LANE = 380, LANE = MIN_LANE, CODE_CHAR = 6.8, HEAD = 30, ROW = 30, FRAME_HEAD = 26, MARGIN = 16, TITLE = 26, CHAR = 6.4;
   var FRAME_WORDS = { "if": "if", elseIf: "else if", "else": "else", select: "select", "case": "case", "for": "loop", "do": "loop", "while": "loop", "with": "with", onError: "on error" };
 
-  function moduleOf(id) { var m = vb.membersById.get(id); return m ? m.module : id; }
-  function memberName(id) { var m = vb.membersById.get(id); return m ? m.name : id; }
+  function unitOf(id) { var m = page.membersById.get(id); return m ? m.unit : id; }
+  function memberName(id) { var m = page.membersById.get(id); return m ? m.name : id; }
 
   // The open starting procedures, as the tree has them.
   function sequenceStarts(list) {
@@ -400,9 +412,9 @@
       return laneOf.get(name);
     }
     var items = [];
-    lane(moduleOf(start.id));
+    lane(unitOf(start.id));
     function rowsOf(rows, callerId, key, path) {
-      var from = lane(moduleOf(callerId));
+      var from = lane(unitOf(callerId));
       rows.forEach(function (row, i) {
         var rowKey = key + (row.block ? "/b" + row.block.id : "/" + i + ":" + (row.id || ""));
         if (row.block) {
@@ -413,14 +425,14 @@
           return;
         }
         if (row.lateBound !== undefined) {
-          items.push({ type: "message", from: from, to: lane("late-bound", true), label: row.lateBound, late: true, condition: row.condition, line: row.line, lineIn: callerId });
+          items.push({ type: "message", from: from, to: lane(language.unfollowed, true), label: row.lateBound, late: true, condition: row.condition, line: row.line, lineIn: callerId });
           return;
         }
         var recursive = path.indexOf(row.id) >= 0;
         seqPaths.set(rowKey, { id: row.id, path: path });
         var expandable = !recursive && hasChildren(row.id);
         var isOpen = expandable && open.has(rowKey);
-        var to = lane(moduleOf(row.id));
+        var to = lane(unitOf(row.id));
         items.push({
           type: "message", from: from, to: to, label: memberName(row.id), id: row.id, relation: row.relation, condition: row.condition,
           recursive: recursive, expandable: expandable, open: isOpen, key: rowKey, line: row.line, lineIn: row.lineIn
@@ -507,7 +519,7 @@
     if (starts.length === 0) {
       // Nothing open yet: a way to start, from the same starting points as the tree.
       var empty = box.append("div").attr("class", "calls-seq-empty");
-      empty.append("p").attr("class", "muted").text("Open a procedure to draw its calls. Here, or in the tree:");
+      empty.append("p").attr("class", "muted").text("Open a " + CALLABLE.one + " to draw its calls. Here, or in the tree:");
       var startable = [];
       list.forEach(function (item) {
         if (!item.group) startable.push({ id: item.id, key: item.key });
@@ -554,13 +566,13 @@
 
   // The participants' boxes, one in each lane's group. LANE is the diagram's lane width.
   function drawHeads(lanes) {
-    var head = lanes.append("g").attr("class", "seq-lane-head").attr("data-seq-module", function (l) { return l.late ? null : l.name; });
+    var head = lanes.append("g").attr("class", "seq-lane-head").attr("data-seq-unit", function (l) { return l.late ? null : l.name; });
     head.append("rect").attr("x", function (l, i) { return laneX(i) - LANE / 2 + 8; }).attr("y", TITLE)
       .attr("width", LANE - 16).attr("height", HEAD).attr("rx", 3);
     head.append("text").attr("x", function (l, i) { return laneX(i); }).attr("y", TITLE + HEAD / 2 + 4).attr("text-anchor", "middle")
       .text(function (l) { return fit(l.name, LANE - 24); });
     head.append("title").text(function (l) {
-      return l.late ? "Late-bound calls: on an Object or Variant, so what they call can't be known without running the code" : l.name;
+      return l.late ? page.capital(language.unfollowed) + " calls. " + language.unfollowedWhy : l.name;
     });
   }
 
@@ -592,7 +604,7 @@
       var item = m.item;
       var x1 = laneX(item.from) + 4 + m.fromOffset, x2 = laneX(item.to) - 4;
       var message = g.append("g").attr("class", "seq-message" + (item.relation ? " relation" : "") + (item.condition ? " condition" : "") + (item.late ? " late" : "") +
-        (item.id && item.id === vb.selection() ? " selected" : "")).attr("data-id", item.id || null).attr("data-key", item.key || null);
+        (item.id && item.id === page.selection() ? " selected" : "")).attr("data-id", item.id || null).attr("data-key", item.key || null);
       var label = message.append("text").attr("class", "seq-label");
       if (item.from === item.to) {
         var x = laneX(item.from) + 4;
@@ -611,7 +623,7 @@
       }
       label.append("tspan").attr("class", "seq-name").attr("data-seq-select", item.id || null)
         .text(fit(messagePrefix(item) + item.label, room) + (item.recursive ? " ↻" : ""));
-      message.append("title").text((item.late ? "Late-bound: " + item.label : nameOf(item.id) + (item.recursive ? " (recursion: already open above)" : "")) +
+      message.append("title").text((item.late ? page.capital(language.unfollowed) + ": " + item.label : nameOf(item.id) + (item.recursive ? " (recursion: already open above)" : "")) +
         (item.line ? ", line " + item.line + " of " + nameOf(item.lineIn) : "") +
         (item.condition ? ". Called by the frame's own statement (its " + item.condition + "), before anything inside it" : ""));
     });
@@ -679,16 +691,16 @@
     // A plain click only selects, as in the tree; Ctrl+click starts from it.
     var focus = event.ctrlKey || event.metaKey;
     var name = target.closest("[data-seq-select]");
-    if (name) { vb.select(name.getAttribute("data-seq-select"), focus ? !vb.focusOnClick() : vb.focusOnClick()); return; }
-    var module = target.closest("[data-seq-module]");
-    if (module) vb.select(module.getAttribute("data-seq-module"), focus ? !vb.focusOnClick() : vb.focusOnClick());
+    if (name) { page.select(name.getAttribute("data-seq-select"), focus ? !page.focusOnClick() : page.focusOnClick()); return; }
+    var unit = target.closest("[data-seq-unit]");
+    if (unit) page.select(unit.getAttribute("data-seq-unit"), focus ? !page.focusOnClick() : page.focusOnClick());
   });
 
   view.querySelectorAll("[data-calls-show]").forEach(function (button) {
     button.addEventListener("click", function () {
       if (showing === button.getAttribute("data-calls-show")) return;
       showing = button.getAttribute("data-calls-show");
-      saveSetting("vbadoc-calls-show", showing);
+      saveSetting(page.tool + "-calls-show", showing);
       draw();
       // How far the tree was scrolled means nothing in the diagram, or the other way round.
       view.querySelector(".calls-body").scrollTop = 0;
@@ -711,14 +723,14 @@
       event.preventDefault();
       // A plain click only selects; Ctrl+click focuses, which roots the tree there.
       var focus = event.ctrlKey || event.metaKey;
-      vb.select(name.getAttribute("data-call-select"), focus ? !vb.focusOnClick() : vb.focusOnClick());
+      page.select(name.getAttribute("data-call-select"), focus ? !page.focusOnClick() : page.focusOnClick());
       return;
     }
     var line = event.target.closest("[data-call-line]");
     if (line) {
       event.preventDefault();
-      vb.select(line.getAttribute("data-call-in"), vb.focusOnClick());
-      vb.showLine(parseInt(line.getAttribute("data-call-line"), 10));
+      page.select(line.getAttribute("data-call-in"), page.focusOnClick());
+      page.showLine(parseInt(line.getAttribute("data-call-line"), 10));
       return;
     }
     var li = event.target.closest("li[aria-expanded]");
@@ -753,7 +765,7 @@
       if (button) button.click();
     } else if (event.key === "Enter" && li.dataset.id) {
       var focus = event.ctrlKey || event.metaKey;
-      vb.select(li.dataset.id, focus ? !vb.focusOnClick() : vb.focusOnClick());
+      page.select(li.dataset.id, focus ? !page.focusOnClick() : page.focusOnClick());
     } else handled = false;
     if (handled) { event.preventDefault(); event.stopPropagation(); }
   });
@@ -762,7 +774,7 @@
     button.addEventListener("click", function () {
       if (direction === button.getAttribute("data-calls-direction")) return;
       direction = button.getAttribute("data-calls-direction");
-      saveSetting("vbadoc-calls-direction", direction);
+      saveSetting(page.tool + "-calls-direction", direction);
       open = new Set(root ? [root] : []);
       draw();
     });
@@ -780,12 +792,12 @@
     draw();
   });
 
-  focusButton.addEventListener("click", function () { vb.setFocusOnClick(!vb.focusOnClick()); });
+  focusButton.addEventListener("click", function () { page.setFocusOnClick(!page.focusOnClick()); });
 
   // ---- Saved views ----
   //
   // A saved view keeps where the tree starts, which rows are open, Calls or Called by, and the tree or the diagram. A
-  // row is known by its path from the top, so after the workbook changes a row may not open where it did.
+  // row is known by its path from the top, so after the source changes a row may not open where it did.
 
   function idsInKey(key) {
     var ids = [];
@@ -798,7 +810,7 @@
     return ids;
   }
 
-  vb.viewPart("calls", {
+  page.viewPart("calls", {
     save: function () {
       var value = { direction: direction, show: showing, open: Array.from(open).sort() };
       if (root) value.root = root;
@@ -808,9 +820,9 @@
       value = value && typeof value === "object" ? value : {};
       direction = value.direction === "calledBy" ? "calledBy" : "calls";
       showing = value.show === "sequence" ? "sequence" : "tree";
-      saveSetting("vbadoc-calls-direction", direction);
-      saveSetting("vbadoc-calls-show", showing);
-      root = typeof value.root === "string" && (isProcedure(value.root) || vb.modulesById.has(value.root)) ? value.root : null;
+      saveSetting(page.tool + "-calls-direction", direction);
+      saveSetting(page.tool + "-calls-show", showing);
+      root = typeof value.root === "string" && (isProcedure(value.root) || page.unitsById.has(value.root)) ? value.root : null;
       open = new Set(Array.isArray(value.open) ? value.open.filter(function (key) { return typeof key === "string"; }) : []);
       openNote.hidden = true;
       drawn = false;
@@ -826,23 +838,23 @@
 
   // ---- Wiring to the rest of the page ----
 
-  vb.onViewChange(function () { if (vb.activeView() === "calls" && !drawn) draw(); });
-  vb.onSelectionChange(function () {
+  page.onViewChange(function () { if (page.activeView() === "calls" && !drawn) draw(); });
+  page.onSelectionChange(function () {
     var rerooted = followFocus();
-    if (vb.selection() === null && root !== null) { root = null; open = new Set(); rerooted = true; }
+    if (page.selection() === null && root !== null) { root = null; open = new Set(); rerooted = true; }
     if (rerooted) { drawIfVisible(); return; }
-    tree.querySelectorAll("li[data-id]").forEach(function (li) { li.setAttribute("aria-selected", li.dataset.id === vb.selection() ? "true" : "false"); });
+    tree.querySelectorAll("li[data-id]").forEach(function (li) { li.setAttribute("aria-selected", li.dataset.id === page.selection() ? "true" : "false"); });
     sequenceBox.querySelectorAll("g.seq-message[data-id]").forEach(function (m) {
-      m.classList.toggle("selected", m.getAttribute("data-id") === vb.selection());
+      m.classList.toggle("selected", m.getAttribute("data-id") === page.selection());
     });
   });
-  vb.onFocusChange(function () { followFocus(); drawIfVisible(); });
-  vb.onShownChange(drawIfVisible);
-  vb.onChoicesChange(drawIfVisible);
-  vb.onFavouritesChange(drawIfVisible);
+  page.onFocusChange(function () { followFocus(); drawIfVisible(); });
+  page.onShownChange(drawIfVisible);
+  page.onChoicesChange(drawIfVisible);
+  page.onFavouritesChange(drawIfVisible);
 
   followFocus();
-  if (vb.activeView() === "calls") draw();
+  if (page.activeView() === "calls") draw();
 
   // ---- The tree as text ----
   //
@@ -862,15 +874,15 @@
     }
     var prefix = row.relation ? row.relation + ": " : row.condition && row.within === undefined ? row.condition + ": " : "";
     if (row.lateBound !== undefined) {
-      out.push(indent + "- " + prefix + "`" + row.lateBound + "` (late-bound)" + lineText(row));
+      out.push(indent + "- " + prefix + "`" + row.lateBound + "` (" + language.unfollowed + ")" + lineText(row));
       return;
     }
     var recursive = path.indexOf(row.id) >= 0;
     var expandable = !recursive && hasChildren(row.id);
     var isOpen = expandable && open.has(key);
-    var member = vb.membersById.get(row.id);
+    var member = page.membersById.get(row.id);
     out.push(indent + "- " + prefix + nameOf(row.id) + " (" + kindOf(row.id) +
-      (member && member.role !== "none" && depth <= 1 && path.length === 0 ? ", " + vb.roleLabel(member.role).toLowerCase() : "") + ")" +
+      (member && member.role !== "none" && depth <= 1 && path.length === 0 ? ", " + page.roleLabel(member.role).toLowerCase() : "") + ")" +
       (recursive ? " ↻ recursion" : "") + lineText(row) +
       (row.within ? ", in " + (row.condition ? "the " + row.condition + " of " : "") + "`" + row.within + "`" : "") +
       (expandable && !isOpen ? " …" : ""));
@@ -902,12 +914,12 @@
       ? (direction === "calls" ? "Calls from " : "Called by, into ") + nameOf(root)
       : direction === "calls" ? "Calls, from the entry points" : "Called by";
     return "### " + heading + "\n\n" +
-      (direction === "calls" ? "What each procedure calls, in the order of its code" : "What calls each procedure") +
+      (direction === "calls" ? "What each " + CALLABLE.one + " calls, in the order of its code" : "What calls each " + CALLABLE.one) +
       ", as far as the tree is opened. A row ending in … has more below it that isn't opened.\n\n" + out.join("\n");
   }
 
   // For tests: the tree's root and direction. For Copy: the tree as text.
-  window.vbadocCalls = {
+  window.codeViewsCalls = {
     text: treeText,
     root: function () { return root; },
     direction: function () { return direction; },

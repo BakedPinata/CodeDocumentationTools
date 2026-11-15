@@ -109,17 +109,17 @@ public class CallsTests(PageFixture fixture)
 
     await page.ClickAsync(Child(ProcessOrders, "OrderService.Init") + " .calls-name");
     Assert.Equal("OrderService.Init", await page.EvaluateAsync<string?>("() => window.vbadoc.selection()"));
-    Assert.Null(await page.EvaluateAsync<string?>("() => window.vbadocCalls.root()"));
+    Assert.Null(await page.EvaluateAsync<string?>("() => window.codeViewsCalls.root()"));
     Assert.Equal("true", await page.GetAttributeAsync(ProcessOrders, "aria-expanded")); // the opened path stays
     Assert.Equal("true", await page.GetAttributeAsync(Child(ProcessOrders, "OrderService.Init"), "aria-selected"));
 
     await page.ClickAsync(Under(ProcessOrders, "OrderService.Process") + " > .tree-row .calls-name", CtrlClick);
-    Assert.Equal("OrderService.Process", await page.EvaluateAsync<string?>("() => window.vbadocCalls.root()"));
+    Assert.Equal("OrderService.Process", await page.EvaluateAsync<string?>("() => window.codeViewsCalls.root()"));
     Assert.Equal("Calls from OrderService.Process", await page.InnerTextAsync("#calls-root-note > span"));
     Assert.Equal("true", await page.GetAttributeAsync("#calls-tree > li[data-id='OrderService.Process']", "aria-expanded"));
 
     await page.ClickAsync("#calls-entry-points");
-    Assert.Null(await page.EvaluateAsync<string?>("() => window.vbadocCalls.root()"));
+    Assert.Null(await page.EvaluateAsync<string?>("() => window.codeViewsCalls.root()"));
     Assert.True(await page.IsHiddenAsync("#calls-root-note"));
     Assert.Empty(opened.Errors);
   }
@@ -131,11 +131,11 @@ public class CallsTests(PageFixture fixture)
     await opened.SelectAsync("Main.ProcessOrders"); // Focus on click is on to begin with
     var page = await OpenCalls(opened);
 
-    Assert.Equal("Main.ProcessOrders", await page.EvaluateAsync<string?>("() => window.vbadocCalls.root()"));
+    Assert.Equal("Main.ProcessOrders", await page.EvaluateAsync<string?>("() => window.codeViewsCalls.root()"));
     Assert.Equal(10, await page.Locator("#calls-tree > li[data-id='Main.ProcessOrders'] li[data-id]").CountAsync()); // and one late-bound
 
     await page.Keyboard.PressAsync("Escape");
-    Assert.Null(await page.EvaluateAsync<string?>("() => window.vbadocCalls.root()"));
+    Assert.Null(await page.EvaluateAsync<string?>("() => window.codeViewsCalls.root()"));
     Assert.Equal(3, await page.Locator("#calls-tree > li.group").CountAsync());
     Assert.Empty(opened.Errors);
   }
@@ -164,8 +164,8 @@ public class CallsTests(PageFixture fixture)
     Assert.Equal(["OrderService.Process line 19"], await ChildNames(page, member)); // the exported class file has header lines
 
     await page.ReloadAsync();
-    await page.WaitForFunctionAsync("() => !!window.vbadocCalls");
-    Assert.Equal("calledBy", await page.EvaluateAsync<string>("() => window.vbadocCalls.direction()"));
+    await page.WaitForFunctionAsync("() => !!window.codeViewsCalls");
+    Assert.Equal("calledBy", await page.EvaluateAsync<string>("() => window.codeViewsCalls.direction()"));
     Assert.Empty(opened.Errors);
   }
 
@@ -180,7 +180,7 @@ public class CallsTests(PageFixture fixture)
 
     Assert.Equal("Main.ProcessOrders", await page.EvaluateAsync<string?>("() => window.vbadoc.selection()"));
     Assert.Equal(1, await page.Locator("#side-panel .code .line.target[data-line='41']").CountAsync());
-    Assert.Null(await page.EvaluateAsync<string?>("() => window.vbadocCalls.root()")); // still from the entry points
+    Assert.Null(await page.EvaluateAsync<string?>("() => window.codeViewsCalls.root()")); // still from the entry points
     Assert.Empty(opened.Errors);
   }
 

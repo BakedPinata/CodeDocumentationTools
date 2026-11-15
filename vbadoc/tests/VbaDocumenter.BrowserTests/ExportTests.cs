@@ -57,7 +57,7 @@ public sealed class ExportTests(PageFixture fixture) : IDisposable
     var page = opened.Page;
     await OpenTab(page);
 
-    var ids = await page.EvaluateAsync<string[]>("() => window.vbadoc.data.modules.map(m => m.id)");
+    var ids = await page.EvaluateAsync<string[]>("() => window.vbadoc.data.units.map(m => m.id)");
     var compared = 0;
     foreach (var id in ids.Where(id => import.WhyNot(id) is null))
     {
@@ -211,7 +211,7 @@ public sealed class ExportTests(PageFixture fixture) : IDisposable
     Assert.Equal(["Logger", "Utils"], await Listed(page, "Chosen"));
 
     await page.ReloadAsync();
-    await page.WaitForFunctionAsync("() => !!window.vbadocGraph");
+    await page.WaitForFunctionAsync("() => !!window.codeViewsGraph");
     await OpenTab(page);
     Assert.Equal(["Logger", "Utils"], await Listed(page, "Chosen"));
     Assert.True(await page.IsCheckedAsync(Box("Logger")));
@@ -328,15 +328,15 @@ public sealed class ExportTests(PageFixture fixture) : IDisposable
     Assert.True(await page.IsHiddenAsync("#view-graph"));
 
     await page.ClickAsync("#tab-graph");
-    await page.WaitForFunctionAsync("() => window.vbadocGraph.nodeCount() > 0");
+    await page.WaitForFunctionAsync("() => window.codeViewsGraph.nodeCount() > 0");
     Assert.True(await page.IsVisibleAsync("#graph-svg"));
     Assert.True(await page.IsHiddenAsync("#view-export"));
 
     await page.ClickAsync("#tab-classes");
-    await page.WaitForFunctionAsync("() => window.vbadocClasses.drawn()");
+    await page.WaitForFunctionAsync("() => window.codeViewsClasses.drawn()");
     await page.ClickAsync("#tab-export");
     await page.ReloadAsync();
-    await page.WaitForFunctionAsync("() => !!window.vbadocGraph");
+    await page.WaitForFunctionAsync("() => !!window.codeViewsGraph");
     Assert.Equal("true", await page.GetAttributeAsync("#tab-export", "aria-selected")); // the tab is remembered, as the others are
     Assert.True(await page.IsVisibleAsync(Box("Logger")));
     Assert.Empty(opened.Errors);

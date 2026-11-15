@@ -167,7 +167,7 @@ public static class HtmlPageWriter
     {
       var text = encoding.GetString(ProjectExporter.FileContent(module)).ReplaceLineEndings("\n");
       // The HTML parser drops a newline straight after <pre>, so add one to keep a leading blank line intact.
-      sb.Append($"<pre hidden class=\"vbadoc-source\" data-module=\"{PageBuilder.Escape(module.Name)}\">\n")
+      sb.Append($"<pre hidden class=\"vbadoc-source\" data-file=\"{PageBuilder.Escape(ProjectExporter.FileNameFor(module))}\">\n")
         .Append(PageBuilder.Escape(text))
         .Append("</pre>\n");
     }

@@ -57,8 +57,8 @@ public class WidelyUsedTests(PageFixture fixture)
     Assert.Equal(["IOrderRepository", "Logger", "Order"], (await page.EvaluateAsync<string[]>("() => window.vbadoc.hidden()")).Order());
     Assert.Equal("Show all", await page.TextContentAsync(Group + " [data-hide-widely-used]"));
     await page.ClickAsync("#tab-classes");
-    await page.WaitForFunctionAsync("() => window.vbadocClasses.drawn()");
-    Assert.Equal(0, await page.Locator("#classes-svg g.class-box[data-module='Logger']").CountAsync());
+    await page.WaitForFunctionAsync("() => window.codeViewsClasses.drawn()");
+    Assert.Equal(0, await page.Locator("#classes-svg g.class-box[data-unit='Logger']").CountAsync());
 
     await page.ClickAsync(Group + " [data-hide-widely-used]");
     Assert.Empty(await page.EvaluateAsync<string[]>("() => window.vbadoc.hidden()"));
@@ -82,7 +82,7 @@ public class WidelyUsedTests(PageFixture fixture)
     Assert.Equal("Show…", await page.InnerTextAsync("#explorer-show summary")); // the share isn't a Show… choice
 
     await page.ReloadAsync();
-    await page.WaitForFunctionAsync("() => !!window.vbadocGraph");
+    await page.WaitForFunctionAsync("() => !!window.codeViewsGraph");
     Assert.Equal("100", await page.InputValueAsync("#explorer-widely-used-share"));
     Assert.Equal(0, await page.Locator(Group).CountAsync());
     Assert.Empty(opened.Errors);

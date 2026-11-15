@@ -1,6 +1,9 @@
-/* vbadoc's page styles: its views, and what it shows in the side panel and under the top bar. The frame and the
-   shared colour tokens are the shell's (shell.css in the shared library), which comes first. Colours are tokens
-   per theme (html[data-theme]); everything else uses the tokens. */
+/* The styles of a page of code: its views, and what it shows in the side panel and under the top bar. The frame and
+   the shared colour tokens are the shell's (shell.css in CodeDocumenter.Shared), which comes first. Colours are tokens
+   per theme (html[data-theme]); everything else uses the tokens.
+
+   What a kind of unit or line looks like isn't here: a language says which of the palette's slots (--kind-1 to 3,
+   --edge-1 to 3) and which line each of its kinds has, and code-page.js writes those rules when the page opens. */
 
 /* The side panel's share of the layout until the user resizes it: wide, because it shows the source. */
 :root {
@@ -9,24 +12,25 @@
 }
 
 html[data-theme="dark"] {
-  /* Graph: three validated categorical hues (all-pairs) for module groups; edge kinds also differ by dash. */
-  --kind-code: #3987e5;
-  --kind-class: #d95926;
-  --kind-host: #199e70;
-  --edge-uses: #7d8691;
-  --edge-implements: #9085e9;
-  --edge-events: #008300;
+  /* The palette: three validated categorical hues (all-pairs) for groups of unit kinds, and three for kinds of
+     line, which also differ by dash. */
+  --kind-1: #3987e5;
+  --kind-2: #d95926;
+  --kind-3: #199e70;
+  --edge-1: #7d8691;
+  --edge-2: #9085e9;
+  --edge-3: #008300;
   --hull-fill: rgba(255, 255, 255, 0.035);
   --hull-stroke: rgba(255, 255, 255, 0.16);
 }
 
 html[data-theme="light"] {
-  --kind-code: #2a78d6;
-  --kind-class: #eb6834;
-  --kind-host: #1baf7a;
-  --edge-uses: #8a939c;
-  --edge-implements: #6250d6;
-  --edge-events: #008300;
+  --kind-1: #2a78d6;
+  --kind-2: #eb6834;
+  --kind-3: #1baf7a;
+  --edge-1: #8a939c;
+  --edge-2: #6250d6;
+  --edge-3: #008300;
   --hull-fill: rgba(11, 11, 11, 0.03);
   --hull-stroke: rgba(11, 11, 11, 0.14);
 }
@@ -60,8 +64,6 @@ html[data-theme="light"] {
 .dependencies li { padding: 1px 0; word-break: break-word; }
 .dependencies .none, .dependencies .recursive { margin: 2px 0 0; }
 .edge-tag { padding: 0 6px; border: 1px solid var(--border); border-radius: 999px; font-size: 11px; }
-.edge-tag.implements { border-color: var(--edge-implements); border-style: dashed; }
-.edge-tag.events { border-color: var(--edge-events); border-style: dotted; }
 
 /* ---- Calls (calls.js): a tree under the toolbar, which here takes its own room rather than floating ---- */
 
@@ -98,7 +100,7 @@ html[data-theme="light"] {
 .seq-title { font-weight: 600; }
 .seq-lane line { stroke: var(--border); stroke-dasharray: 4 4; }
 .seq-lane-head rect { fill: var(--surface-2); stroke: var(--border); }
-.seq-lane-head[data-seq-module] { cursor: pointer; }
+.seq-lane-head[data-seq-unit] { cursor: pointer; }
 .seq-lane.late .seq-lane-head rect { stroke-dasharray: 4 3; }
 .seq-lane.late .seq-lane-head text { fill: var(--text-muted); font-style: italic; }
 .seq-activation { fill: var(--surface-2); stroke: var(--text-muted); }
@@ -181,16 +183,18 @@ html[data-theme="light"] {
 .graph-art .node { cursor: pointer; }
 .graph-art .node .hit { fill: transparent; }
 .graph-art .node .shape { stroke: var(--bg); stroke-width: 2px; } /* surface ring separates overlapping marks */
-.graph-art .group-code .shape { fill: var(--kind-code); }
-.graph-art .group-class .shape { fill: var(--kind-class); }
-.graph-art .group-host .shape { fill: var(--kind-host); }
+.graph-art .group-1 .shape { fill: var(--kind-1); }
+.graph-art .group-2 .shape { fill: var(--kind-2); }
+.graph-art .group-3 .shape { fill: var(--kind-3); }
 .graph-art .group-neutral .shape { fill: var(--text-muted); }
 .graph-art .node.hollow .shape { fill: var(--bg); stroke-width: 2.5px; }
-.graph-art .group-class.hollow .shape { stroke: var(--kind-class); }
-.graph-art .node.module-node .shape { fill: var(--bg); stroke-width: 2.5px; }
-.graph-art .group-code.module-node .shape { stroke: var(--kind-code); }
-.graph-art .group-class.module-node .shape { stroke: var(--kind-class); }
-.graph-art .group-host.module-node .shape { stroke: var(--kind-host); }
+.graph-art .group-1.hollow .shape { stroke: var(--kind-1); }
+.graph-art .group-2.hollow .shape { stroke: var(--kind-2); }
+.graph-art .group-3.hollow .shape { stroke: var(--kind-3); }
+.graph-art .node.unit-node .shape { fill: var(--bg); stroke-width: 2.5px; }
+.graph-art .group-1.unit-node .shape { stroke: var(--kind-1); }
+.graph-art .group-2.unit-node .shape { stroke: var(--kind-2); }
+.graph-art .group-3.unit-node .shape { stroke: var(--kind-3); }
 .graph-art .node.unreferenced .shape { stroke: var(--text-muted); stroke-width: 1.5px; stroke-dasharray: 2 2; }
 .graph-art .node.pinned .shape { stroke: var(--accent); stroke-width: 2.5px; stroke-dasharray: none; }
 .graph-art .node.selected .shape { stroke: var(--text); stroke-width: 2.5px; stroke-dasharray: none; }
@@ -210,12 +214,6 @@ html[data-theme="light"] {
 
 .graph-art .edge { fill: none; stroke-width: 1.25px; stroke-opacity: var(--graph-edge-opacity, 1); }
 .graph-art .edge.highlighted { stroke-opacity: 1; }
-.graph-art .edge.uses { stroke: var(--edge-uses); }
-.graph-art .edge.implements { stroke: var(--edge-implements); stroke-dasharray: 6 4; }
-.graph-art .edge.events { stroke: var(--edge-events); stroke-dasharray: 2 3; }
-.graph-art .arrow-uses { fill: var(--edge-uses); }
-.graph-art .arrow-implements { fill: var(--bg); stroke: var(--edge-implements); stroke-width: 1.25px; }
-.graph-art .arrow-events { fill: var(--edge-events); }
 
 .graph-art .dim { opacity: 0.12; }
 .graph-art .edge.highlighted { stroke-width: 2px; }
@@ -271,11 +269,6 @@ html[data-theme="light"] {
 .class-box { cursor: pointer; }
 .class-box text { fill: var(--text); }
 .class-box .box-outline { fill: var(--surface); stroke: var(--border); stroke-width: 1.5px; }
-.class-box.kind-module .box-outline { stroke: var(--kind-code); }
-.class-box.kind-class .box-outline,
-.class-box.kind-interface .box-outline { stroke: var(--kind-class); }
-.class-box.kind-form .box-outline,
-.class-box.kind-document .box-outline { stroke: var(--kind-host); }
 .class-box.selected .box-outline { stroke: var(--text); stroke-width: 3px; }
 .class-box .stereotype { fill: var(--text-muted); }
 .class-box .box-name { font-weight: 600; }
@@ -287,12 +280,6 @@ html[data-theme="light"] {
 /* Lines keep their width on screen at any zoom, so a zoomed-out diagram stays readable. */
 .class-edge, .class-box .box-outline, .class-box .divider { vector-effect: non-scaling-stroke; }
 .class-edge { fill: none; stroke-width: 1.25px; }
-.class-edge.realization { stroke: var(--edge-implements); stroke-dasharray: 5 3; }
-.class-edge.association { stroke: var(--text-muted); }
-.class-edge.dependency { stroke: var(--edge-uses); stroke-dasharray: 4 3; }
-#classes-arrow-realization path { fill: var(--bg); stroke: var(--edge-implements); stroke-width: 1.25px; }
-#classes-arrow-association path { fill: none; stroke: var(--text-muted); stroke-width: 1.25px; }
-#classes-arrow-dependency path { fill: none; stroke: var(--edge-uses); stroke-width: 1.25px; }
 /* A halo in the background colour keeps labels readable where they cross lines. */
 /* The legend's highlight fades what it doesn't pick out, as in the graph. */
 .classes-svg .dim { opacity: 0.15; }

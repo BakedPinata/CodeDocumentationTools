@@ -77,7 +77,7 @@ public sealed partial class PrintTests(PageFixture fixture)
     Assert.Equal("true", await page.GetAttributeAsync("#tab-graph", "aria-selected"));
     Assert.Equal("Utils", await page.EvaluateAsync<string?>("() => window.vbadoc.selection()"));
     Assert.False(await page.EvaluateAsync<bool>("() => window.vbadoc.filterActive()"));
-    await page.WaitForFunctionAsync("() => window.vbadocGraph.nodeCount() > 0");
+    await page.WaitForFunctionAsync("() => window.codeViewsGraph.nodeCount() > 0");
     Assert.Equal(shown, await page.Locator("#graph-svg g.node").EvaluateAllAsync<string[]>("ns => ns.map(n => n.dataset.id).sort()"));
     Assert.Empty(opened.Errors);
   }
