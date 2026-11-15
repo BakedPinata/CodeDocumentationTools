@@ -9,9 +9,10 @@ versions of their own, and a change to one changes the build stamp of the tools 
 |---|---|---|
 | `CodeDocumenter.Shared` | What every tool needs | every tool |
 | `CodeDocumenter.Workbooks` | What only the tools that read Excel workbooks need. It uses `CodeDocumenter.Shared` | vbadoc, pqdoc |
-| `CodeDocumenter.CodeViews` | The views of code every tool but pqdoc shares. It uses `CodeDocumenter.Shared`. Empty until step M2 of the generalisation plan | vbadoc |
+| `CodeDocumenter.CodeViews` | The views of code every tool but pqdoc shares, and the page they're part of. It uses `CodeDocumenter.Shared` | vbadoc |
 
-Each is in `src/`, with its tests in `tests/` (`CodeDocumenter.Shared.Tests`, `CodeDocumenter.Workbooks.Tests`), and
+Each is in `src/`, with its tests in `tests/` (`CodeDocumenter.Shared.Tests`, `CodeDocumenter.Workbooks.Tests`,
+`CodeDocumenter.CodeViews.Tests`), and
 `CodeDocumenter.Shared.sln` holds them all.
 
 ## What's in them
@@ -35,6 +36,13 @@ Each is in `src/`, with its tests in `tests/` (`CodeDocumenter.Shared.Tests`, `C
 | `CommandLine/` | `ImportOptions`: the `import` command; `ImportTargetOptions`: `--new`, `--into`, `--in-place` and `--on-clash`; `ConsoleImportInteraction`: the console's prompts with the one `import` adds |
 | `Importing/` | `ImportPlan`: what a choice comes to; `ExportManifest`: the file the Export tab writes; `BundleFolder`: a folder of chosen files with a README; `ImportClash` and `ClashResolver`: what's in the target already, and what to do about it, asking through `IImportInteraction`; `ImportRun`: the steps of `import` both tools share; `ImportableItem`: something a source has to take, for the desktop app's list |
 
+**`CodeDocumenter.CodeViews`**
+
+| Folder | What |
+|---|---|
+| (root) | `CodeViewsPage`: what a tool puts into its `ShellPage` for a page of code: the tabs, the views' HTML, the stylesheet, and the scripts in load order around the tool's own; `PageClassLine` and `PageClassEdge`: the class diagram's part of the page's data |
+| `Resources/Views/` | `code-page.js`: the page of code (data, selection, the source panel and its Dependencies list, the explorer, search, Back and Forward; what a tool tells it, and what it gives the views, are at its top); `graph.js`, `classes.js` and `calls.js`: the views; `views.html`: their toolbars and containers; `views.css`: their styles and the source panel's |
+
 ## Commands
 
 Run these from the repository root, so every tool builds and tests against any change here.
@@ -46,6 +54,25 @@ dotnet test --solution CodeDocumentationTools.sln                # everything, s
 ```
 
 ## Decisions
+
+### The views of code (step M2 of the generalisation plan)
+
+- **Moved from vbadoc as they were,** still speaking of modules and members: `graph.js`, `classes.js`, `calls.js`,
+  `views.html`, `page.css` (as `views.css`) and `page.js` (as `code-page.js`). Step M3 puts a code model under them.
+- **The tool speaks first.** Its script sets `window.codeViewsPage` (`tool`, `source(data)`, `exports(page)`) and
+  the library's `code-page.js`, loaded after it, reads that. So `code-page.js` moved without being wrapped in a
+  function, and a tool's part is data and a few functions, not a call it has to time. `CodeViewsPage.Scripts`
+  gives the order: the tool's scripts, `code-page.js`, then the views.
+- **What stayed with vbadoc** is what's about a workbook's VBA project: decoding module files with the project's
+  code page, the highlighter, and what the Export tab can take.
+- **`PageScript(Assembly, Name)`** replaced `ShellPage.ScriptAssembly` and a list of names, so a page can inline
+  scripts from the tool and from this library. pqdoc's are all its own.
+- **The class diagram's data is here; working it out is the language's.** `ClassDiagram` reads VBA's members, so
+  it stays in vbadoc until the VBA language has a library (N2).
+- **The library has no browser tests yet.** Its views can only be opened in a page, and only vbadoc can make one
+  until M3, so vbadoc's browser tests go on testing them. `CodeDocumenter.CodeViews.Tests` checks what
+  `CodeViewsPage` hands a tool.
+- **The scripts still say `window.vbadoc` and store settings as `vbadoc-…`.** M3's to change.
 
 ### Three libraries, and "source" (step M1 of the generalisation plan)
 

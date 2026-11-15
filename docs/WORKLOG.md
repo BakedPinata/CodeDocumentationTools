@@ -19,8 +19,9 @@ rather than repeating it.
   to start, and nothing waits for it. L1 is done: Lock view. L2 is done: Peek. L3 is done: the Calls tab's follow-ups, with the user's
   real example of the missing Ifs still to be checked. L4 is done: a views file in the output folder is built into
   the page. L5 is done: descriptions and printing, with the user's check on a work machine still to come. L6 is
-  done: Copy as text. M1 is done: the shared library is three.
-- **vbadoc 0.38.0:** stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
+  done: Copy as text. M1 is done: the shared library is three. M2 is done: vbadoc's views are in the code views library, with their
+  browser tests still in vbadoc (see the step).
+- **vbadoc 0.39.0:** stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
   `<workbook>-vba.html`, with an explorer of modules and members, in `'@Folder` folders or by kind. It asks
   before overwriting a page that would change (`--on-exists`, `--force`), as pqdoc does. Stage 6 (UserForms) is parked;
   stage 7 waits for the generalisation plan. Since 0.31.0 (step J2) it writes into add-ins (`.xlam`) as into workbooks.
@@ -34,7 +35,7 @@ rather than repeating it.
   and the tools' questions as dialogs. See `codedocui/README.md`.
 - **`shared/`:** the code more than one tool uses, in three libraries since step M1: `CodeDocumenter.Shared` (what
   every tool needs, the page shell among it), `CodeDocumenter.Workbooks` (what the workbook tools need) and
-  `CodeDocumenter.CodeViews` (the views of code, empty until M2). See its README.
+  `CodeDocumenter.CodeViews` (the page of code and its views, since M2). See its README.
 - **The feedback plan** (steps A0–J2, agreed on 2026-11-03) is closed and deleted. Every step is done but G2–G4 and
   E5b, which are steps L3–L6 of the generalisation plan. The user closed the checks that were still to come. The plan
   as it stood is at the tag `feedback-plan-final`, and E5b's original notes at `feedback-plan-e5b-notes`; the log below
@@ -49,6 +50,20 @@ rather than repeating it.
 ## Log
 
 Newest first.
+
+### 2026-11-15: Step M2, vbadoc's views move to the code views library
+
+- `graph.js`, `classes.js`, `calls.js`, `views.html`, `page.css` (as `views.css`) and `page.js` (as `code-page.js`)
+  moved to `CodeDocumenter.CodeViews` as they were. vbadoc's own `page.js` is what's about a workbook's VBA: decoding
+  module files, the highlighter, the Export tab. It tells the library in `window.codeViewsPage`.
+- `CodeViewsPage` gives a tool the tabs, views, styles and script order; `PageScript` lets a page's scripts come
+  from more than one assembly.
+- Not as the plan had it, and for the user to confirm: the views' browser tests stayed in vbadoc, since only vbadoc
+  can make a page of code until M3; and `ClassDiagram` stayed, since it reads VBA's members (its data records
+  moved).
+- Checked: every test passes (four new unit tests), and screenshots of each tab in both themes. Nothing a page
+  shows changed.
+- vbadoc 0.39.0.
 
 ### 2026-11-15: Step M1, the shared library in three
 

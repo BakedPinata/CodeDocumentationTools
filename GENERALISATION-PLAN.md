@@ -46,7 +46,7 @@ step K0. The progress table says where the work is.
 | [L5](#step-l5-printing-and-descriptions-g3) | Printing a view or every view, with descriptions (G3) | Claude, then you on a work machine | Done; your check on a work machine is still to come |
 | [L6](#step-l6-copy-a-view-as-text-g4) | Copy a view as text, to paste into a chat (G4) | Claude | Done |
 | [M1](#step-m1-the-shared-library-in-three) | The shared library in three: what every tool needs, what only workbooks need, and the code views. The shell says "source", not "workbook" | Claude | Done |
-| [M2](#step-m2-vbadocs-views-move-to-the-code-views-library) | vbadoc's graph, class diagram and Calls tab move to the code views library | Claude | Not started |
+| [M2](#step-m2-vbadocs-views-move-to-the-code-views-library) | vbadoc's graph, class diagram and Calls tab move to the code views library | Claude | Done, with the views' browser tests left in vbadoc: see the step |
 | [M3](#step-m3-the-code-model) | The code model: the views draw what a language describes, and files are apart from the things in them. vbadoc is its first language | Claude | Not started |
 | [N1](#step-n1-sample-databases-and-a-spike-on-reading-them) | Sample Access databases, and a spike on getting forms and VBA out of them | Claude, then you at home and on a work machine | Not started |
 | [N2](#step-n2-accessdoc-reads-a-databases-vba) | `accessdoc`: the VBA language in a library vbadoc and accessdoc share; the tool's skeleton; a page of the database's VBA | Claude | Not started |
@@ -742,6 +742,29 @@ Done on 2026-11-15, as above. What was decided along the way:
 `graph.js`, `classes.js`, `calls.js`, the parts of `page.js` and `page.css` they need, and `ClassDiagram` move as
 they are, still speaking of modules. vbadoc's browser tests move with them where they test the views, and stay where
 they test vbadoc.
+
+Done on 2026-11-15, with two things that aren't as written above:
+
+- **The browser tests stayed in vbadoc,** all of them. A test of a view needs a page to open, and a page needs a
+  language to fill it: until M3 the only one is VBA, which is vbadoc's Core. Moving the tests would have made the
+  library's tests depend on a tool, which the guidelines rule out for the libraries. M3 gives the library browser
+  tests of its own, over its made-up language. Say if you'd rather they moved anyway.
+- **`ClassDiagram` stayed in vbadoc; its data moved.** It works out a box's lines from VBA's members (`Property Get`,
+  `WithEvents`, `Declare`), so it's the VBA language's, and goes to `CodeDocumenter.Vba` with the parser in N2. What
+  the diagram draws from, the records `PageClassLine` and `PageClassEdge`, is in the library.
+
+What was decided along the way:
+
+- **All of `page.js` went, as `code-page.js`,** but for what's about a workbook: nearly all of it is what any page
+  of code needs (the selection, the source panel, the Dependencies list, the explorer, search, Back and Forward).
+  vbadoc's `page.js` is now a page long. It says how module files are decoded (the project's code page) and
+  highlighted, and fills the Export tab, in `window.codeViewsPage`, which the library's script reads.
+- **All of `page.css` went, as `views.css`,** as every rule in it was for the views or the source panel.
+- **The library's scripts still say `window.vbadoc`,** and keep their settings under `vbadoc-…`. M3 changes that
+  with the rest of what assumes VBA.
+- **A page's scripts can come from more than one assembly** (`PageScript` in `ShellPage`), the tool's and a
+  library's.
+- **Nothing a page shows changed.** Checked by the tests, and by screenshots of each tab in both themes.
 
 ### Step M3: The code model
 

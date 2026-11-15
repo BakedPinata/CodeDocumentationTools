@@ -606,6 +606,21 @@ Favourites below. Back and Forward stay as they are.
 - **Browser tests written for the graph's geometry** open the page without the explorer (a stored setting), because
   a narrower view moves nodes under the legend or out of view. The explorer has tests of its own.
 
+### Where the views live (0.39.0, step M2 of the generalisation plan)
+
+- **The graph, the class diagram, the Calls tab and the page they're part of are the code views library's**
+  (`CodeDocumenter.CodeViews`; see `shared/README.md`). Decisions below that name `page.js`, `graph.js`,
+  `classes.js`, `calls.js`, `views.html` or `page.css` are about files that are there now, `page.js` as
+  `code-page.js` and `page.css` as `views.css`. They still hold as written.
+- **vbadoc's own `page.js`** says what's about a workbook's VBA project: how module files are decoded (the
+  project's code page, with windows-1252 and a note when the browser can't), the highlighter, and what the Export
+  tab can take. `HtmlPageWriter` takes the tabs, views, styles and script order from `CodeViewsPage`.
+- **`ClassDiagram` stays here,** as it reads VBA's members. The records it fills (`PageClassLine`, `PageClassEdge`)
+  are the library's.
+- **The browser tests stay here** and go on testing the views through vbadoc's pages, as only vbadoc can make a
+  page of code until the code model (M3).
+- **Nothing the page shows changed.**
+
 ### The shared libraries (0.38.0, step M1 of the generalisation plan)
 
 - **vbadoc uses all three:** `CodeDocumenter.Shared`, `CodeDocumenter.Workbooks` (opening the workbook, and

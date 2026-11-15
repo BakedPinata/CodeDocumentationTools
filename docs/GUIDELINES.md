@@ -100,7 +100,8 @@ Agreed on 2026-11-13. Until a tool says otherwise:
   - **`CodeDocumenter.Workbooks`:** what only the tools that read Excel workbooks need. Opening and writing a
     workbook, and the `import` command.
   - **`CodeDocumenter.CodeViews`:** what every tool that documents code needs, which is every tool but pqdoc. The
-    views drawn from code: the graph, the class diagram and the Calls tab.
+    views drawn from code (the graph, the class diagram and the Calls tab) and the page of code they're part of: its
+    script, template and styles. A tool brings its data, its highlighter and what's its own.
 
   The tools' Core libraries use them and never each other, and they never use a tool. `CodeDocumenter.Workbooks` and
   `CodeDocumenter.CodeViews` use `CodeDocumenter.Shared`, and not each other. They aren't products, so they have no
@@ -218,7 +219,8 @@ Agreed on 2026-11-13. Until a tool says otherwise:
   attribution to carry. If many more are needed, an icon set can be weighed again, including its effect on how quickly
   the page responds.
 - **Each tool keeps its own global, data block and stored settings** (`window.vbadoc`, `#vbadoc-data`, `vbadoc-…`),
-  so its views talk to the tool, not the shell, and a setting remembered before the shell keeps working.
+  so its views talk to the tool, not the shell, and a setting remembered before the shell keeps working. A tool whose
+  page is the code views library's says what's its own in `window.codeViewsPage`, before the library's script runs.
 - **Generated pages never load anything from the network.**
 - Vendored libraries are stored once, byte-for-byte unchanged, in `shared/src/CodeDocumenter.Shared/Resources/Vendor/`
   with their licence files, and are inlined into each page with the licence as a comment.
