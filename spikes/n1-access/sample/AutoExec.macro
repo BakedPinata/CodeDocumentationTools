@@ -1,0 +1,11 @@
+Version =196611
+ColumnsShown =0
+Begin
+    Action ="SetTempVar"
+    Argument ="AutoExecRan"
+    Argument ="True"
+End
+Begin
+    Action ="RunCode"
+    Argument ="LogStartup(\"AutoExec\")"
+End

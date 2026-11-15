@@ -1,0 +1,26 @@
+Option Compare Database
+Option Explicit
+
+' Things the forms share. Made-up content, for accessdoc's tests.
+
+' Says hello. Run by an expression in a button's On Click: =SayHello()
+Public Function SayHello() As Boolean
+    MsgBox "Hello from the sample database"
+    SayHello = True
+End Function
+
+' Records that start-up code ran, so a reader of the database can prove it didn't.
+Public Function LogStartup(ByVal what As String) As Boolean
+    CurrentDb.Execute "INSERT INTO StartupLog (What, At) VALUES ('" & what & "', Now())"
+    TempVars.Add "StartupRan", what
+    LogStartup = True
+End Function
+
+' What one line of an order comes to.
+Public Function LineTotal(ByVal quantity As Long, ByVal price As Currency) As Currency
+    LineTotal = quantity * price
+End Function
+
+Public Sub OpenCustomers()
+    DoCmd.OpenForm "frmCustomers"
+End Sub

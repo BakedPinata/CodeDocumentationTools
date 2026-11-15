@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Step N1 of the generalisation plan: throwaway code, kept out of the tools and their solutions. It tries two ways
+       of getting forms and VBA out of an Access database: Access writing them as text from a copy (choice A), and
+       reading the file with no Access at all (choice C). See README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>AccessSpike</RootNamespace>
+    <AssemblyName>accessspike</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <!-- One file to carry to a work machine: dotnet publish -c Release -r win-x64 (see README.md). -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- For choice C: the VBA project in a database is stored as a workbook's is, so vbadoc's reading of it is used. -->
+    <ProjectReference Include="..\..\vbadoc\src\VbaDocumenter.Core\VbaDocumenter.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The sample database's source, read from beside the executable. -->
+    <None Include="sample\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
