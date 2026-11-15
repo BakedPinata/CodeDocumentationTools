@@ -1,0 +1,5 @@
+Customers	local	5 fields	
+OrderLines	local	5 fields	
+Orders	local	5 fields	
+Regions	linked	2 fields	;DATABASE=C:\Users\Public\Documents\AccessDocSample\SampleBackEnd.accdb
+StartupLog	local	3 fields	
