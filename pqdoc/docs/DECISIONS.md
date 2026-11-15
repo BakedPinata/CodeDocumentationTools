@@ -235,6 +235,13 @@ The commands and what they promise are in Requirements.md (FR-IMP-7 to FR-IMP-16
   check, because a token's kind also shows in its text (quotes, `//`, digits, `#`). In the light theme numbers and type
   names are close in colour, in vbadoc too; left for C2, which gives both pages one set of tokens.
 
+## Copy as text (1.26.0, step L6 of the generalisation plan)
+
+- **Copy as text is the shell's** (FR-HTML-26; see `shared/README.md`), from what pqdoc already gives Print: the
+  queries the graph shows, each described the same way. pqdoc adds only `language: "powerquery"` for the code
+  blocks. It has no view that needs text of its own.
+- **Tests read the text through `pqdoc.viewText`.**
+
 ## Descriptions and printing (1.25.0, step L5 of the generalisation plan)
 
 - **A query's description** (FR-HTML-24) is `Analysis/QueryDescription`: the workbook's own, which `WorkbookReader`

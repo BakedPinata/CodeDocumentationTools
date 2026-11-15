@@ -232,6 +232,12 @@ that mentions something the workbook no longer has still opens, and says what's 
 used by. **Every saved view** prints each of your views from a new page, which makes a document of the workbook to
 leave with it. Tick **Include each item's source** to add the code.
 
+**Copy**, beside it, puts what the page shows on the clipboard as text (Markdown), to paste into a chat or a document:
+each item with its signature, description and what it uses and is used by, and on the Calls tab the tree as you've
+opened it. Tick **Include each item's source** to add the code. It says how much it copied, and warns when that's long
+for a chat; tick fewer items in the explorer to shorten it. If the browser won't copy, the text appears in a box to
+copy by hand. The text only goes to your clipboard.
+
 A module's or member's description is its `VB_Description` attribute if it has one, otherwise the comments directly
 above it (for a module, the comments at its top). It shows under the name in the source panel.
 

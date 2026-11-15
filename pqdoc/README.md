@@ -156,6 +156,9 @@ left to right by depth (how many queries feed them). You can:
   comments at the top of its M code;
 - print the graph and its queries, or every saved view from a new page each, with **Print** in the top bar, and save
   it as a PDF from the browser's print dialog;
+- copy the queries the graph shows as text (Markdown), with **Copy** in the top bar, to paste into a chat or a
+  document: each query's description and what it uses, and its M code if you tick **Include each item's source**.
+  It warns when the text is long for a chat, and it only goes to your clipboard;
 - reset the view.
 
 The top bar says how many queries and dependencies there are and, for a workbook, when it was last saved; it never

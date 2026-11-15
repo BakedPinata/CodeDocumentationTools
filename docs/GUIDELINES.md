@@ -194,6 +194,11 @@ Agreed on 2026-11-13. Until a tool says otherwise:
   its open view is still, which element is its diagram, and what there is to say about an item
   (`shell.print.init`). The document is in the light theme whatever the page is in, and it says which build made the
   page, never when.
+- **Copy as text is the shell's:** a Copy menu beside Print puts the view showing on the clipboard as Markdown, to
+  paste into a chat or a document: the same items Print lists, from the same description of each, with what the
+  tool adds for its open view (vbadoc's Calls tree as it's opened). It says how much it copied, warns when that's
+  long, and shows the text in a box to copy by hand if the browser refuses the clipboard. It only ever goes to the
+  clipboard.
 - **A page never says when it was made,** so the same workbook gives the same page and git diffs show only real
   changes. The top bar's summary says when the workbook was last saved instead, from its own document properties.
 - **The side panel follows the selection** unless locked open: it opens when something is selected and closes when

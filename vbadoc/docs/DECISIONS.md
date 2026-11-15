@@ -606,6 +606,20 @@ Favourites below. Back and Forward stay as they are.
 - **Browser tests written for the graph's geometry** open the page without the explorer (a stored setting), because
   a narrower view moves nodes under the legend or out of view. The explorer has tests of its own.
 
+### Copy as text (0.37.0, step L6 of the generalisation plan)
+
+- **Copy as text is the shell's** (see `shared/README.md`), from what vbadoc already gives Print. vbadoc adds
+  `language: "vba"` for the code blocks and `text()`, which on the Calls tab is `vbadocCalls.text()`.
+- **The Calls tree as text is written beside the tree** (`treeText` in `calls.js`), from the same `roots()`,
+  `childrenOf()` and open rows, so it has the tree's rows in the tree's order: a nested list, two spaces a level. A
+  block's statement is in backticks and whole, where the tree cuts it at 60 characters. A row that could open and
+  isn't ends in "…", and so does a closed group or block, so a reader knows the text stops short there.
+- **The sequence diagram copies as the tree,** since it draws what's open in it.
+- **A module's file and line count is a note, not a signature,** so it isn't put in a code block. Print shows it
+  as text now too.
+- **Tests read the text through `vbadoc.viewText`,** and replace `navigator.clipboard` to check what the menu
+  copies, or to refuse it.
+
 ### Descriptions and printing (0.36.0, step L5 of the generalisation plan)
 
 - **Descriptions are read by the parser** (`Parsing/Descriptions`), into `Member.Description` and

@@ -44,7 +44,7 @@ step K0. The progress table says where the work is.
 | [L3](#step-l3-calls-tab-follow-ups-e5b) | Calls tab follow-ups (E5b): Ifs whose conditions make calls, and the sequence diagram's participants staying in view | Claude | Done; your real example is still to be checked |
 | [L4](#step-l4-views-file-built-into-the-page-g2) | A views file in the output folder is built into the page (G2) | Claude | Done |
 | [L5](#step-l5-printing-and-descriptions-g3) | Printing a view or every view, with descriptions (G3) | Claude, then you on a work machine | Done; your check on a work machine is still to come |
-| [L6](#step-l6-copy-a-view-as-text-g4) | Copy a view as text, to paste into a chat (G4) | Claude | Not started |
+| [L6](#step-l6-copy-a-view-as-text-g4) | Copy a view as text, to paste into a chat (G4) | Claude | Done |
 | [M1](#step-m1-the-shared-library-in-three) | The shared library in three: what every tool needs, what only workbooks need, and the code views. The shell says "source", not "workbook" | Claude | Not started |
 | [M2](#step-m2-vbadocs-views-move-to-the-code-views-library) | vbadoc's graph, class diagram and Calls tab move to the code views library | Claude | Not started |
 | [M3](#step-m3-the-code-model) | The code model: the views draw what a language describes, and files are apart from the things in them. vbadoc is its first language | Claude | Not started |
@@ -700,6 +700,19 @@ What was decided along the way:
 A Copy button puts the current view on the clipboard as Markdown: its items with signatures and descriptions, the
 open Calls tree, and optionally the source. It warns when the text is long. If the browser refuses the clipboard, the
 text appears in a box to copy by hand. N5 uses the same button for a form's outline.
+
+Done on 2026-11-15, as above. What was decided along the way:
+
+- **A Copy menu in the top bar, beside Print,** with Copy this view and Include each item's source. It copies the
+  page as it is now; there's no "every saved view", which would be far too long for a chat.
+- **The same items as Print lists,** from the same description of each, so the two can't disagree: what the diagram
+  shows, or on the Calls tab the ticked items, or the selection. The same limits too: 200 items, and 300 lines of
+  source an item.
+- **The Calls tab adds its tree as it's opened,** as a nested list, in either direction. A row with more below it
+  that isn't opened ends in "…".
+- **Long is more than 30,000 characters.** It's still copied, with a warning that says how to shorten it.
+- **A tool adds text of its own for its open view** (`text()` in `shell.print.init`), which is where N5's outline of
+  a form goes.
 
 ### Step M1: The shared library in three
 

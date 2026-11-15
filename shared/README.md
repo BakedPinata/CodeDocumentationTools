@@ -164,6 +164,29 @@ dotnet test --solution CodeDocumentationTools.sln                # everything, s
   result reaches `AtomicFileWriter.Replace`, which uses `File.Replace` so the file keeps its permissions and creation
   time. A move would give it the folder's.
 
+### Copy as text (step L6 of the generalisation plan)
+
+- **The Copy menu is the shell's,** in the top bar after Print, and shown with it, once a tool calls
+  `shell.print.init`: Copy this view, and Include each item's source, remembered as `<tool>-copy-source`.
+- **It's Print's document as Markdown,** from the page as it is now: `# <title>`, the summary and "Made by" with the
+  build stamp; `## <the view's name>` (or "The page as it is now"), its description and the line saying what it
+  shows (`viewSays()`, which Print uses too); what the tool adds; then `### <n> items` and a `####` for each, with
+  its kind, signature in a code block, note, description, and Uses and Used by as a list.
+- **The items are Print's** (`printedItems()`, `describe(id)`), with Print's limits (`PRINT_ITEMS`,
+  `PRINT_SOURCE_LINES`), so a printed view and a copied one list the same things.
+- **Two more things a tool can give `print.init` are for it:** `text()`, Markdown for what the open view shows that
+  isn't a list of items, under a heading of level 3, or `""`; and `language`, written on the code blocks.
+- **Source is the file's own lines,** not the highlighted HTML, with "Lines 7 to 11:" above a block that isn't the
+  whole file. If source was asked for and none is loaded, the text ends by saying so.
+- **A code block can't be ended by its code:** its fence is longer than any run of backticks inside it (`fenced`).
+  Names and descriptions are copied as written, not escaped, as the text is read more often than it's rendered.
+- **Long is more than `COPY_LONG` characters** (30,000). The text is copied all the same, and the status warns, with
+  what would shorten it.
+- **If the clipboard is refused** (`copyText`, which the code view's copy button uses, tries the clipboard API and
+  then the older copy command), the text is put in a read-only box in the menu, selected, for Ctrl+C.
+- **`shell.copy.text(options)`** gives a promise of the text, for tests.
+- **No "every saved view".** A chat wants one view; a document of them all is what Print is for.
+
 ### Printing (step L5 of the generalisation plan)
 
 - **The Print menu is the shell's,** in the top bar after Views, shown once a tool calls
@@ -191,7 +214,7 @@ dotnet test --solution CodeDocumentationTools.sln                # everything, s
   without it, the ticked items, or the selection. At most 200 items (`PRINT_ITEMS`), and 300 lines of source an item
   (`PRINT_SOURCE_LINES`), each with a line saying how many more there are.
 - **`describe(id)`** gives `{ name, kind, signature, note, description, uses, usedBy, source: { id, first, last } }`:
-  `signature` prints as code and `note` as text, and `uses` and `usedBy` are names.
+  `signature` prints as code and `note` as text, and `uses` and `usedBy` are names. Copy as text uses it too.
 - **Each view after the first starts a new page** (`break-before: page`), and an item isn't split across pages unless
   it has source.
 

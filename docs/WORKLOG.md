@@ -8,7 +8,7 @@ rather than repeating it.
 - **Updating it:** at the end of each stage, and after any session that changes direction, update *Current state* and
   add an entry at the top of the log. Give the date, what changed and why, and commits, in a few lines.
 
-## Current state (2026-11-13)
+## Current state (2026-11-15)
 
 - **`GENERALISATION-PLAN.md`** (root): the current plan, agreed on 2026-11-13. It widens the repository to
   Access databases (forms and VBA), C# solutions and Python projects, with new names for the repository, the shared
@@ -18,12 +18,13 @@ rather than repeating it.
   `CodeDocumenter.Shared`. K2 is done: the desktop app is `codedocui`. K3 (the repository's own name) is the user's
   to start, and nothing waits for it. L1 is done: Lock view. L2 is done: Peek. L3 is done: the Calls tab's follow-ups, with the user's
   real example of the missing Ifs still to be checked. L4 is done: a views file in the output folder is built into
-  the page. L5 is done: descriptions and printing, with the user's check on a work machine still to come.
-- **vbadoc 0.36.0:** stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
+  the page. L5 is done: descriptions and printing, with the user's check on a work machine still to come. L6 is
+  done: Copy as text.
+- **vbadoc 0.37.0:** stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
   `<workbook>-vba.html`, with an explorer of modules and members, in `'@Folder` folders or by kind. It asks
   before overwriting a page that would change (`--on-exists`, `--force`), as pqdoc does. Stage 6 (UserForms) is parked;
   stage 7 waits for the generalisation plan. Since 0.31.0 (step J2) it writes into add-ins (`.xlam`) as into workbooks.
-- **pqdoc 1.25.0**, plus stages 3b–3d: reads a workbook's queries directly, or a folder of hand-exported `.m` files,
+- **pqdoc 1.26.0**, plus stages 3b–3d: reads a workbook's queries directly, or a folder of hand-exported `.m` files,
   and writes HTML by default as `<workbook or folder>-powerquery.html`. From a workbook it also writes each query to a
   `.m` file, kept in step with the workbook. The page shows each query's M code, highlighted, and an explorer of the
   queries in their Excel groups, nested as Excel shows them, or as queries and functions.
@@ -47,6 +48,18 @@ rather than repeating it.
 ## Log
 
 Newest first.
+
+### 2026-11-15: Step L6, copy a view as text (G4)
+
+- A Copy menu in the top bar, the shell's, beside Print: Copy this view puts the page as it is on the clipboard as
+  Markdown (title, summary and build stamp; the view's name, description and what it shows; each item Print would
+  list, with kind, signature, description and Uses / Used by, and its source if asked). It says how much it copied,
+  warns above 30,000 characters, and shows the text in a box if the browser refuses the clipboard.
+- vbadoc's Calls tab adds its tree as it's opened, as a nested list, in either direction. A tool adds such text
+  through `text()` in `shell.print.init`, which is where N5's outline of a form will go.
+- Changed: a module's file and line count prints as a note, not as code.
+- Checked: every test passes (ten new browser tests), and screenshots of the menu in both themes.
+- vbadoc 0.37.0, pqdoc 1.26.0.
 
 ### 2026-11-13: Step L5, descriptions and printing (G3)
 

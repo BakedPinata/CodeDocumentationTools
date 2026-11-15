@@ -217,6 +217,15 @@ Shared by both views.
 - **Include each item's source** adds each item's code, highlighted and numbered as its file has it, up to 300 lines an item, when the source is embedded or a folder is loaded. The choice is remembered.
 - The browser's own Print (Ctrl+P) still prints the page as it looks.
 
+### Copy as text
+
+- **A Copy menu** in the top bar, beside Print, puts the page as it's arranged now on the clipboard as Markdown, to paste into a chat or a document. It goes nowhere else.
+- **The text** has the workbook's name, the page's summary and the build of vbadoc that made the page, then the view's name and description if the page is still as a saved view has it, the line saying what it shows, and the same items Print lists, each with its name, kind, signature as code, description, and what it uses and what uses it. The same limit applies: 200 items, with a count of the rest.
+- **On the Calls tab** the tree comes first, as it's opened, as a nested list in the order of the code: groups, procedures with their kind and role, blocks with their statement, calls made by a block's own statement marked as in the tree, late-bound calls, recursion, each call's line, and a count of calls left out. A row with more below it that isn't opened ends in "…". Called by lists each caller with the block its call is in.
+- **Include each item's source** adds each item's own lines as a code block, up to 300 lines an item, when the source is embedded or a folder is loaded; if it isn't, the text says so. The choice is remembered.
+- **The menu says how many characters were copied,** and warns when it's more than 30,000, with how to shorten it.
+- **If the browser refuses the clipboard,** the text is shown in a box in the menu, selected, to copy with Ctrl+C.
+
 ### Saved views
 
 - **A view** is everything the page shows, saved under a name, with a description: the tab; the selection and whether it's focused; Focus on click and Focus on favourites; the views' filter, whether the view is locked (with the ticks to go back to), the hidden items, the Show… choices and the widely used share; whether the explorer and the source panel are shown, their sizes, the explorer's layout and the source panel's lock; whether the source panel shows a member in its whole module and its Dependencies; the graph's level, Dependencies / Dependents, Path, legend picks and settings (apart from the two about dragging) and, at each level where anything was moved, where its nodes are and which are pinned, and the same for a focused graph; the class diagram's Members switch, legend picks and moved boxes, focused or not; and the Calls tab's starting point, open rows, Calls or Called by, and tree or sequence diagram. Favourites and the theme stay the person's own.
