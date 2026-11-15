@@ -35,7 +35,7 @@ public class HtmlPageWriterTests
 
     var summary = HtmlPageWriter.Summary(model);
     Assert.Matches(@"^12 modules, \d+ members, \d+ module and \d+ member dependencies\.$", summary);
-    Assert.Contains($">{summary} Workbook saved <time id=\"workbook-saved\" datetime=\"2026-11-04T01:57:36Z\"", html);
+    Assert.Contains($">{summary} Workbook saved <time id=\"source-saved\" datetime=\"2026-11-04T01:57:36Z\"", html);
   }
 
   [Fact]

@@ -341,15 +341,15 @@ public sealed class ViewsTests(PageFixture fixture) : IDisposable
 
     var text = File.ReadAllText(file);
     var json = JsonNode.Parse(text)!.AsObject();
-    Assert.Equal(["formatVersion", "tool", "views", "workbook"], json.Select(p => p.Key));
+    Assert.Equal(["formatVersion", "source", "tool", "views"], json.Select(p => p.Key));
     Assert.Equal(1, (int)json["formatVersion"]!);
     Assert.Equal("vbadoc", (string)json["tool"]!);
-    Assert.Equal("SampleVba.xlsm", (string)json["workbook"]!);
+    Assert.Equal("SampleVba.xlsm", (string)json["source"]!);
     var first = json["views"]![0]!.AsObject();
     Assert.Equal(first.Select(p => p.Key).Order(StringComparer.Ordinal), first.Select(p => p.Key));
     Assert.Equal("Without logging", (string)first["name"]!);
     Assert.Equal(["Logger"], first["hidden"]!.AsArray().Select(n => (string)n!));
-    Assert.StartsWith("{\n  \"formatVersion\": 1,\n  \"tool\": \"vbadoc\",\n  \"views\": [\n    {\n", text);
+    Assert.StartsWith("{\n  \"formatVersion\": 1,\n  \"source\": \"SampleVba.xlsm\",\n  \"tool\": \"vbadoc\",\n  \"views\": [\n    {\n", text);
     Assert.EndsWith("}\n", text);
 
     // A new browser has none of this one's storage.

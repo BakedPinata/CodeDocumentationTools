@@ -113,7 +113,7 @@ public sealed class PageFixture : IAsyncLifetime
       {
         "formatVersion": 1,
         "tool": "vbadoc",
-        "workbook": "SampleVba.xlsm",
+        "source": "SampleVba.xlsm",
         "views": [
       """ + OrdersView + """
           ,

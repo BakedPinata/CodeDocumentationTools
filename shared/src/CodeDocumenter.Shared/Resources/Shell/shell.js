@@ -39,9 +39,12 @@
 //   shell.focusOnClick() / setFocusOnClick(on)   the page's Focus on click setting, remembered as
 //                                      <tool>-focus-on-click and on unless turned off; setting it applies it to the
 //                                      current selection too
-//   shell.items.init({ workbook, exists(id), node(id), describeFilter(ids) })   the workbook (favourites, the filter
-//                                      and hidden items are remembered per workbook, as <tool>-favourites|<workbook>,
-//                                      <tool>-filter|<workbook> and <tool>-hidden|<workbook>), whether an id is still
+//   shell.items.init({ source, sourceWord, exists(id), node(id), describeFilter(ids) })   what the page documents:
+//                                      source is its name, such as a workbook's file name (favourites, the filter and
+//                                      hidden items are remembered per source, as <tool>-favourites|<source>,
+//                                      <tool>-filter|<source> and <tool>-hidden|<source>), and sourceWord what kind of
+//                                      thing it is, for messages, such as "workbook" or "database" ("source" without
+//                                      it). Then whether an id is still
 //                                      in it (others are ignored), the explorer node for one, and what the filter
 //                                      shows, such as "5 of 70 modules"; call it before setLayouts. With
 //                                      widelyUsed(share), the tool's explorer nodes for what's used by at least share%
@@ -61,7 +64,7 @@
 //                                      shows ({ ids, alone }, or null to leave the filter as it is), and unlocking
 //                                      puts the ticks back as they were. focused() and focusFavourites() are false
 //                                      while it's on. fn(on) is called in place of onFilterChange, once the filter
-//                                      and the lock have both changed. Remembered per workbook as <tool>-lock|<workbook>
+//                                      and the lock have both changed. Remembered per source as <tool>-lock|<source>
 //   shell.favourites.list() / has(id) / toggle(id) / onFavouritesChange(fn)   the favourites, in the order starred
 //   shell.favourites.buttonHtml(id)    a star that adds or removes the favourite, for the side panel's header; the
 //                                      explorer's rows have their own, and the shell keeps every star in step
@@ -116,7 +119,7 @@
 //                                      views: save() gives what to keep (JSON, or null for nothing), apply(value)
 //                                      sets the view to it without drawing (value is undefined for a view without
 //                                      it, which starts afresh), and ids(value) lists the items it mentions, so those
-//                                      the workbook no longer has can be listed. name can't be one of the shell's own:
+//                                      the source no longer has can be listed. name can't be one of the shell's own:
 //                                      name, description, tab, filter, alone, lock, hidden, show, selection, focus,
 //                                      explorer or panel
 //   Views built into the page: a tool that finds <tool>-views.json in its output folder puts its views in the page
@@ -146,6 +149,7 @@
 //   language, the name written on its code blocks, such as "vba"
 //   shell.copy.text(options)           the text the menu would copy (options.source includes each item's source),
 //                                      giving a promise, for tests
+//   The Export tab is there when the tool asks for it (ShellPage.ExportTab), as the workbook tools do: then
 //   shell.exports.init({ what, whyNot(id), uses(id), needs(id), offers(id), pickFor(id), references, writeTo })   the Export tab,
 //                                      which lists the explorer's items: what they are ("modules and classes"), why an
 //                                      item can't be picked (null when it can), the items it uses that can come, what
@@ -196,9 +200,9 @@
 
     var data = JSON.parse($(tool + "-data").textContent);
 
-    // The workbook's saved time is written in UTC, so the page is the same wherever it's made; show it in the viewer's
-    // own time, keeping the UTC text if the browser can't.
-    var savedTime = $("workbook-saved");
+    // When the source was last saved is written in UTC, so the page is the same wherever it's made; show it in the
+    // viewer's own time, keeping the UTC text if the browser can't.
+    var savedTime = $("source-saved");
     if (savedTime) {
       try {
         var saved = new Date(savedTime.getAttribute("datetime"));
@@ -942,18 +946,21 @@
 
     // ---- Favourites ----
     //
-    // Any number, starred from the explorer or the side panel's header, remembered per workbook in the browser, and
+    // Any number, starred from the explorer or the side panel's header, remembered per source in the browser, and
     // listed at the top of the explorer in every layout, in the order they were starred. A favourite that's no longer
-    // in the workbook is ignored. Every star is a button with data-favourite="<id>", which the shell keeps in step.
+    // in the source is ignored. Every star is a button with data-favourite="<id>", which the shell keeps in step.
 
     var STAR_ICON = "<svg class=\"icon star-icon\" viewBox=\"0 0 16 16\" aria-hidden=\"true\" focusable=\"false\">" +
       "<path d=\"M8 1.8l1.9 3.95 4.35.55-3.2 3 .8 4.3L8 11.5l-3.85 2.1.8-4.3-3.2-3 4.35-.55z\"/></svg>";
     var favouriteSource = null; // from items.init
-    var favourites = [];        // ids in the order starred, including any no longer in the workbook
+    var favourites = [];        // ids in the order starred, including any no longer in the source
     var favouritesItem = null;  // the Favourites group in the tree, or null when there are none
     var favouritesOpen = true;
 
-    function favouritesKey() { return "favourites|" + favouriteSource.workbook; }
+    // What the page documents, in a word, for messages: the tool's ("workbook", "database"), or "source".
+    function sourceWord() { return (favouriteSource && favouriteSource.sourceWord) || "source"; }
+
+    function favouritesKey() { return "favourites|" + favouriteSource.source; }
 
     function loadIds(name) {
       try {
@@ -1033,7 +1040,7 @@
     // ---- Hiding ----
     //
     // Hiding takes an item out of every view; the tool says what goes with it (a module's members). Hidden with the
-    // button on an explorer row or in the side panel's header, remembered per workbook, and never silent: a hidden
+    // button on an explorer row or in the side panel's header, remembered per source, and never silent: a hidden
     // item stays in the layout, marked, and is listed in a Hidden group at the foot of the explorer, to bring back one
     // at a time or all at once; every view's toolbar counts them; and the side panel says when the selection is hidden
     // or what it's linked to is. Every hide button has data-hide="<id>", which the shell keeps in step.
@@ -1042,11 +1049,11 @@
     var HIDE_ICON = "<svg class=\"icon hide-icon\" viewBox=\"0 0 16 16\" aria-hidden=\"true\" focusable=\"false\">" +
       "<path d=\"M1.75 8S4 4.25 8 4.25 14.25 8 14.25 8 12 11.75 8 11.75 1.75 8 1.75 8z\"/><circle cx=\"8\" cy=\"8\" r=\"1.75\"/>" +
       "<path d=\"M2.75 13.25l10.5-10.5\"/></svg>";
-    var hiddenIds = [];     // in the order hidden, including any no longer in the workbook
+    var hiddenIds = [];     // in the order hidden, including any no longer in the source
     var hiddenItem = null;  // the Hidden group in the tree, or null when nothing is hidden
     var hiddenOpen = false;
 
-    function hiddenKey() { return "hidden|" + favouriteSource.workbook; }
+    function hiddenKey() { return "hidden|" + favouriteSource.source; }
 
     function hiddenList() {
       return favouriteSource ? hiddenIds.filter(function (id) { return favouriteSource.exists(id); }) : [];
@@ -1259,7 +1266,7 @@
     // ---- The Show… menu ----
     //
     // What kinds of thing the tree and every view show, chosen in one place: the tool gives the sections and says
-    // whether the choices keep an item (items.init's kept). Remembered per tool, not per workbook, as the views' own
+    // whether the choices keep an item (items.init's kept). Remembered per tool, not per source, as the views' own
     // Show… menus were. Never silent: the button counts the choices in effect, and so does a note in every view's
     // toolbar, with Show everything.
 
@@ -1478,10 +1485,10 @@
     // Ticking an item's box adds it to the filter, and while anything is ticked the views show only what's ticked; the
     // tool says what a tick covers (has()). A box is apart from the name, which still selects, and from the selection:
     // Esc clears the selection, not the filter. Ticking a folder or group ticks the items in it, and an item's own box
-    // ticks it with all it holds (a module's members), whose boxes then show ticked. Remembered per workbook; never
+    // ticks it with all it holds (a module's members), whose boxes then show ticked. Remembered per source; never
     // silent, with a bar in the explorer and a note in every view's toolbar, each with Clear.
 
-    var ticked = new Set();     // ids ticked, including any no longer in the workbook
+    var ticked = new Set();     // ids ticked, including any no longer in the source
     var alone = new Set();      // ids in the filter on their own, without what they hold (see Lock view)
     var viewLock = null;        // null, or { before, beforeAlone }: the ticks to go back to when the view is unlocked
     var filterBar = $("explorer-filter-bar");
@@ -1508,8 +1515,8 @@
       showNotes.push(showNote);
     });
 
-    function filterKey() { return "filter|" + favouriteSource.workbook; }
-    function aloneKey() { return "filter-alone|" + favouriteSource.workbook; }
+    function filterKey() { return "filter|" + favouriteSource.source; }
+    function aloneKey() { return "filter-alone|" + favouriteSource.source; }
 
     function filterIds() {
       return favouriteSource ? Array.from(ticked).filter(function (id) { return favouriteSource.exists(id); }) : [];
@@ -1632,7 +1639,7 @@
     // selects: the views keep their items, places and zoom, and only the selection's outline and the side panel
     // change. An item shown without all it holds (a module whose own node is in the graph while its members aren't)
     // is kept "alone", its box half ticked. Unlocking puts the ticks back as they were. One lock for the page,
-    // remembered per workbook with the ticks to go back to, and kept in a saved view.
+    // remembered per source with the ticks to go back to, and kept in a saved view.
 
     var LOCK_ICONS = "<svg class=\"icon lock-open\" viewBox=\"0 0 16 16\" aria-hidden=\"true\" focusable=\"false\"><rect x=\"3\" y=\"7.5\" width=\"10\" height=\"6.5\" rx=\"1.5\"/><path d=\"M5.5 7.5V5a2.5 2.5 0 0 1 4.9-.7\"/></svg>" +
       "<svg class=\"icon lock-shut\" viewBox=\"0 0 16 16\" aria-hidden=\"true\" focusable=\"false\"><rect x=\"3\" y=\"7.5\" width=\"10\" height=\"6.5\" rx=\"1.5\"/><path d=\"M5.5 7.5V5a2.5 2.5 0 0 1 5 0v2.5\"/></svg>";
@@ -1648,7 +1655,7 @@
       lockButtons.push(button);
     });
 
-    function lockKey() { return "lock|" + favouriteSource.workbook; }
+    function lockKey() { return "lock|" + favouriteSource.source; }
 
     function cleanLock(raw) {
       if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
@@ -1926,9 +1933,9 @@
     // side panel's lock, and what each of the tool's views adds through views.part (the graph's positions, say).
     // Favourites are the user's own, so they aren't part of one, and nor are the theme and the views' own preferences.
     // The Views menu in the top bar saves the page as a view, opens one, saves over one, and renames, describes or
-    // deletes it. Views are kept per workbook in the browser, as <tool>-views|<workbook>, and Export and Import carry
+    // deletes it. Views are kept per source in the browser, as <tool>-views|<source>, and Export and Import carry
     // them in a file, <tool>-views.json, which works offline in a page opened from disk. The file is JSON with a format
-    // version and the workbook's name, written with sorted keys and 2-space indentation so its diffs are small.
+    // version and the source's name, written with sorted keys and 2-space indentation so its diffs are small.
     //
     // Views can also be built into the page (step L4 of the generalisation plan): a tool that finds <tool>-views.json
     // in its output folder puts the file's views in the page, in a JSON block with the id <tool>-views, so everyone
@@ -1939,7 +1946,7 @@
     //
     // Opening a view sets everything at once, the selection included, telling the tool through onViewApplied rather
     // than the selection's, the filter's, hiding's and the choices' own events, so each view is drawn once. What it
-    // mentions that the workbook no longer has is left out and listed, in the page and on the console, never treated
+    // mentions that the source no longer has is left out and listed, in the page and on the console, never treated
     // as an error. A view saved before it kept something (the panels, say) leaves that as it is.
 
     var VIEWS_FORMAT = 1;
@@ -1952,7 +1959,7 @@
     var currentArrangement = null; // how the page was arranged then, to tell whether it's changed since
     var undoState = null;        // while Undo is offered: the list as it was, and what to say once it's put back
     var editing = null;          // null, "new", or the view being renamed or described
-    var pendingImport = null;    // views read from a file that doesn't match the workbook, until imported or not
+    var pendingImport = null;    // views read from a file that doesn't match the source, until imported or not
     var viewsBox = $("views");
     var viewsSummary = viewsBox.querySelector("summary");
     var viewsList = $("views-list");
@@ -1964,7 +1971,7 @@
     var viewsInput = $("views-import");
     var noticeBox = $("page-notice");
 
-    function viewsKey() { return "views|" + favouriteSource.workbook; }
+    function viewsKey() { return "views|" + favouriteSource.source; }
 
     function stringList(value) { return Array.isArray(value) ? value.filter(function (id) { return typeof id === "string"; }) : []; }
 
@@ -2124,7 +2131,7 @@
       return JSON.stringify(sortedKeys(copy));
     }
 
-    // The items a view mentions that the workbook doesn't have.
+    // The items a view mentions that the source doesn't have.
     function missingFrom(view) {
       if (!favouriteSource) return [];
       var ids = view.filter.concat(view.alone || [], view.hidden, view.selection ? [view.selection.id] : []);
@@ -2237,8 +2244,8 @@
       currentArrangement = arrangementOf(captureView());
       var missing = missingFrom(view);
       if (missing.length > 0) {
-        console.warn(tool + ": the view \"" + view.name + "\" mentions " + itemsText(missing.length) + " that this workbook doesn't have: " + missing.join(", "));
-        showNotice("The view “" + view.name + "” mentions " + itemsText(missing.length) + " that this workbook doesn't have, so " +
+        console.warn(tool + ": the view \"" + view.name + "\" mentions " + itemsText(missing.length) + " that this " + sourceWord() + " doesn't have: " + missing.join(", "));
+        showNotice("The view “" + view.name + "” mentions " + itemsText(missing.length) + " that this " + sourceWord() + " doesn't have, so " +
           (missing.length === 1 ? "it's" : "they're") + " left out: " + listOf(missing) + ".");
       } else {
         hideNotice();
@@ -2504,13 +2511,13 @@
       window.setTimeout(function () { URL.revokeObjectURL(link.href); }, 60000);
     }
 
-    // The workbook's name goes in the file, so an import into another workbook's page can say so first.
+    // The source's name goes in the file, so an import into another source's page can say so first.
     function exportViews() {
       // Every view listed, the page's among them with the person's versions in their place, so the file can take the
       // place of the one the page was made with.
       var views = listedViews().map(function (entry) { return entry.view; });
       var file = { formatVersion: VIEWS_FORMAT, tool: tool, views: views };
-      if (favouriteSource) file.workbook = favouriteSource.workbook;
+      if (favouriteSource) file.source = favouriteSource.source;
       downloadJson(tool + "-views.json", file);
       setViewsStatus("Exported " + viewsText(views.length) + " as " + tool + "-views.json. In the page's folder, " + tool +
         " builds them into the page the next time it runs.", false);
@@ -2529,7 +2536,7 @@
     });
 
     // Views read from a file are added, replacing any of the same name, and nothing else changes until one is opened.
-    // A file that doesn't match the workbook (it names another, or mentions items this one doesn't have) says so
+    // A file that doesn't match the source (it names another, or mentions items this one doesn't have) says so
     // first, with what would be replaced, and is imported only if the person goes on. Undo puts the list back.
     function importViews(text, fileName) {
       closeConfirm(); // a file chosen while another waited to be confirmed takes its place
@@ -2552,15 +2559,16 @@
       var missing = new Set();
       views.forEach(function (view) { missingFrom(view).forEach(function (id) { missing.add(id); }); });
       var ids = Array.from(missing).sort();
-      var workbook = favouriteSource ? favouriteSource.workbook : null;
-      var otherWorkbook = typeof file.workbook === "string" && workbook !== null && file.workbook !== workbook ? file.workbook : null;
-      if (ids.length === 0 && otherWorkbook === null) { addImported(reading); return; }
+      var here = favouriteSource ? favouriteSource.source : null;
+      var from = typeof file.source === "string" ? file.source : file.workbook; // "workbook" in files written before step M1
+      var other = typeof from === "string" && here !== null && from !== here ? from : null;
+      if (ids.length === 0 && other === null) { addImported(reading); return; }
 
       var parts = [];
-      if (otherWorkbook !== null) parts.push(fileName + " holds views of " + otherWorkbook + ", not " + workbook + ".");
+      if (other !== null) parts.push(fileName + " holds views of " + other + ", not " + here + ".");
       if (ids.length > 0) {
         parts.push((views.length === 1 ? "Its view mentions " : "Its views mention ") + itemsText(ids.length) +
-          " that this workbook doesn't have, which would be left out: " + listOf(ids) + ".");
+          " that this " + sourceWord() + " doesn't have, which would be left out: " + listOf(ids) + ".");
       }
       var replaced = views.filter(function (view) { return indexOfView(view.name) >= 0; });
       if (replaced.length > 0) {
@@ -2590,7 +2598,7 @@
         var notHere = missingFrom(view);
         if (notHere.length > 0) {
           console.warn(tool + ": the view \"" + view.name + "\" in " + reading.fileName + " mentions " + itemsText(notHere.length) +
-            " that this workbook doesn't have: " + notHere.join(", "));
+            " that this " + sourceWord() + " doesn't have: " + notHere.join(", "));
         }
       });
       dropRedundantViews(); // those the page has already, as they are
@@ -2640,7 +2648,7 @@
     var exportFilterBox = $("export-filter");
     var exportFile = $("export-file");
 
-    function exportKey() { return "export|" + favouriteSource.workbook; }
+    function exportKey() { return "export|" + favouriteSource.source; }
 
     function byLowerName(a, b) {
       var x = a.toLowerCase();
@@ -2797,7 +2805,7 @@
         return "<li><label class=\"export-reference\"><input type=\"checkbox\" data-export-reference=\"" + escapeHtml(r.name) + "\"" + (on ? " checked" : "") + ">" +
           "<span>" + escapeHtml(r.description) + " <span class=\"muted\">" + escapeHtml(r.name) + "</span></span></label></li>";
       });
-      var workbook = favouriteSource.workbook;
+      var workbook = favouriteSource.source;
       exportPlanBox.innerHTML =
         exportListHtml("Chosen", chosen) +
         exportListHtml("Comes along", brought) +
@@ -2863,63 +2871,67 @@
       exportStatus.appendChild(button);
     }
 
-    exportFilterBox.addEventListener("input", filterExportTree);
+    // The tab is there only when the tool asked for it (ShellPage.ExportTab): without it there's nothing to wire.
+    function wireExport() {
+      exportFilterBox.addEventListener("input", filterExportTree);
 
-    exportPlanBox.addEventListener("click", function (event) {
-      var select = event.target.closest("[data-export-select]");
-      var remove = event.target.closest("[data-export-remove]");
-      var add = event.target.closest("[data-export-add]");
-      if (select) selectItem(select.getAttribute("data-export-select"));
-      else if (remove) pickForExport([remove.getAttribute("data-export-remove")], false);
-      else if (add) pickForExport([add.getAttribute("data-export-add")], true);
-    });
-
-    exportPlanBox.addEventListener("change", function (event) {
-      var name = event.target.getAttribute("data-export-reference");
-      if (name === null) return;
-      exportLeaveOut = exportLeaveOut.filter(function (n) { return n !== name; });
-      if (!event.target.checked) exportLeaveOut.push(name);
-      saveExport();
-    });
-
-    $("export-from-filter").addEventListener("click", function () { pickForExport(exportFromFilter(), true); });
-
-    $("export-clear").addEventListener("click", function () {
-      var before = { picks: exportPicks, leaveOut: exportLeaveOut };
-      exportPicks = [];
-      saveExport();
-      updateExport();
-      setExportStatus("Cleared the choice.", false, before);
-    });
-
-    exportStatus.addEventListener("click", function (event) {
-      if (!event.target.closest("#export-undo") || !exportUndo) return;
-      exportPicks = exportUndo.picks;
-      exportLeaveOut = exportUndo.leaveOut;
-      saveExport();
-      updateExport();
-      setExportStatus("Put the choice back.");
-    });
-
-    $("export-download").addEventListener("click", function () {
-      if (exportPicks.length === 0) return;
-      downloadJson(tool + "-export.json", {
-        formatVersion: EXPORT_FORMAT, tool: tool, workbook: favouriteSource.workbook,
-        items: exportPicks.slice().sort(byLowerName), leaveOutReferences: exportLeaveOut.slice().sort(byLowerName)
+      exportPlanBox.addEventListener("click", function (event) {
+        var select = event.target.closest("[data-export-select]");
+        var remove = event.target.closest("[data-export-remove]");
+        var add = event.target.closest("[data-export-add]");
+        if (select) selectItem(select.getAttribute("data-export-select"));
+        else if (remove) pickForExport([remove.getAttribute("data-export-remove")], false);
+        else if (add) pickForExport([add.getAttribute("data-export-add")], true);
       });
-      setExportStatus("Downloaded " + tool + "-export.json.");
-    });
 
-    $("export-load").addEventListener("click", function () { exportFile.click(); });
+      exportPlanBox.addEventListener("change", function (event) {
+        var name = event.target.getAttribute("data-export-reference");
+        if (name === null) return;
+        exportLeaveOut = exportLeaveOut.filter(function (n) { return n !== name; });
+        if (!event.target.checked) exportLeaveOut.push(name);
+        saveExport();
+      });
 
-    exportFile.addEventListener("change", function () {
-      var file = exportFile.files && exportFile.files[0];
-      if (!file) return;
-      var reading = file.text ? file.text() : new Response(file).text();
-      reading.then(function (text) { loadManifest(text, file.name); }, function () {
-        setExportStatus("Couldn't read " + file.name + ".", true);
-      }).then(function () { exportFile.value = ""; }); // so the same file can be read again
-    });
+      $("export-from-filter").addEventListener("click", function () { pickForExport(exportFromFilter(), true); });
+
+      $("export-clear").addEventListener("click", function () {
+        var before = { picks: exportPicks, leaveOut: exportLeaveOut };
+        exportPicks = [];
+        saveExport();
+        updateExport();
+        setExportStatus("Cleared the choice.", false, before);
+      });
+
+      exportStatus.addEventListener("click", function (event) {
+        if (!event.target.closest("#export-undo") || !exportUndo) return;
+        exportPicks = exportUndo.picks;
+        exportLeaveOut = exportUndo.leaveOut;
+        saveExport();
+        updateExport();
+        setExportStatus("Put the choice back.");
+      });
+
+      $("export-download").addEventListener("click", function () {
+        if (exportPicks.length === 0) return;
+        downloadJson(tool + "-export.json", {
+          formatVersion: EXPORT_FORMAT, tool: tool, workbook: favouriteSource.source,
+          items: exportPicks.slice().sort(byLowerName), leaveOutReferences: exportLeaveOut.slice().sort(byLowerName)
+        });
+        setExportStatus("Downloaded " + tool + "-export.json.");
+      });
+
+      $("export-load").addEventListener("click", function () { exportFile.click(); });
+
+      exportFile.addEventListener("change", function () {
+        var file = exportFile.files && exportFile.files[0];
+        if (!file) return;
+        var reading = file.text ? file.text() : new Response(file).text();
+        reading.then(function (text) { loadManifest(text, file.name); }, function () {
+          setExportStatus("Couldn't read " + file.name + ".", true);
+        }).then(function () { exportFile.value = ""; }); // so the same file can be read again
+      });
+    }
+    if (exportTree) wireExport();
 
     // A manifest replaces the choice, and Undo puts it back. What this workbook can't give is left out and listed.
     function loadManifest(text, fileName) {
@@ -2944,9 +2956,9 @@
       exportLeaveOut = stringList(file.leaveOutReferences);
       saveExport();
       updateExport();
-      var other = typeof file.workbook === "string" && file.workbook !== favouriteSource.workbook ? " It was made from " + file.workbook + "." : "";
+      var other = typeof file.workbook === "string" && file.workbook !== favouriteSource.source ? " It was made from " + file.workbook + "." : "";
       setExportStatus("Loaded " + itemsText(exportPicks.length) + " from " + fileName + "." + other +
-        (missing.length > 0 ? " " + itemsText(missing.length) + " this workbook can't give " + (missing.length === 1 ? "was" : "were") + " left out: " + listOf(missing) + "." : ""),
+        (missing.length > 0 ? " " + itemsText(missing.length) + " this " + sourceWord() + " can't give " + (missing.length === 1 ? "was" : "were") + " left out: " + listOf(missing) + "." : ""),
         missing.length > 0 || other !== "", before);
     }
 

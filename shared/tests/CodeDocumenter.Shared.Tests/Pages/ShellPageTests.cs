@@ -125,15 +125,39 @@ public sealed class ShellPageTests
   }
 
   [Fact]
-  public void The_summary_says_when_the_workbook_was_saved_in_UTC()
+  public void The_summary_says_when_the_source_was_saved_in_UTC_in_the_tools_word_for_it()
   {
-    var html = Page(p => p with { Summary = "3 things & more.", WorkbookSaved = new DateTimeOffset(2026, 11, 4, 11, 57, 36, TimeSpan.FromHours(10)) }).Render();
+    var html = Page(p => p with { Summary = "3 things & more.", SourceWord = "workbook", SourceSaved = new DateTimeOffset(2026, 11, 4, 11, 57, 36, TimeSpan.FromHours(10)) }).Render();
 
     Assert.Contains(
-      "<p class=\"summary muted\" id=\"page-summary\">3 things &amp; more. Workbook saved <time id=\"workbook-saved\" " +
+      "<p class=\"summary muted\" id=\"page-summary\">3 things &amp; more. Workbook saved <time id=\"source-saved\" " +
       "datetime=\"2026-11-04T01:57:36Z\" title=\"2026-11-04T01:57:36Z\">2026-11-04 01:57 UTC</time>.</p>",
       html,
       StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void Without_a_word_for_it_the_source_is_a_source()
+  {
+    var html = Page(p => p with { SourceSaved = new DateTimeOffset(2026, 11, 4, 1, 57, 36, TimeSpan.Zero) }).Render();
+
+    Assert.Contains("id=\"page-summary\">Source saved <time id=\"source-saved\"", html, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void The_Export_tab_and_its_view_are_there_only_when_asked_for()
+  {
+    var without = Page().Render();
+    var with = Page(p => p with { ExportTab = true }).Render();
+
+    Assert.DoesNotContain("id=\"tab-export\"", without, StringComparison.Ordinal);
+    Assert.DoesNotContain("id=\"view-export\"", without, StringComparison.Ordinal);
+    // After the tool's own tabs, with its view after theirs.
+    Assert.Contains(
+      "tabindex=\"-1\">Other &lt;view&gt;</button>\n    <button type=\"button\" role=\"tab\" id=\"tab-export\" aria-controls=\"view-export\" aria-selected=\"false\" tabindex=\"-1\">Export</button>",
+      with.ReplaceLineEndings("\n"), StringComparison.Ordinal);
+    Assert.Contains("<section class=\"view export-view\" id=\"view-export\" role=\"tabpanel\" aria-labelledby=\"tab-export\" hidden>", with, StringComparison.Ordinal);
+    Assert.True(with.IndexOf("id=\"view-other\"", StringComparison.Ordinal) < with.IndexOf("id=\"view-export\"", StringComparison.Ordinal));
   }
 
   [Fact]

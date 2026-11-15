@@ -94,7 +94,8 @@ public static class ViewsFile
       warnings.Add($"{skipped} without a name {(skipped == 1 ? "was" : "were")} left out");
     }
 
-    if (Text(file["workbook"]) is { } workbook && workbook != source)
+    // "workbook" in files exported before step M1 of the generalisation plan.
+    if ((Text(file["source"]) ?? Text(file["workbook"])) is { } workbook && workbook != source)
     {
       warnings.Add($"it holds views of {workbook}, not {source}, so they may mention items this page doesn't have");
     }

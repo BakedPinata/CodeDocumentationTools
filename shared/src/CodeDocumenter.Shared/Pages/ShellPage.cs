@@ -21,8 +21,9 @@ public sealed partial record ShellPage
   private static readonly Lazy<string> Template = new(() => EmbeddedResources.ReadText(typeof(ShellPage).Assembly, "Shell/shell.html"));
   private static readonly Lazy<string> ShellStylesheet = new(() => EmbeddedResources.ReadText(typeof(ShellPage).Assembly, "Shell/shell.css"));
 
-  // The shell's own tab, after the tool's: its view is in the template.
-  private static readonly ShellTab ExportTab = new("export", "Export");
+  // The shell's own tab, after the tool's, for a tool that asks for it.
+  private static readonly ShellTab ExportShellTab = new("export", "Export");
+  private static readonly Lazy<string> ExportView = new(() => EmbeddedResources.ReadText(typeof(ShellPage).Assembly, "Shell/export.html"));
 
   /// <summary>
   /// The tool's short name, such as <c>vbadoc</c>. It names the data block (<c>&lt;tool&gt;-data</c>), embedded source
@@ -55,10 +56,24 @@ public sealed partial record ShellPage
   public string Summary { get; init; } = string.Empty;
 
   /// <summary>
-  /// When the workbook was last saved, from its own document properties, shown after <see cref="Summary"/>; null when
-  /// not known. Never when the page was made, so the same workbook always gives the same page.
+  /// What kind of thing the page documents, in a word, such as <c>workbook</c> or <c>database</c>: the word the summary
+  /// uses for when it was saved. The tool's script gives the shell's script the same word, for its messages.
   /// </summary>
-  public DateTimeOffset? WorkbookSaved { get; init; }
+  public string SourceWord { get; init; } = "source";
+
+  /// <summary>
+  /// When the source was last saved, from what it says itself (a workbook's document properties, say), shown after
+  /// <see cref="Summary"/> as "Workbook saved …", with <see cref="SourceWord"/>; null when it isn't known or doesn't
+  /// apply, as for a folder of code. Never when the page was made, so the same source always gives the same page.
+  /// </summary>
+  public DateTimeOffset? SourceSaved { get; init; }
+
+  /// <summary>
+  /// Whether the page has the shell's Export tab, after the tool's own: choosing what to take out of the source, for
+  /// the tool's <c>import</c> command. The workbook tools ask for it; the tool's script then calls
+  /// <c>shell.exports.init</c>.
+  /// </summary>
+  public bool ExportTab { get; init; }
 
   /// <summary>Anything more for the top bar, before its switches, as HTML.</summary>
   public string TopBarHtml { get; init; } = string.Empty;
@@ -119,16 +134,17 @@ public sealed partial record ShellPage
       ["TITLE"] = PageBuilder.Escape(Title),
       ["FAVICON"] = PageBuilder.FaviconDataUri(FaviconSvg),
       ["STYLE"] = ShellStylesheet.Value.TrimEnd() + "\n\n" + Stylesheet,
-      ["TABS"] = TabsHtml([.. Tabs, ExportTab]),
+      ["TABS"] = TabsHtml(ExportTab ? [.. Tabs, ExportShellTab] : Tabs),
       ["SEARCH"] = SearchHtml.TrimEnd(),
       ["LOAD_FOLDER_HINT"] = PageBuilder.Escape(LoadFolderHint),
-      ["SUMMARY"] = SummaryHtml(Summary, WorkbookSaved),
+      ["SUMMARY"] = SummaryHtml(Summary, SourceWord, SourceSaved),
       ["TOP_BAR"] = TopBarHtml.TrimEnd(),
       ["PANEL_NAME"] = PageBuilder.Escape(PanelName),
       ["PANEL_LABEL"] = PageBuilder.Escape(PanelName.ToLowerInvariant()),
       ["EXPLORER_LABEL"] = PageBuilder.Escape(ExplorerLabel),
       ["BEFORE_LAYOUT"] = BeforeLayoutHtml.TrimEnd(),
       ["VIEWS"] = ViewsHtml.TrimEnd(),
+      ["EXPORT_VIEW"] = ExportTab ? ExportView.Value.TrimEnd() : string.Empty,
       ["DATA"] = PageBuilder.EscapeForScriptElement(DataJson),
       ["SAVED_VIEWS"] = ViewsJson.Length == 0
         ? string.Empty
@@ -144,7 +160,7 @@ public sealed partial record ShellPage
   /// The summary in the top bar. The saved time is written in UTC, so the page is the same wherever it's made, and the
   /// shell's script shows it in the viewer's own time.
   /// </summary>
-  private static string SummaryHtml(string summary, DateTimeOffset? saved)
+  private static string SummaryHtml(string summary, string sourceWord, DateTimeOffset? saved)
   {
     if (summary.Length == 0 && saved is null)
     {
@@ -157,12 +173,15 @@ public sealed partial record ShellPage
       var utc = when.ToUniversalTime();
       var iso = utc.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
       html.Append(summary.Length > 0 ? " " : string.Empty)
-        .Append("Workbook saved <time id=\"workbook-saved\" datetime=\"").Append(iso).Append("\" title=\"").Append(iso).Append("\">")
+        .Append(PageBuilder.Escape(Capitalised(sourceWord))).Append(" saved <time id=\"source-saved\" datetime=\"").Append(iso).Append("\" title=\"").Append(iso).Append("\">")
         .Append(utc.ToString("yyyy-MM-dd HH:mm 'UTC'", CultureInfo.InvariantCulture)).Append("</time>.");
     }
 
     return html.Append("</p>").ToString();
   }
+
+  private static string Capitalised(string word) =>
+    word.Length == 0 ? word : char.ToUpper(word[0], CultureInfo.InvariantCulture) + word[1..];
 
   private static string TabsHtml(IReadOnlyList<ShellTab> tabs)
   {

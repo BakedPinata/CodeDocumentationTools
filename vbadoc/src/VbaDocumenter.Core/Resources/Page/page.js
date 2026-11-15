@@ -754,7 +754,8 @@
   // Favourites and the filter are per workbook. In the explorer's Favourites group a member shows its module, as it
   // isn't under it. The filter counts the modules it shows.
   shell.items.init({
-    workbook: data.project.title,
+    source: data.project.title,
+    sourceWord: "workbook",
     kept: kept,
     widelyUsed: widelyUsed,
     exists: function (id) { return modulesById.has(id) || membersById.has(id); },

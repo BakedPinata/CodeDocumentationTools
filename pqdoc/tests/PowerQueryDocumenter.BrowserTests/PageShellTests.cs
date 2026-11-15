@@ -40,10 +40,10 @@ public sealed partial class PageShellTests(PageFixture fixture)
       "11 queries, 11 dependencies, 1 circular dependency. Workbook saved ",
       await page.InnerTextAsync("#page-summary"),
       StringComparison.Ordinal);
-    Assert.Equal("2026-10-02T02:03:00Z", await page.GetAttributeAsync("#workbook-saved", "datetime"));
+    Assert.Equal("2026-10-02T02:03:00Z", await page.GetAttributeAsync("#source-saved", "datetime"));
     Assert.Equal(
       await page.EvaluateAsync<string>("() => new Date('2026-10-02T02:03:00Z').toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })"),
-      await page.InnerTextAsync("#workbook-saved"));
+      await page.InnerTextAsync("#source-saved"));
     Assert.Equal("true", await page.GetAttributeAsync("#tab-graph", "aria-selected"));
   }
 

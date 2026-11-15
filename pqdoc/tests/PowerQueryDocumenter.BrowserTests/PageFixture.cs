@@ -71,7 +71,7 @@ public sealed class PageFixture : IAsyncLifetime
     {
       "formatVersion": 1,
       "tool": "pqdoc",
-      "workbook": "sales-model",
+      "source": "sales-model",
       "views": [
         { "name": "Orders and its source", "description": "Where orders come from", "filter": ["Orders", "Source"], "hidden": [], "show": { "off": [], "radios": {} } }
       ]

@@ -13,7 +13,7 @@ public sealed class ViewsFileTests : IDisposable
     {
       "formatVersion": 1,
       "tool": "vbadoc",
-      "workbook": "Sales.xlsm",
+      "source": "Sales.xlsm",
       "views": [
         { "name": "Orders", "description": "How an order is <processed>", "filter": ["Order", "OrderService"], "tab": "classes" },
         { "name": "Logging", "filter": ["Logger"] }
@@ -107,6 +107,15 @@ public sealed class ViewsFileTests : IDisposable
   public void An_empty_views_file_builds_nothing_in_and_says_nothing()
   {
     Assert.Equal(ViewsFileResult.None, Read("""{ "formatVersion": 1, "tool": "vbadoc", "views": [] }"""));
+  }
+
+  [Fact]
+  public void A_file_exported_when_the_source_was_called_the_workbook_is_read_the_same()
+  {
+    var older = Views.Replace("\"source\":", "\"workbook\":", StringComparison.Ordinal);
+
+    Assert.Null(Read(older).Warning);
+    Assert.Contains("it holds views of Sales.xlsm, not Purchases.xlsm", Read(older, source: "Purchases.xlsm").Warning, StringComparison.Ordinal);
   }
 
   [Fact]

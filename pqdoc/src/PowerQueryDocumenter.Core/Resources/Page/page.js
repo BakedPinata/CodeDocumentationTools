@@ -435,7 +435,8 @@
   };
 
   shell.items.init({
-    workbook: data.title,
+    source: data.title,
+    sourceWord: "workbook",
     kept: kept,
     widelyUsed: widelyUsed,
     exists: function (id) { return queriesById.has(id); },

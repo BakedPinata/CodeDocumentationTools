@@ -173,7 +173,7 @@ public sealed class BuiltInViewsTests(PageFixture fixture) : IDisposable
         await page.InnerTextAsync("#views-status"));
     var json = JsonNode.Parse(File.ReadAllText(file))!.AsObject();
     Assert.Equal(["Orders", "Old logging", "Mine"], json["views"]!.AsArray().Select(v => (string)v!["name"]!));
-    Assert.Equal("SampleVba.xlsm", (string)json["workbook"]!);
+    Assert.Equal("SampleVba.xlsm", (string)json["source"]!);
 
     // The tool reads what the page wrote.
     var read = VbaDocumenter.Core.Output.HtmlPageWriter.ReadViews(_folder, "SampleVba.xlsm");

@@ -94,7 +94,7 @@ public sealed class HtmlExporterTests
     Assert.Contains(">sales-model</h1>", html);
     // In UTC, so the page is the same wherever it's made; the page shows it in the viewer's own time.
     Assert.Contains(
-      ">3 queries, 3 dependencies, 1 circular dependency. Workbook saved <time id=\"workbook-saved\" datetime=\"2026-10-02T02:03:00Z\" " +
+      ">3 queries, 3 dependencies, 1 circular dependency. Workbook saved <time id=\"source-saved\" datetime=\"2026-10-02T02:03:00Z\" " +
       "title=\"2026-10-02T02:03:00Z\">2026-10-02 02:03 UTC</time>.</p>",
       html);
   }
