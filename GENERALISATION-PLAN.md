@@ -48,7 +48,7 @@ step K0. The progress table says where the work is.
 | [M1](#step-m1-the-shared-library-in-three) | The shared library in three: what every tool needs, what only workbooks need, and the code views. The shell says "source", not "workbook" | Claude | Done |
 | [M2](#step-m2-vbadocs-views-move-to-the-code-views-library) | vbadoc's graph, class diagram and Calls tab move to the code views library | Claude | Done, with the views' browser tests left in vbadoc: see the step |
 | [M3](#step-m3-the-code-model) | The code model: the views draw what a language describes, and files are apart from the things in them. vbadoc is its first language | Claude | Done |
-| [N1](#step-n1-sample-databases-and-a-spike-on-reading-them) | Sample Access databases, and a spike on getting forms and VBA out of them | Claude, then you at home and on a work machine | Not started |
+| [N1](#step-n1-sample-databases-and-a-spike-on-reading-them) | Sample Access databases, and a spike on getting forms and VBA out of them | Claude, then you at home and on a work machine | Claude's part is done; yours is next: run the spike at home, on a work machine and on a real database, and say whether the sample database file may be committed |
 | [N2](#step-n2-accessdoc-reads-a-databases-vba) | `accessdoc`: the VBA language in a library vbadoc and accessdoc share; the tool's skeleton; a page of the database's VBA | Claude | Not started |
 | [N3](#step-n3-accessdoc-reads-forms) | `accessdoc`: forms read into sections, controls, subforms, data sources and events, with handlers linked to their controls | Claude | Not started |
 | [N4](#step-n4-the-forms-view) | `accessdoc`: the Forms view: which form holds which, each form's layout drawn, its controls, data and events | Claude, then you on a real database | Not started |
@@ -814,6 +814,32 @@ Done on 2026-11-15, as above. What was decided along the way:
 - **You:** run the spike at home and on a work machine, where application control, Group Policy and Access's own
   security settings are the real test, and on one real database.
 - **The step ends with a recommendation, and N2–N5 are revised to fit.**
+
+**Claude's part, done on 2026-11-15.** The detail is in `spikes/n1-access/README.md`, with how to run it.
+
+- **The samples:** the add-in's test source is committed with its licence
+  (`accessdoc/tests/AccessDocumenter.Tests/Fixtures/VcsAddinTesting/`). The sample database is built by the spike
+  (`build-sample`), and its text, as Access wrote it, is committed (`…/Fixtures/SampleDatabase/text/`).
+- **Choice A works by importing:** a new, empty database imports each object from the copy and writes it as text,
+  so the database is never the one open and none of its start-up ran. Opening the copy with code disabled is out:
+  the start-up form still opened and the AutoExec macro still ran its safe actions.
+- **Times here:** about 5 s to start and close Access, and 0.17 s an object: 26 s for 150 forms.
+- **Choice C gets the VBA and not the forms:** every module's code, form modules included, read from the file with
+  no Access, the same as Access's text but for the case of identifiers. Forms are there only as binary.
+- **Recommended, before your runs:** A by importing, with the folder of text as the other input, as 5.5 has it;
+  and C kept for the VBA alone, for a machine where Access can't be started and for tests.
+
+**Yours:**
+
+1. Make Northwind 2.0 into `accessdoc/private/`, and run `try` on it at home.
+2. Publish the spike as one file, and run it on a work machine: on the sample, then on one real database.
+3. Send back the three reports. The README says what to look for.
+4. **Say whether `Sample.accdb` may be committed.** Access had written your Windows user name into it as the
+   database's Author; the build now sets "Fixture Author" at once, and the file was searched for your name in 8-bit
+   and UTF-16 and has none. It's in `accessdoc/private/`, uncommitted, until you say. Its linked table points at
+   `C:\Users\Public\Documents\AccessDocSample\SampleBackEnd.accdb`, which the build also makes.
+
+N2–N5 are revised once those are back.
 
 ### Step N2: accessdoc reads a database's VBA
 

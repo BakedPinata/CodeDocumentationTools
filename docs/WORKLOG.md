@@ -21,6 +21,8 @@ rather than repeating it.
   the page. L5 is done: descriptions and printing, with the user's check on a work machine still to come. L6 is
   done: Copy as text. M1 is done: the shared library is three. M2 is done: vbadoc's views are in the code views library, with their
   browser tests still in vbadoc (see the step). M3 is done: the code model, with VBA as its first language.
+  N1: Claude's part is done (samples, and a spike that reads a database two ways); the user's runs at home, on a
+  work machine and on a real database are next, and N2–N5 are revised after them.
 - **vbadoc 0.40.0:** stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
   `<workbook>-vba.html`, with an explorer of modules and members, in `'@Folder` folders or by kind. It asks
   before overwriting a page that would change (`--on-exists`, `--force`), as pqdoc does. Stage 6 (UserForms) is parked;
@@ -50,6 +52,20 @@ rather than repeating it.
 ## Log
 
 Newest first.
+
+### 2026-11-15: Step N1, Claude's part: sample databases and the spike
+
+- Fixtures: the Access Version Control add-in's test source, with its licence; and the sample database's text as
+  Access wrote it. The sample is built by script through Access (`spikes/n1-access`, `build-sample`).
+- The spike (`spikes/n1-access`, throwaway, with a README of findings): Access writing text from a copy works by
+  importing into an empty database, which ran none of the sample's start-up; opening the copy with code disabled
+  still opened the start-up form and ran the AutoExec macro's safe actions. 26 s for 150 forms. The file read
+  directly gives all the VBA and no forms.
+- Access wrote the user's Windows name into the sample as its Author. The build replaces it; the file is searched
+  and clean, and stays uncommitted in `accessdoc/private/` until the user agrees.
+- Next: the user runs the spike at home (Northwind), on a work machine and on one real database, then N2–N5 are
+  revised.
+- Checked: the spike's runs here, as a debug build and as the published single file.
 
 ### 2026-11-15: Step M3, the code model
 
