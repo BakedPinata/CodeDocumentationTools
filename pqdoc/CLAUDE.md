@@ -24,7 +24,7 @@ dotnet run --project src/PowerQueryDocumenter -- <workbook or folder> [--output 
 ## Rules for pqdoc
 
 - Everything goes in `PowerQueryDocumenter.Core`; `PowerQueryDocumenter.Cli` only parses arguments, sets up logging and
-  prompts, and the console app is only its `Program.cs`. Code vbadoc needs too is in `../shared/` (see its README): change it from the repository root, so vbadoc builds and
+  prompts, and the console app is only its `Program.cs`. Code other tools need too is in the libraries in `../shared/` (see its README): change it from the repository root, so vbadoc builds and
   tests against the change.
 - Adding an output format means writing an `IExporter` and registering it in `ExporterRegistry`; the analyser doesn't
   change.

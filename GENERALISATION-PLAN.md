@@ -45,7 +45,7 @@ step K0. The progress table says where the work is.
 | [L4](#step-l4-views-file-built-into-the-page-g2) | A views file in the output folder is built into the page (G2) | Claude | Done |
 | [L5](#step-l5-printing-and-descriptions-g3) | Printing a view or every view, with descriptions (G3) | Claude, then you on a work machine | Done; your check on a work machine is still to come |
 | [L6](#step-l6-copy-a-view-as-text-g4) | Copy a view as text, to paste into a chat (G4) | Claude | Done |
-| [M1](#step-m1-the-shared-library-in-three) | The shared library in three: what every tool needs, what only workbooks need, and the code views. The shell says "source", not "workbook" | Claude | Not started |
+| [M1](#step-m1-the-shared-library-in-three) | The shared library in three: what every tool needs, what only workbooks need, and the code views. The shell says "source", not "workbook" | Claude | Done |
 | [M2](#step-m2-vbadocs-views-move-to-the-code-views-library) | vbadoc's graph, class diagram and Calls tab move to the code views library | Claude | Not started |
 | [M3](#step-m3-the-code-model) | The code model: the views draw what a language describes, and files are apart from the things in them. vbadoc is its first language | Claude | Not started |
 | [N1](#step-n1-sample-databases-and-a-spike-on-reading-them) | Sample Access databases, and a spike on getting forms and VBA out of them | Claude, then you at home and on a work machine | Not started |
@@ -719,6 +719,23 @@ Done on 2026-11-15, as above. What was decided along the way:
 Split as 5.3 sets out (the fourth library, for VBA, waits for N2). The shell's interface and messages say "source"
 where they said "workbook" and mean either, with the tool supplying the word shown; the Export tab becomes something
 a tool asks for; the summary's saved time becomes optional.
+
+Done on 2026-11-15, as above. What was decided along the way:
+
+- **The libraries sit side by side in `shared/src/`,** each with its tests in `shared/tests/`, in the one
+  `shared/CodeDocumenter.Shared.sln`. `CodeDocumenter.CodeViews` is made here with nothing in it but its place, so
+  M2 only moves files.
+- **The import command's prompt went with it.** `IUserInteraction` keeps what every tool asks (overwrite, confirm);
+  `IImportInteraction` adds the clash prompt, in `CodeDocumenter.Workbooks`, with `ConsoleImportInteraction`. The
+  workbook tools and the desktop app use those.
+- **`ExtractionException` stays in `CodeDocumenter.Shared`,** as every tool has input it may not be able to read.
+- **A build stamp follows the libraries its tool is built from** (`ToolStampPaths` in each tool's
+  `Directory.Build.props`), so a change to the workbook library won't change accessdoc's pages.
+- **The tool gives the word:** `SourceWord` to `ShellPage` and `sourceWord` to `shell.items.init`, "workbook" for
+  both tools today. Stored settings keep their keys.
+- **A views file says `"source"`,** where it said `"workbook"`. A file exported before still reads, in the page and
+  in the tools. The export manifest keeps `"workbook"`: it's the workbook tools' file.
+- **The Export tab's view left the template** for a file of its own, put in when `ShellPage.ExportTab` is set.
 
 ### Step M2: vbadoc's views move to the code views library
 

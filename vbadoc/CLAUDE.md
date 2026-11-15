@@ -23,7 +23,7 @@ dotnet run --project src/VbaDocumenter -- <workbook> [--output <folder>] [--embe
 ## Rules for vbadoc
 
 - Everything goes in `VbaDocumenter.Core`; `VbaDocumenter.Cli` only parses arguments and prints, and the console app is
-  only its `Program.cs`. Code pqdoc needs too is in `../shared/` (see its README): change it from the repository root, so
+  only its `Program.cs`. Code other tools need too is in the libraries in `../shared/` (see its README): change it from the repository root, so
   pqdoc builds and tests against the change.
 - Use the fixtures in `tests/VbaDocumenter.Tests/Fixtures/`, and the `SyntheticWorkbook` helper for cases no real
   fixture covers.

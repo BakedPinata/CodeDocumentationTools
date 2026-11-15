@@ -606,6 +606,14 @@ Favourites below. Back and Forward stay as they are.
 - **Browser tests written for the graph's geometry** open the page without the explorer (a stored setting), because
   a narrower view moves nodes under the legend or out of view. The explorer has tests of its own.
 
+### The shared libraries (0.38.0, step M1 of the generalisation plan)
+
+- **vbadoc uses all three:** `CodeDocumenter.Shared`, `CodeDocumenter.Workbooks` (opening the workbook, and
+  `import`) and `CodeDocumenter.CodeViews`, which is empty until M2. Its build stamp follows those folders.
+- **Its services ask through `IImportInteraction`,** as `import` asks about clashes.
+- **A views file it exports says `"source"`** where it said `"workbook"`. Files exported before still build in and
+  import.
+
 ### Copy as text (0.37.0, step L6 of the generalisation plan)
 
 - **Copy as text is the shell's** (see `shared/README.md`), from what vbadoc already gives Print. vbadoc adds

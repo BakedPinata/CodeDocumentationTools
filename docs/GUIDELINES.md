@@ -92,13 +92,20 @@ Agreed on 2026-11-13. Until a tool says otherwise:
   as where a page went, is added to the tool.
 - Each tool's folder has a `README.md`, `Requirements.md`, `CLAUDE.md`, `docs/PLAN.md`, `docs/DECISIONS.md`, its
   solution, `src/` and `tests/`.
-- **Code both tools need lives once, in `shared/`** (`CodeDocumenter.Shared`, with `CodeDocumenter.Shared.Tests` and
-  its own solution). It holds only what is duplicated or needed by both: opening a workbook, exit codes, the build
-  stamp, writing a source folder and atomic writes, asking before overwriting (`--on-exists`, `--force`), the page
-  shell and its helpers, and vendored d3. The tools' Core
-  libraries use it and never each other, and it never uses them. It isn't a product, so it has no short name or version
-  of its own; `shared/README.md` says what's in it and records its decisions. Code that only one tool needs stays in
-  that tool, even if the other might need it one day.
+- **Code more than one tool needs lives once, in `shared/`,** in libraries by who needs it, each with its tests, in
+  one solution:
+  - **`CodeDocumenter.Shared`:** what every tool needs. Exit codes, the build stamp, writing a source folder and
+    atomic writes, asking before overwriting (`--on-exists`, `--force`), the page shell and its helpers, and vendored
+    d3.
+  - **`CodeDocumenter.Workbooks`:** what only the tools that read Excel workbooks need. Opening and writing a
+    workbook, and the `import` command.
+  - **`CodeDocumenter.CodeViews`:** what every tool that documents code needs, which is every tool but pqdoc. The
+    views drawn from code: the graph, the class diagram and the Calls tab.
+
+  The tools' Core libraries use them and never each other, and they never use a tool. `CodeDocumenter.Workbooks` and
+  `CodeDocumenter.CodeViews` use `CodeDocumenter.Shared`, and not each other. They aren't products, so they have no
+  short names or versions of their own; `shared/README.md` says what's in them and records their decisions. Code that
+  only one tool needs stays in that tool, even if another might need it one day.
 
 ## Command line, logging and exit codes
 
@@ -125,12 +132,12 @@ Agreed on 2026-11-13. Until a tool says otherwise:
 
 - Each tool has its own version, in its own `Directory.Build.props`. Raise it at the end of a stage.
 - Each tool shows `<version>+<commit>[-dirty]`, in `--version` and in the pages it generates.
-- **The stamp is per tool.** The commit is the last one that touched the tool's folder, `shared/` or the root build
-  files, and `-dirty` means uncommitted changes in those paths. The root build files are exactly
-  `Directory.Build.props`, `Directory.Build.targets`, `Directory.Packages.props` and `global.json`, so root docs don't
-  change a stamp and a commit to one tool doesn't change another's pages. A commit to `shared/` changes both, because
-  both are built from it. The desktop app's stamp follows `vbadoc/` and `pqdoc/` too (`ToolStampPaths`), for the same
-  reason.
+- **The stamp is per tool.** The commit is the last one that touched the tool's folder, the shared libraries it's
+  built from or the root build files, and `-dirty` means uncommitted changes in those paths. The root build files are
+  exactly `Directory.Build.props`, `Directory.Build.targets`, `Directory.Packages.props` and `global.json`, so root
+  docs don't change a stamp and a commit to one tool doesn't change another's pages. Each tool lists its libraries as
+  `ToolStampPaths` in its `Directory.Build.props`, so a commit to a library changes the stamp of the tools built from
+  it and no others. The desktop app's stamp follows `vbadoc/` and `pqdoc/` too, for the same reason.
 
 ## Publishing
 
@@ -159,8 +166,10 @@ Agreed on 2026-11-13. Until a tool says otherwise:
   following the selection, hiding and resizing, Expand / Collapse all, favourites, listed at its top, the views'
   filter, ticked on its rows, widely used and hidden items, listed at its foot, and the Show… menu, one for the tree
   and every view).
-- **The Export tab is the shell's,** in both pages: it chooses what to take out of the workbook, shows what that comes to,
-  and writes the manifest the tool's `import` command reads. It isn't a view of the workbook, so it lists everything,
+- **The page says what it documents in the tool's word** ("workbook", "database"): the tool gives it to `ShellPage`
+  and to the shell's script, whose own interface and messages say "source".
+- **The Export tab is the shell's, for a tool that asks for it,** as the workbook tools do: it chooses what to take
+  out of the workbook, shows what that comes to, and writes the manifest the tool's `import` command reads. It isn't a view of the workbook, so it lists everything,
   whatever the filter, hiding, the Show… choices and focus are doing. What can be picked and what an item relies on are
   the tool's Core's to say, and the page gets them as data, so the page and the command can't disagree.
 - **Nothing leaves the views silently:** whatever limits what they show (the Show… choices, the filter, hidden items,
@@ -199,8 +208,9 @@ Agreed on 2026-11-13. Until a tool says otherwise:
   tool adds for its open view (vbadoc's Calls tree as it's opened). It says how much it copied, warns when that's
   long, and shows the text in a box to copy by hand if the browser refuses the clipboard. It only ever goes to the
   clipboard.
-- **A page never says when it was made,** so the same workbook gives the same page and git diffs show only real
-  changes. The top bar's summary says when the workbook was last saved instead, from its own document properties.
+- **A page never says when it was made,** so the same source gives the same page and git diffs show only real
+  changes. The top bar's summary says when the workbook was last saved instead, from its own document properties;
+  a tool whose source has no such time leaves it out.
 - **The side panel follows the selection** unless locked open: it opens when something is selected and closes when
   the selection is cleared, and the views keep still while it does. The panels' buttons are icons at the ends of the
   top bar, each on its panel's side.

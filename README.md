@@ -10,7 +10,7 @@ options. Each has its own folder, solution, version and README, and they all fol
 | **pqdoc** | An Excel workbook (`.xlsx`, `.xlsm` or `.xlsb`), or a folder of exported Power Query (`.m`) files | An interactive HTML graph of the dependencies between queries, and optionally CSV and PlantUML | [pqdoc/README.md](pqdoc/README.md) |
 | **codedocui** | A workbook or folder, as both tools do | A window on Windows over both tools, for documenting and importing: every option, the command it runs with Copy, the tools' log, and their questions as dialogs | [codedocui/README.md](codedocui/README.md) |
 
-Code both tools need, such as opening a workbook and building a page, is kept once in [shared/](shared/README.md).
+Code more than one tool needs, such as building a page and opening a workbook, is kept once in [shared/](shared/README.md).
 
 ## Building and testing
 

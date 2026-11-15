@@ -1,33 +1,74 @@
-# CodeDocumenter.Shared
+# The shared libraries
 
-The code both tools need, kept once. vbadoc's and pqdoc's Core libraries use it; it never uses them, and they never use
-each other. It isn't a product: it has no command line, no version of its own, and changes to it change both tools'
-build stamps. See "Structure" in [docs/GUIDELINES.md](../docs/GUIDELINES.md) for what belongs here.
+The code more than one tool needs, kept once, in three libraries by who needs it. The tools' Core libraries use them;
+they never use a tool, and the tools never use each other. They aren't products: they have no command line and no
+versions of their own, and a change to one changes the build stamp of the tools built from it. See "Structure" in
+[docs/GUIDELINES.md](../docs/GUIDELINES.md) for what belongs here.
 
-## What's in it
-
-| Folder | What | Used by |
+| Library | For | Used by |
 |---|---|---|
-| (root) | `ExitCodes`, the codes every tool returns; `ToolVersion`, the build stamp read from a tool's own assembly | both |
-| `Workbooks/` | `WorkbookFile`: reading a workbook while Excel has it open, telling zip-based from compound files, spotting encryption; `ExtractionException`, exit code 3; `OpcPackage`: a workbook's parts in memory, to change some and keep the rest; `BlankWorkbook`: a new workbook with one sheet, and the content types of a macro-enabled workbook and an add-in; `TargetFile`: what can be written into, from each tool's list, and why anything else can't | both readers; writing workbooks |
-| `Files/` | `AtomicFileWriter`: write to a temporary file, then move it into place, or replace a file keeping its permissions; `SourceFolderWriter`: keep a folder of source files in step with a workbook; `OverwriteResolver` and `OnExistsBehaviour`: what to do when an output already exists, asking through `IUserInteraction` | vbadoc's module files and page; pqdoc's `.m` files and outputs |
-| `CommandLine/` | `OverwriteOptions`: `--on-exists` and `--force` (`-y`), checked and bound the same way in both tools; `ImportOptions`: the `import` command; `ImportTargetOptions`: `--new`, `--into`, `--in-place` and `--on-clash`; `UnknownOptions`: words that look like options but aren't the command's, which System.CommandLine would take for arguments; `ConsoleUserInteraction`: the prompts, on standard error | both command lines |
-| `Importing/` | `ImportPlan`: what a choice comes to; `ExportManifest`: the file the Export tab writes; `BundleFolder`: a folder of chosen files with a README; `ImportClash` and `ClashResolver`: what's in the target already, and what to do about it; `ImportRun`: the steps of `import` both tools share; `ImportableItem`: something a source has to take, for the desktop app's list | both `import` commands |
-| `Pages/` | `ViewsFile`: a saved views file in an output folder, read for building into the page; `ShellPage`: a page built on the shell, from the parts a tool brings; `PageBuilder`: filling a template's placeholders, inlining scripts after d3 and the shell's, escaping text and JSON, the favicon; `EmbeddedResources`; `VendoredScripts` | both pages |
-| `Resources/Shell/` | The page shell: `shell.html` (the template), `shell.css` (the frame and shared colour tokens) and `shell.js` (theme, settings, tabs, the explorer, the side panel, their splitters, Load folder, source view; its interface is at the top) | both pages |
-| `Resources/Vendor/` | d3 and its licence, byte-for-byte as published (see its README) | both pages |
+| `CodeDocumenter.Shared` | What every tool needs | every tool |
+| `CodeDocumenter.Workbooks` | What only the tools that read Excel workbooks need. It uses `CodeDocumenter.Shared` | vbadoc, pqdoc |
+| `CodeDocumenter.CodeViews` | The views of code every tool but pqdoc shares. It uses `CodeDocumenter.Shared`. Empty until step M2 of the generalisation plan | vbadoc |
+
+Each is in `src/`, with its tests in `tests/` (`CodeDocumenter.Shared.Tests`, `CodeDocumenter.Workbooks.Tests`), and
+`CodeDocumenter.Shared.sln` holds them all.
+
+## What's in them
+
+**`CodeDocumenter.Shared`**
+
+| Folder | What |
+|---|---|
+| (root) | `ExitCodes`, the codes every tool returns; `ToolVersion`, the build stamp read from a tool's own assembly; `ExtractionException`: what was given can't be read, exit code 3 |
+| `Files/` | `AtomicFileWriter`: write to a temporary file, then move it into place, or replace a file keeping its permissions; `SourceFolderWriter`: keep a folder of source files in step with what they came from; `OverwriteResolver` and `OnExistsBehaviour`: what to do when an output already exists, asking through `IUserInteraction` |
+| `CommandLine/` | `OverwriteOptions`: `--on-exists` and `--force` (`-y`), checked and bound the same way in every tool; `UnknownOptions`: words that look like options but aren't the command's, which System.CommandLine would take for arguments; `ConsoleUserInteraction`: the prompts, on standard error |
+| `Pages/` | `ViewsFile`: a saved views file in an output folder, read for building into the page; `ShellPage`: a page built on the shell, from the parts a tool brings; `PageBuilder`: filling a template's placeholders, inlining scripts after d3 and the shell's, escaping text and JSON, the favicon; `EmbeddedResources`; `VendoredScripts` |
+| `Resources/Shell/` | The page shell: `shell.html` (the template), `export.html` (the Export tab's view, for a tool that asks for it), `shell.css` (the frame and shared colour tokens) and `shell.js` (theme, settings, tabs, the explorer, the side panel, their splitters, Load folder, source view; its interface is at the top) |
+| `Resources/Vendor/` | d3 and its licence, byte-for-byte as published (see its README) |
+
+**`CodeDocumenter.Workbooks`**
+
+| Folder | What |
+|---|---|
+| (root) | `WorkbookFile`: reading a workbook while Excel has it open, telling zip-based from compound files, spotting encryption, when it was last saved; `OpcPackage`: a workbook's parts in memory, to change some and keep the rest; `BlankWorkbook`: a new workbook with one sheet, and the content types of a macro-enabled workbook and an add-in; `TargetFile`: what can be written into, from each tool's list, and why anything else can't |
+| `CommandLine/` | `ImportOptions`: the `import` command; `ImportTargetOptions`: `--new`, `--into`, `--in-place` and `--on-clash`; `ConsoleImportInteraction`: the console's prompts with the one `import` adds |
+| `Importing/` | `ImportPlan`: what a choice comes to; `ExportManifest`: the file the Export tab writes; `BundleFolder`: a folder of chosen files with a README; `ImportClash` and `ClashResolver`: what's in the target already, and what to do about it, asking through `IImportInteraction`; `ImportRun`: the steps of `import` both tools share; `ImportableItem`: something a source has to take, for the desktop app's list |
 
 ## Commands
 
-Run these from the repository root, so both tools build and test against any change here.
+Run these from the repository root, so every tool builds and tests against any change here.
 
 ```bash
 dotnet build CodeDocumentationTools.sln -warnaserror
-dotnet test --project shared/tests/CodeDocumenter.Shared.Tests   # this library's own tests
-dotnet test --solution CodeDocumentationTools.sln                # everything, since both tools depend on it
+dotnet test --solution shared/CodeDocumenter.Shared.sln          # these libraries' own tests
+dotnet test --solution CodeDocumentationTools.sln                # everything, since the tools depend on them
 ```
 
 ## Decisions
+
+### Three libraries, and "source" (step M1 of the generalisation plan)
+
+- **Split by who needs it,** not by kind of code, so a tool takes a library whole: a tool for Access databases
+  needs the page shell and none of the workbook code, and its build stamp shouldn't move when that changes.
+- **Moved as it was.** Namespaces follow the libraries (`CodeDocumenter.Workbooks`,
+  `CodeDocumenter.Workbooks.Importing`, `CodeDocumenter.Workbooks.CommandLine`); nothing else about the code changed.
+- **The clash prompt is the import's.** `IUserInteraction` (overwrite, confirm) is every tool's;
+  `IImportInteraction` adds `AskClash`, and `ConsoleImportInteraction` derives from `ConsoleUserInteraction`, which
+  is no longer sealed for that. A program that runs the workbook tools implements `IImportInteraction`.
+- **`ExtractionException` is every tool's,** in the root namespace: what a tool was given can't be read.
+- **The Workbooks tests link two helpers** (`TempDirectory`, `TestLog`) from the Shared tests, not copy them.
+- **The shell says "source".** `shell.items.init` takes `source` (the name; `workbook` before) and `sourceWord`
+  (what kind of thing it is, for messages: "this workbook doesn't have"; "source" without it). `ShellPage` has
+  `SourceWord` and `SourceSaved`, in place of `WorkbookSaved`, and writes "Workbook saved" from the word; the
+  element is `#source-saved`. Stored settings keep their keys, so nobody loses anything.
+- **A views file's `"workbook"` is `"source"` now.** Both are read (`ViewsFile`, and the page's Import), since it
+  cost a line each; `"source"` wins when a file has both.
+- **The export manifest keeps `"workbook"`.** It's written by the Export tab and read by `import`, which only the
+  workbook tools have.
+- **The Export tab is asked for** (`ShellPage.ExportTab`). Its view left `shell.html` for `export.html`, put in at
+  `{{EXPORT_VIEW}}`, and `shell.js` wires its controls only when they're in the page.
+- **`CodeDocumenter.CodeViews` holds only `CodeViewsLibrary`,** a place for M2 to move the views to.
 
 - **Made in step C1 of the feedback plan** from the copies the two tools had grown. Moving them changed nothing the
   tools write: every fixture's output was compared byte for byte before and after, apart from the build stamp and
@@ -227,7 +268,7 @@ dotnet test --solution CodeDocumentationTools.sln                # everything, s
 - **What makes a file unusable,** each a warning naming the file and the reason, with nothing built in: not JSON
   (comments and trailing commas are allowed, as people edit these by hand), not a views file (no `views` array or
   `formatVersion`), another tool's, or a `formatVersion` above `ViewsFile.FormatVersion`. Views without a name are
-  left out and counted. A file whose `workbook` isn't this page's is built in, with a warning that its views may
+  left out and counted. A file whose `source` isn't this page's is built in, with a warning that its views may
   mention items the page doesn't have, since the page already copes with those.
 - **`ShellPage.ViewsJson`** puts them in the page as `<script type="application/json" id="<tool>-views">`, made safe
   as the data is. With no views there's no block.
@@ -314,7 +355,7 @@ dotnet test --solution CodeDocumentationTools.sln                # everything, s
   view's tab, which is shown without an event of its own first.
 - **Kept per workbook in the browser** as `<tool>-views|<workbook>`; if the browser can't keep them, the menu says to
   export them. Which view was open isn't kept.
-- **The file** is `<tool>-views.json`: `{ "formatVersion": 1, "tool": "<tool>", "views": [...], "workbook": "<name>" }`,
+- **The file** is `<tool>-views.json`: `{ "formatVersion": 1, "source": "<name>", "tool": "<tool>", "views": [...] }` (`"workbook"` for the name before step M1),
   written with sorted keys and 2-space indentation and a final line feed, downloaded through a `Blob` link. Import (a
   hidden file input, `#views-import`) adds its views, replacing those of the same name; a file that isn't JSON or has
   no `views`, another tool's, or a newer format is refused with the reason, and views without a name are left out and

@@ -116,7 +116,7 @@ tests/CodeDocumenter.Desktop.Tests/      tests of everything but the window, wit
 ```
 
 It uses each tool's command-line library (`VbaDocumenter.Cli`, `PowerQueryDocumenter.Cli`), and so their Core libraries
-and `../shared/`.
+and the libraries in `../shared/`.
 
 ## Third-party components
 

@@ -19,12 +19,12 @@ rather than repeating it.
   to start, and nothing waits for it. L1 is done: Lock view. L2 is done: Peek. L3 is done: the Calls tab's follow-ups, with the user's
   real example of the missing Ifs still to be checked. L4 is done: a views file in the output folder is built into
   the page. L5 is done: descriptions and printing, with the user's check on a work machine still to come. L6 is
-  done: Copy as text.
-- **vbadoc 0.37.0:** stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
+  done: Copy as text. M1 is done: the shared library is three.
+- **vbadoc 0.38.0:** stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
   `<workbook>-vba.html`, with an explorer of modules and members, in `'@Folder` folders or by kind. It asks
   before overwriting a page that would change (`--on-exists`, `--force`), as pqdoc does. Stage 6 (UserForms) is parked;
   stage 7 waits for the generalisation plan. Since 0.31.0 (step J2) it writes into add-ins (`.xlam`) as into workbooks.
-- **pqdoc 1.26.0**, plus stages 3b–3d: reads a workbook's queries directly, or a folder of hand-exported `.m` files,
+- **pqdoc 1.27.0**, plus stages 3b–3d: reads a workbook's queries directly, or a folder of hand-exported `.m` files,
   and writes HTML by default as `<workbook or folder>-powerquery.html`. From a workbook it also writes each query to a
   `.m` file, kept in step with the workbook. The page shows each query's M code, highlighted, and an explorer of the
   queries in their Excel groups, nested as Excel shows them, or as queries and functions.
@@ -32,8 +32,9 @@ rather than repeating it.
   compressed 50 MB file. It runs the tools' command lines in its own process, so it holds no logic of its own. The
   Document tab has every option of both main commands, and the Import tab every option of both `import`s, with Preview
   and the tools' questions as dialogs. See `codedocui/README.md`.
-- **`shared/`** (`CodeDocumenter.Shared`, which was `ExcelDocumenter.Shared` until step K1): the code both tools use, since step C1, and the page shell both pages are
-  built on, since C2. See its README.
+- **`shared/`:** the code more than one tool uses, in three libraries since step M1: `CodeDocumenter.Shared` (what
+  every tool needs, the page shell among it), `CodeDocumenter.Workbooks` (what the workbook tools need) and
+  `CodeDocumenter.CodeViews` (the views of code, empty until M2). See its README.
 - **The feedback plan** (steps A0–J2, agreed on 2026-11-03) is closed and deleted. Every step is done but G2–G4 and
   E5b, which are steps L3–L6 of the generalisation plan. The user closed the checks that were still to come. The plan
   as it stood is at the tag `feedback-plan-final`, and E5b's original notes at `feedback-plan-e5b-notes`; the log below
@@ -48,6 +49,19 @@ rather than repeating it.
 ## Log
 
 Newest first.
+
+### 2026-11-15: Step M1, the shared library in three
+
+- `CodeDocumenter.Workbooks` takes what only the workbook tools need out of `CodeDocumenter.Shared`: opening and
+  writing workbooks, and `import` with its options and its clash prompt (`IImportInteraction`).
+  `CodeDocumenter.CodeViews` is made, empty, for M2. Each has its tests beside the others, in the one solution.
+- A tool's build stamp follows only the libraries it's built from (`ToolStampPaths`).
+- The shell says "source" and the tool gives the word shown; the Export tab is asked for (`ShellPage.ExportTab`),
+  and both tools ask.
+- Changed: a views file says `"source"` where it said `"workbook"`. Older files still read.
+- Checked: every test passes (three new unit tests), and the commit that only moves code builds and passes on its
+  own.
+- vbadoc 0.38.0, pqdoc 1.27.0.
 
 ### 2026-11-15: Step L6, copy a view as text (G4)
 
