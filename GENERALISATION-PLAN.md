@@ -580,8 +580,8 @@ Done on 2026-11-16. Yours first, in this order:
 - [ ] Delete the old publish folder, `…\Executables\ExcelDocumentationTools\`, by hand.
 
 Then Claude: the pages' repository link and the root README's title (vbadoc 0.40.1, pqdoc 1.27.1), and a check that
-a fresh clone builds with warnings as errors, passes every test and publishes. vbadoc's DECISIONS.md still says
-`ExcelDocumentationTools` in its "One repository" entry, which is yours to change.
+a fresh clone builds with warnings as errors, passes every test and publishes. vbadoc's DECISIONS.md has the new name in
+its "One repository" entry, as you agreed.
 
 ### Step L1: Lock the view
 

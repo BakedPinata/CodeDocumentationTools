@@ -57,8 +57,8 @@ Newest first.
 
 - The user renamed the repository on GitHub and on disk to `CodeDocumentationTools`, pointed the remote at it,
   copied Claude Code's memory folder and moved `PATH` to the new publish folder.
-- The pages link to the new address (`ToolVersion.RepositoryUrl`), and the root README has the new title. The log
-  keeps the old name where it was the name at the time, as does vbadoc's DECISIONS.md, which is the user's to change.
+- The pages link to the new address (`ToolVersion.RepositoryUrl`), and the root README has the new title. vbadoc's
+  DECISIONS.md has the new name, as the user agreed. The log keeps the old name where it was the name at the time.
 - The `general/` branches were rebased onto main, for dependabot's two updates there (the minor-and-patch group, and
   System.CommandLine 3.0.0), with nothing to change for them.
 - Checked: a fresh clone builds with warnings as errors, passes every test and publishes; `vbadoc --version` from the

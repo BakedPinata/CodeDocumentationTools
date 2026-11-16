@@ -6,8 +6,9 @@ or that change it. Add to this file whenever a new decision is agreed. Conventio
 
 ## Platform and libraries
 
-- **One repository.** vbadoc now lives in `vbadoc/` in BakedPinata/ExcelDocumentationTools, which is this repository's
-  old BakedPinata/vbadocumenter renamed. Its history moved with it. Stage 6 continues now that vbadoc is aligned
+- **One repository.** vbadoc now lives in `vbadoc/` in BakedPinata/CodeDocumentationTools, which is this repository's
+  old BakedPinata/vbadocumenter renamed (to ExcelDocumentationTools in 2026-10, then to CodeDocumentationTools in
+  step K3 of the generalisation plan). Its history moved with it. Stage 6 continues now that vbadoc is aligned
   with pqdoc.
 - **.NET 10**, moved from .NET 9 on 2026-11-03, a week before .NET 9's support ended, once the work machine had the
   .NET 10 SDK. Output was byte-identical apart from the build stamp. The framework is set in the root
