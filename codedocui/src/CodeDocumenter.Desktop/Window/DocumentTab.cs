@@ -51,10 +51,10 @@ internal sealed class DocumentTab : UserControl
     AutoSizeMode = AutoSizeMode.GrowAndShrink;
     var browse = MakeButton("&Browse…", "Choose a workbook");
     browse.Click += (_, _) => BrowseForWorkbook();
-    var folder = MakeButton("&Folder…", "Choose a folder of .m files, for Power Query");
+    var folder = MakeButton("&Folder…", "Choose a folder of exported VBA modules or .m files");
     folder.Click += (_, _) => BrowseForFolder();
     rows.Add(Caption("&Workbook"), input, Flow(browse, folder));
-    rows.Add(null, Note("A workbook, or for Power Query a folder of .m files. You can also drop one on the window.", visible: true));
+    rows.Add(null, Note("A workbook, or a folder of exported VBA modules (.bas, .cls, .frm) or .m files. You can also drop one on the window.", visible: true));
     folderRow.AddRange(rows.Add(Caption("", indent: true), Flow(recursive, folderGroups)));
 
     onExists.Items.AddRange(new object[]
@@ -302,7 +302,7 @@ internal sealed class DocumentTab : UserControl
   {
     using var picker = new FolderBrowserDialog
     {
-      Description = "Choose a folder of .m files, for Power Query",
+      Description = "Choose a folder of exported VBA modules or .m files",
       UseDescriptionForTitle = true,
       InitialDirectory = FolderOf(DocumentCommands.Tidy(input.Text)),
     };

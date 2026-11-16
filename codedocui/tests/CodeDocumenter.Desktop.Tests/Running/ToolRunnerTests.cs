@@ -74,7 +74,7 @@ public sealed class ToolRunnerTests : IDisposable
     Assert.Equal(ExitCodes.InvalidArguments, result.ExitCode);
     Assert.Null(result.Page);
     Assert.Contains(lines, l => l.Kind == LogKind.Error && l.Text == "[ERR] Unknown option '--nope'.");
-    Assert.Contains(lines, l => l.Kind == LogKind.Plain && l.Text == "Usage: vbadoc <workbook> [options]");
+    Assert.Contains(lines, l => l.Kind == LogKind.Plain && l.Text == "Usage: vbadoc <input> [options]");
   }
 
   [Fact]

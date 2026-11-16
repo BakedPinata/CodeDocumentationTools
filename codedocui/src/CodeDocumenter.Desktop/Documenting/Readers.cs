@@ -1,4 +1,6 @@
 using CodeDocumenter.Desktop.Running;
+using CodeDocumenter.Shared.Files;
+using VbaDocumenter.Core.Extraction;
 
 namespace CodeDocumenter.Desktop.Documenting;
 
@@ -26,15 +28,32 @@ internal static class Readers
       return true;
     }
 
+    // A folder is read by the tool whose files are in it, at any depth, as --recursive would find them.
+    if (Directory.Exists(input))
+    {
+      return HasFiles(input, tool == Tool.Vbadoc ? ModuleFolderReader.Extensions : [".m"]);
+    }
+
     var extension = Path.GetExtension(input);
     return tool switch
     {
-      Tool.Vbadoc => !Directory.Exists(input) && VbadocExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase),
-      Tool.Pqdoc => Directory.Exists(input)
-        || PqdocExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase)
+      Tool.Vbadoc => VbadocExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase),
+      Tool.Pqdoc => PqdocExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase)
         || (extension.Length == 0 && !File.Exists(input)),
       _ => false,
     };
+  }
+
+  static bool HasFiles(string folder, IReadOnlyList<string> extensions)
+  {
+    try
+    {
+      return SourceFolder.Find(folder, extensions, recursive: true).Count > 0;
+    }
+    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+    {
+      return false;
+    }
   }
 
   /// <summary>Why a tool isn't offered for an input, for the window.</summary>
@@ -43,7 +62,8 @@ internal static class Readers
     var extension = Path.GetExtension(input);
     return tool switch
     {
-      Tool.Vbadoc when Directory.Exists(input) => "vbadoc reads a workbook, not a folder",
+      Tool.Vbadoc when Directory.Exists(input) => "no .bas, .cls or .frm files in this folder or below it",
+      Tool.Pqdoc when Directory.Exists(input) => "no .m files in this folder or below it",
       _ when extension.Length > 0 => $"{tool.Name()} doesn't read {extension.ToLowerInvariant()} files",
       _ => $"{tool.Name()} doesn't read this",
     };

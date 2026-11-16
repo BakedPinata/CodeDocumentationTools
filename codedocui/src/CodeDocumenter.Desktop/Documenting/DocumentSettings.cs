@@ -18,7 +18,7 @@ internal enum LogDetail
 /// </summary>
 internal sealed class DocumentSettings
 {
-  /// <summary>A workbook, or for pqdoc a folder of .m files.</summary>
+  /// <summary>A workbook, or a folder of module files or .m files.</summary>
   public string Input { get; set; } = "";
 
   /// <summary><c>--recursive</c>: with a folder, read its subfolders too.</summary>

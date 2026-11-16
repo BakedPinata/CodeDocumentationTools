@@ -16,7 +16,7 @@ internal static class DocumentCommands
   /// </summary>
   public static IReadOnlyDictionary<Tool, IReadOnlyList<string>> Covered { get; } = new Dictionary<Tool, IReadOnlyList<string>>
   {
-    [Tool.Vbadoc] = ["--output", "--output-name", "--embed-source", "--on-exists", "--verbose", "--quiet"],
+    [Tool.Vbadoc] = ["--output", "--output-name", "--embed-source", "--recursive", "--folder-groups", "--on-exists", "--verbose", "--quiet"],
     [Tool.Pqdoc] = ["--output", "--output-name", "--format", "--embed-source", "--plantuml-server", "--recursive", "--folder-groups", "--on-exists", "--verbose", "--quiet"],
   };
 
@@ -62,7 +62,7 @@ internal static class DocumentCommands
     var input = Tidy(settings.Input);
     if (input.Length == 0)
     {
-      return ["Choose a workbook, or a folder of .m files for Power Query."];
+      return ["Choose a workbook, or a folder of exported VBA modules or .m files."];
     }
 
     var readers = Tools.All.Where(tool => Readers.Reads(tool, input)).ToList();
@@ -94,6 +94,7 @@ internal static class DocumentCommands
     var arguments = new List<string> { Tidy(settings.Input) };
     AddValue(arguments, "--output", settings.Vbadoc.Output);
     AddValue(arguments, "--output-name", settings.Vbadoc.OutputName);
+    AddFolder(arguments, settings);
     AddShared(arguments, settings);
     return new ToolCommand(Tool.Vbadoc, arguments);
   }

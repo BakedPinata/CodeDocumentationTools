@@ -62,7 +62,7 @@ public sealed class DocumentCommandsTests
     var commands = DocumentCommands.For(Everything());
 
     Assert.Equal(
-      new[] { Workbook, "--output", @"C:\Docs\VBA", "--output-name", "Sales", "--embed-source", "--on-exists", "skip", "--verbose" },
+      new[] { Workbook, "--output", @"C:\Docs\VBA", "--output-name", "Sales", "--recursive", "--folder-groups", "--embed-source", "--on-exists", "skip", "--verbose" },
       commands[0].Arguments);
     Assert.Equal(
       new[]
@@ -261,12 +261,17 @@ public sealed class DocumentCommandsTests
   }
 
   [Fact]
-  public void A_folder_is_for_pqdoc_whatever_its_name()
+  public void A_folder_is_for_the_tool_whose_files_are_in_it_whatever_its_name()
   {
     using var folder = new TempFolder();
     var named = Directory.CreateDirectory(Path.Combine(folder.Path, "queries.xlsm")).FullName;
+    File.WriteAllText(Path.Combine(named, "Sales.m"), "1");
 
     Assert.Equal(new[] { "Pqdoc" }, DocumentCommands.For(Settings(named)).Select(c => c.Tool.ToString()));
+
+    Directory.CreateDirectory(Path.Combine(named, "VBA"));
+    File.WriteAllText(Path.Combine(named, "VBA", "Main.bas"), "Attribute VB_Name = \"Main\"");
+    Assert.Equal(new[] { "Vbadoc", "Pqdoc" }, DocumentCommands.For(Settings(named)).Select(c => c.Tool.ToString()));
   }
 
   [Fact]
@@ -282,7 +287,7 @@ public sealed class DocumentCommandsTests
   public void Nothing_runs_until_an_input_is_chosen()
   {
     Assert.Empty(DocumentCommands.For(Settings("  ")));
-    Assert.Equal(new[] { "Choose a workbook, or a folder of .m files for Power Query." }, DocumentCommands.Problems(Settings("")));
+    Assert.Equal(new[] { "Choose a workbook, or a folder of exported VBA modules or .m files." }, DocumentCommands.Problems(Settings("")));
   }
 
   [Fact]

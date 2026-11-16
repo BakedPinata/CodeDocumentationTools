@@ -51,7 +51,8 @@ public sealed partial class ReadersTests
     using var folder = new TempFolder();
 
     Assert.Equal("vbadoc doesn't read .xlsx files", Readers.WhyNot(Tool.Vbadoc, @"C:\Work\Sales.XLSX"));
-    Assert.Equal("vbadoc reads a workbook, not a folder", Readers.WhyNot(Tool.Vbadoc, folder.Path));
+    Assert.Equal("no .bas, .cls or .frm files in this folder or below it", Readers.WhyNot(Tool.Vbadoc, folder.Path));
+    Assert.Equal("no .m files in this folder or below it", Readers.WhyNot(Tool.Pqdoc, folder.Path));
     Assert.Equal("pqdoc doesn't read .xls files", Readers.WhyNot(Tool.Pqdoc, @"C:\Work\Sales.xls"));
   }
 }
