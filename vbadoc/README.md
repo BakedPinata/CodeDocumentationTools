@@ -51,16 +51,19 @@ dotnet publish src/VbaDocumenter -c Release -p:PublishProfile=FolderProfile
 ## Usage
 
 ```bash
-dotnet run --project src/VbaDocumenter -- <workbook> [--output <folder>] [--output-name <name>] [--embed-source]
-                                            [--on-exists <behaviour>] [--force] [--verbose | --quiet]
+dotnet run --project src/VbaDocumenter -- <workbook or folder> [--output <folder>] [--output-name <name>] [--embed-source]
+                                            [--recursive] [--folder-groups] [--on-exists <behaviour>] [--force]
+                                            [--verbose | --quiet]
 ```
 
 | Argument | Alias | |
 |---|---|---|
-| `<workbook>` | | `.xlsm`, `.xlsb`, `.xlam`, `.xls` or `.xla` |
-| `--output <folder>` | `-o` | Output folder. Default: a `VBAProject` folder next to the workbook |
+| `<workbook or folder>` | | `.xlsm`, `.xlsb`, `.xlam`, `.xls` or `.xla`, or a folder of exported `.bas`, `.cls` and `.frm` files (see [A folder of module files](#a-folder-of-module-files)) |
+| `--output <folder>` | `-o` | Output folder. Default: a `VBAProject` folder next to the workbook, or the folder itself |
 | `--output-name <name>` | `-n` | The page's file name, without `.html`. Default: the workbook's name and `-vba`, such as `Sales-vba`. It can't contain a folder, an extension, `#` or `%` |
 | `--embed-source` | | Put the module source inside the page, so it works without Load folder |
+| `--recursive` | `-r` | With a folder, read the module files in its subfolders too. Folders starting with a dot, hidden folders, and `bin`, `obj` and `node_modules` are skipped |
+| `--folder-groups` | | With `--recursive`, show a module with no `'@Folder` in its subfolder's folder in the explorer |
 | `--on-exists <behaviour>` | | What to do when the page already exists and would change: `prompt`, `overwrite`, `skip` or `fail`. Default: `prompt` when run in a terminal, otherwise `fail` |
 | `--force` | `-y` | Overwrite the page without asking. The same as `--on-exists overwrite` |
 | `--verbose` | `-v` | List every member found in each module, with its line range, show how long each step took, and show debug-level log output |
@@ -85,6 +88,28 @@ output is only used by `--help` and `--version`.
 | 130 | Cancelled with Ctrl+C |
 
 The codes are shared with pqdoc.
+
+### A folder of module files
+
+vbadoc also documents VBA that's already been exported, such as a folder someone else sent or keeps in git: give it the
+folder in place of a workbook.
+
+```bash
+vbadoc C:\Exported                                  # the .bas, .cls and .frm files at its top level
+vbadoc C:\Exported --recursive                      # and in its subfolders
+vbadoc C:\Exported --recursive --folder-groups      # with each subfolder as a folder in the explorer
+```
+
+- **The folder is left as it is.** Only the page is written, into the folder (or `--output`), named after it, such as
+  `Exported-vba.html`. No module files are written or deleted. With `--output` elsewhere, the page says which folder to
+  choose in Load folder.
+- **Load folder looks in subfolders**, so choose the folder you ran vbadoc on, and each file is found where it is.
+- **A module is named by its `Attribute VB_Name`**, as the VBA editor imports it, or by its file name if it has none. A
+  `.cls` is a sheet's or the workbook's module when its `VB_Base` says so, and a class otherwise, with or without the
+  editor's `VERSION 1.0 CLASS` header. Files can be UTF-8 or Windows-1252, with any line endings.
+- **Two files of the same name in different subfolders** are both shown, the second named by its path (`Old/Utils`),
+  with a warning; the Export tab and `import` won't take either.
+- **A folder has no library references**, as module files don't record them, and no saved date.
 
 ### An existing page
 

@@ -98,6 +98,25 @@ or that change it. Add to this file whenever a new decision is agreed. Conventio
   generator tag says vbadoc wrote it: `index.html` from before 0.8.0, or a renamed workbook's page. Pages written by
   hand or by pqdoc are left alone. It reads only each file's first 2 KB, where the tag is.
 
+## A folder of module files (0.42.0, step S2 of the generalisation plan)
+
+- **The folder is read, never written,** apart from the page. Module files, `.gitattributes` and older pages are
+  vbadoc's to manage only in a folder it exported; a folder from elsewhere isn't. So the older-pages rule doesn't run.
+- **A module keeps its file's path and bytes** (`VbaModule.SourceFile`, `FileBytes`), and `ProjectExporter.FileNameFor`
+  and `FileContent` give those for it. So the parser, the page's hashes and the embedded source all use the file as it
+  is, and Load folder's check that a file hasn't changed works on it. `Source` and `SourceBytes` are the source as a
+  workbook would hold it, without the editor's header, for `import`.
+- **One code page for the folder:** UTF-8 if every file is valid UTF-8 and one has more than ASCII, else Windows-1252.
+  The page has one decoder, and a folder from one source is one or the other; a mix is warned about.
+- **`Attribute VB_Name` names a module**, as the VBA editor imports it, because a file may have been renamed.
+- **A document module is told by its `VB_Base`** (Excel's workbook, worksheet and chart class ids start `0{000208`),
+  as a sheet exported by the editor is a `.cls` like any class.
+- **The same name in two subfolders** follows pqdoc (S1): the first by path keeps the name, the other is named by its
+  path, and neither can be taken, as `ModuleImport.WhyNot` says.
+- **`--folder-groups` gives a module with no `'@Folder` its subfolders as one**, joined by dots, so the explorer needs
+  nothing new. It's off by default, as the user chose: only `'@Folder` places a module unless asked.
+- **The argument is `<input>`**, as pqdoc's is, now that it can be a folder.
+
 ## Writing into workbooks: what step H1 found
 
 The spike was `spikes/h1-import`, deleted after H4 and still in the repository's history, with the workbooks' list. Excel accepted all of this, at home and

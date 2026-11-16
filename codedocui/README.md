@@ -41,7 +41,8 @@ which halves its size for about a tenth of a second at start-up. Nothing is unpa
 codedocui [<workbook or folder>]
 ```
 
-**Choose what to document** with Browse… (a workbook) or Folder… (a folder of `.m` files, for Power Query), from the
+**Choose what to document** with Browse… (a workbook) or Folder… (a folder of exported VBA modules, of `.m` files, or both: each
+tool is offered when its files are in the folder or below it), from the
 recent ones in the list, by dropping it on the window, or by naming it when starting the app. Explorer's "Copy as path"
 can be pasted as it is. The Import tab chooses its source the same way.
 
@@ -49,7 +50,7 @@ can be pasted as it is. The Import tab chooses its source the same way.
 
 | In the window | vbadoc | pqdoc |
 |---|---|---|
-| Subfolders too; Subfolders as groups, shown for a folder | | `--recursive`; `--folder-groups` |
+| Subfolders too; Subfolders as groups, shown for a folder | `--recursive`; `--folder-groups` | `--recursive`; `--folder-groups` |
 | Put the source in the page | `--embed-source` | `--embed-source` |
 | If a file exists: Ask, Overwrite, Skip or Stop | `--on-exists` (Ask is the default, and asks in a dialog) | `--on-exists` |
 | Log: Normal, Verbose or Quiet | `--verbose`, `--quiet` | `--verbose`, `--quiet` |

@@ -58,6 +58,19 @@ A second spike (a sequence-diagram generator, since abandoned) proved that a lig
 - Output must be **deterministic** so git diffs only show real changes: stable sort orders, no timestamps or run-specific values in generated files. The page may say when the workbook was last saved, from the workbook's own document properties, since that changes only when the workbook does.
 - Re-running the tool must update the folder to match the workbook, including removing files for modules that no longer exist. It must only delete files it generated; other files in the repo (README, `.gitattributes`, etc.) must be left alone.
 
+## A folder of module files
+
+Added in step S2 of the generalisation plan (2026-11-16), for code exported by someone else.
+
+- **The input may be a folder** of exported modules: `.bas`, `.cls` and `.frm` files, as the VBA editor, Rubberduck or vbadoc wrote them, or as they came from elsewhere. Only its top level is read, unless `--recursive` (`-r`) says to read its subfolders too, at any depth, apart from folders starting with a dot, hidden and system folders, and `bin`, `obj` and `node_modules`. Any other file is left alone.
+- **It's documented where it is.** The page goes in the folder (or `--output`), named after the folder and `-vba`. Nothing else is written or deleted there: no module files, no `.gitattributes`, and no older pages. With `--output` elsewhere, the page says which folder to choose in Load folder.
+- **The page refers to each file at its path below the folder**, and Load folder finds it there at any depth below the folder picked (as pqdoc's does). Its lines are the file's own, header and all.
+- **A module's name** is its `Attribute VB_Name`, as the VBA editor imports it, or else its file name, with a warning when they differ. A `.cls` is a document module when its `VB_Base` is one of Excel's (the workbook, a sheet, a chart), and a class otherwise, with or without the `VERSION 1.0 CLASS` header.
+- **Encoding and line endings:** every file is read as UTF-8 when all are valid UTF-8 and one has more than ASCII in it (a byte order mark is allowed), and as Windows-1252 otherwise, with a warning when the folder mixes them. Any line endings are accepted. The page decodes the files the same way.
+- **The same name in two subfolders:** both are documented. The one first by path keeps the name, and code that uses it is taken to mean that one; the other is named by its path, such as `Old/Utils`, with a warning. A workbook can't hold both, so the Export tab and `import` won't take either. Two files in one folder with the same module are a duplicate, and the second is left out, with a warning.
+- **`--folder-groups`**, with `--recursive`, puts a module with no `'@Folder` of its own in its subfolders' folder in the explorer, as if it had `'@Folder("Sub.Folder")`. Without it, only `'@Folder` places a module, as for a workbook.
+- **What files don't record isn't shown:** a folder has no library references and no saved date. A folder with no module files stops with exit code 3.
+
 ## Forms
 
 Forms (UserForms) are in scope, but no sample workbook with forms has been available for testing yet. Build this part defensively.

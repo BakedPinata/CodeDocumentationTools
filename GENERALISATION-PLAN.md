@@ -52,7 +52,7 @@ says where the work is.
 | [N1](#step-n1-sample-databases-and-a-spike-on-reading-them) | Sample Access databases, and a spike on getting forms and VBA out of them | Claude, then you at home and on a work machine | Claude's part is done; yours is next: run the spike at home, on a work machine and on a real database, and say whether the sample database file may be committed |
 | [S0](#steps-s0s3-folders-of-exported-files) | Folders of exported files, added on 2026-11-16 and done before N2: your answers to the questions in S0 | You | Done |
 | [S1](#step-s1-subfolders-in-pqdoc-and-in-load-folder) | pqdoc's `--recursive`, and Load folder finding each file at its place below the folder picked, in both tools | Claude | Done |
-| [S2](#step-s2-vbadoc-documents-a-folder-of-exported-modules) | vbadoc documents a folder of exported modules, recursive or not, referring to the files where they are | Claude, then you on a real folder | Not started |
+| [S2](#step-s2-vbadoc-documents-a-folder-of-exported-modules) | vbadoc documents a folder of exported modules, recursive or not, referring to the files where they are | Claude, then you on a real folder | Claude's part is done; yours is next: run it on a real folder from an outside source |
 | [S3](#step-s3-vbadoc-imports-from-a-folder-and-the-desktop-app) | `vbadoc import` from a folder of modules, and the desktop app's Folder… and Subfolders for both tools | Claude | Not started |
 | [S4](#step-s4-userforms-from-a-folder-into-a-workbook) | `vbadoc import` writes UserForms from a folder into a workbook, from their `.frm` and `.frx` | Claude | Not started: to be worked out after S3 |
 | [N2](#step-n2-accessdoc-reads-a-databases-vba) | `accessdoc`: the VBA language in a library vbadoc and accessdoc share; the tool's skeleton; a page of the database's VBA | Claude | Not started |
@@ -909,6 +909,11 @@ matching end of its path. pqdoc 1.28.0, vbadoc 0.41.0 (for the shell's Load fold
   the shared README.
 
 ### Step S2: vbadoc documents a folder of exported modules
+
+Claude's part done on 2026-11-16, as below. Differences: the page doesn't say that references can't be known from
+files (the README and Requirements do, and the Export tab simply has none); the desktop app's part for vbadoc's
+Document tab came forward from S3, and it now offers each tool for a folder when that tool's files are in it or below
+it; the argument is `<input>`, as pqdoc's is. vbadoc 0.42.0, codedocui 0.6.0.
 
 - The input may be a folder (FR-IN in Requirements), with `--recursive`. Modules are read from `.bas`, `.cls` and `.frm`
   files (question 8), named as question 5 says, decoded as question 6 says, into the same code model

@@ -25,8 +25,9 @@ rather than repeating it.
   work machine and on a real database are next, and N2–N5 are revised after them. Steps S0–S3 (folders of exported
   files, added on 2026-11-16 as urgent, approved with the answers in S0) come first, then S4 (UserForms from a
   folder into a workbook). S1 is done: pqdoc reads subfolders with `--recursive`, and Load folder finds files below
-  the folder picked.
-- **vbadoc 0.41.0:** stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
+  the folder picked. S2, Claude's part, is done: vbadoc documents a folder of exported modules; the user's run on a
+  real outside folder is to come.
+- **vbadoc 0.42.0** (a folder of exported modules as input since step S2): stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
   `<workbook>-vba.html`, with an explorer of modules and members, in `'@Folder` folders or by kind. It asks
   before overwriting a page that would change (`--on-exists`, `--force`), as pqdoc does. Stage 6 (UserForms) is parked;
   stage 7 waits for the generalisation plan. Since 0.31.0 (step J2) it writes into add-ins (`.xlam`) as into workbooks.
@@ -35,7 +36,7 @@ rather than repeating it.
   and writes HTML by default as `<workbook or folder>-powerquery.html`. From a workbook it also writes each query to a
   `.m` file, kept in step with the workbook. The page shows each query's M code, highlighted, and an explorer of the
   queries in their Excel groups, nested as Excel shows them, or as queries and functions.
-- **codedocui 0.5.0** (`xldocui` until step K2), since steps I3, I4 and J2: the desktop app over both tools, in Windows Forms, published as one
+- **codedocui 0.6.0** (`xldocui` until step K2), since steps I3, I4 and J2: the desktop app over both tools, in Windows Forms, published as one
   compressed 50 MB file. It runs the tools' command lines in its own process, so it holds no logic of its own. The
   Document tab has every option of both main commands, and the Import tab every option of both `import`s, with Preview
   and the tools' questions as dialogs. See `codedocui/README.md`.
@@ -56,6 +57,18 @@ rather than repeating it.
 ## Log
 
 Newest first.
+
+### 2026-11-16: Step S2, vbadoc documents a folder of exported modules
+
+- `vbadoc <folder>` reads `.bas`, `.cls` and `.frm` files (`ModuleFolderReader`), with `--recursive` and
+  `--folder-groups` as pqdoc has them. Only the page is written; nothing in the folder is written or deleted.
+- A module keeps its file's path and bytes, so the page, its hashes, Peek and the parser use the file as it is. Names
+  come from `Attribute VB_Name`, document modules from `VB_Base`; UTF-8 or Windows-1252, any line endings. The same
+  name in two subfolders is shown twice and can't be taken.
+- The desktop app offers each tool for a folder when its files are in it or below it, with vbadoc's Subfolders boxes.
+- Checked: every test (1846), including a folder vbadoc wrote from a workbook reading back as the same modules and
+  staying byte for byte the same, and a browser test of Load folder on modules in subfolders; a run on a copy of a
+  real exported folder. vbadoc 0.42.0, codedocui 0.6.0. Next for the user: a real folder from an outside source.
 
 ### 2026-11-16: Step S1, subfolders in pqdoc and in Load folder
 
