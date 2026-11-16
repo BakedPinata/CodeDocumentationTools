@@ -8,26 +8,26 @@ rather than repeating it.
 - **Updating it:** at the end of each stage, and after any session that changes direction, update *Current state* and
   add an entry at the top of the log. Give the date, what changed and why, and commits, in a few lines.
 
-## Current state (2026-11-15)
+## Current state (2026-11-16)
 
 - **`GENERALISATION-PLAN.md`** (root): the current plan, agreed on 2026-11-13. It widens the repository to
   Access databases (forms and VBA), C# solutions and Python projects, with new names for the repository, the shared
   library and the desktop app, and starts with what the feedback plan parked, a Lock view button and a peek at a
   reference. Its progress table says which step is next. K0 is done: the user's answers are in its section 1, and
   the plan is revised for them. K1 is done: the root solution is `CodeDocumentationTools.sln` and the shared library
-  `CodeDocumenter.Shared`. K2 is done: the desktop app is `codedocui`. K3 (the repository's own name) is the user's
-  to start, and nothing waits for it. L1 is done: Lock view. L2 is done: Peek. L3 is done: the Calls tab's follow-ups, with the user's
+  `CodeDocumenter.Shared`. K2 is done: the desktop app is `codedocui`. K3 is done: the repository is
+  `CodeDocumentationTools`, on GitHub and on disk. L1 is done: Lock view. L2 is done: Peek. L3 is done: the Calls tab's follow-ups, with the user's
   real example of the missing Ifs still to be checked. L4 is done: a views file in the output folder is built into
   the page. L5 is done: descriptions and printing, with the user's check on a work machine still to come. L6 is
   done: Copy as text. M1 is done: the shared library is three. M2 is done: vbadoc's views are in the code views library, with their
   browser tests still in vbadoc (see the step). M3 is done: the code model, with VBA as its first language.
   N1: Claude's part is done (samples, and a spike that reads a database two ways); the user's runs at home, on a
   work machine and on a real database are next, and N2–N5 are revised after them.
-- **vbadoc 0.40.0:** stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
+- **vbadoc 0.40.1:** stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
   `<workbook>-vba.html`, with an explorer of modules and members, in `'@Folder` folders or by kind. It asks
   before overwriting a page that would change (`--on-exists`, `--force`), as pqdoc does. Stage 6 (UserForms) is parked;
   stage 7 waits for the generalisation plan. Since 0.31.0 (step J2) it writes into add-ins (`.xlam`) as into workbooks.
-- **pqdoc 1.27.0**, plus stages 3b–3d: reads a workbook's queries directly, or a folder of hand-exported `.m` files,
+- **pqdoc 1.27.1**, plus stages 3b–3d: reads a workbook's queries directly, or a folder of hand-exported `.m` files,
   and writes HTML by default as `<workbook or folder>-powerquery.html`. From a workbook it also writes each query to a
   `.m` file, kept in step with the workbook. The page shows each query's M code, highlighted, and an explorer of the
   queries in their Excel groups, nested as Excel shows them, or as queries and functions.
@@ -52,6 +52,19 @@ rather than repeating it.
 ## Log
 
 Newest first.
+
+### 2026-11-16: Step K3, the repository's name, and dependabot's updates
+
+- The user renamed the repository on GitHub and on disk to `CodeDocumentationTools`, pointed the remote at it,
+  copied Claude Code's memory folder and moved `PATH` to the new publish folder.
+- The pages link to the new address (`ToolVersion.RepositoryUrl`), and the root README has the new title. The log
+  keeps the old name where it was the name at the time, as does vbadoc's DECISIONS.md, which is the user's to change.
+- The `general/` branches were rebased onto main, for dependabot's two updates there (the minor-and-patch group, and
+  System.CommandLine 3.0.0), with nothing to change for them.
+- Checked: a fresh clone builds with warnings as errors, passes every test and publishes; `vbadoc --version` from the
+  new publish folder.
+- vbadoc 0.40.1, pqdoc 1.27.1. The old `…\Executables\ExcelDocumentationTools\` folder is still to be deleted by
+  hand.
 
 ### 2026-11-15: Step N1, Claude's part: sample databases and the spike
 
