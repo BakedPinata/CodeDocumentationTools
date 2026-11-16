@@ -49,6 +49,7 @@ can be pasted as it is. The Import tab chooses its source the same way.
 
 | In the window | vbadoc | pqdoc |
 |---|---|---|
+| Subfolders too; Subfolders as groups, shown for a folder | | `--recursive`; `--folder-groups` |
 | Put the source in the page | `--embed-source` | `--embed-source` |
 | If a file exists: Ask, Overwrite, Skip or Stop | `--on-exists` (Ask is the default, and asks in a dialog) | `--on-exists` |
 | Log: Normal, Verbose or Quiet | `--verbose`, `--quiet` | `--verbose`, `--quiet` |
@@ -78,6 +79,7 @@ or out of a folder of `.m` files for queries, as `vbadoc import` and `pqdoc impo
 |---|---|
 | Source | the source |
 | Take: modules and classes, or queries, when both tools read the source | which tool runs |
+| Subfolders too, shown for a folder (queries) | `--recursive`, which the list is read with too |
 | Tick them in the list, or From a manifest | `--items`, or `--manifest` |
 | Write to: a bundle folder, a new workbook, a copy of a target, or the target itself | `--bundle`, `--new`, `--into`, or `--into` and `--in-place` |
 | If it's in the target: Ask, Overwrite or Skip, with a target | `--on-clash` (Ask asks in a dialog) |

@@ -53,6 +53,15 @@ or that change it. Add to this file whenever a new decision is agreed. Conventio
   same way.
 - **Query names are case-insensitive**, so a file whose name differs from another's only by case is ignored with a
   warning.
+- **Subfolders only with `--recursive`** (step S1 of the generalisation plan, 2026-11-16), for folders exported by
+  someone else. Off by default, so an `old/` or `backup/` folder isn't read by surprise; dot folders, hidden folders,
+  `bin`, `obj` and `node_modules` are never read. The page keeps each file's path below the folder, and Load folder
+  always looks at every depth below the folder picked.
+- **The same name in two subfolders keeps both** (S1): the one at the top level, or else the first by path, keeps the
+  name and its references; the other is named by its path, such as `Old/Sales`. A workbook can't hold both, so
+  `import` refuses either until one is moved or renamed, rather than guessing.
+- **Subfolders aren't query groups unless `--folder-groups` says so** (S1, as the user chose): a group is something
+  Excel's Queries pane has, and a folder layout from elsewhere may not mean one.
 - **A file that can't be read doesn't stop the run.** Its query stays in the graph, because other queries may reference
   it, but its own references are missing. Outputs are still produced, and the exit code is 3.
 

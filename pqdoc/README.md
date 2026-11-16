@@ -49,7 +49,10 @@ pqdoc <input> [options]
   Excel. Outputs go in a `PowerQuery` folder next to the workbook, with each query in its own `.m`
   file (see [Query files](#query-files)); or
 - **a folder of exported `.m` files**, one query per file. The query name is the file name without
-  `.m`, and only the top level of the folder is scanned. Outputs go in the same folder.
+  `.m`. Only the top level is read, unless `--recursive` says to read its subfolders too, as a folder
+  exported by someone else often has them. Nothing in the folder is changed: outputs go in it, beside
+  the files. With `--recursive`, two files of the same name in different subfolders are both shown,
+  the second named by its path (`Old/Sales`), with a warning; `import` won't take either.
 
 An encrypted workbook (password, IRM or sensitivity label) can't be read: save a copy without
 encryption and run pqdoc on that.
@@ -66,6 +69,8 @@ renamed workbook's page. In a folder of `.m` files it only mentions them.
 | `--output` | `-o` | path | a `PowerQuery` folder next to a workbook, or the input folder | Where outputs are written. Created if missing. |
 | `--format` | `-f` | `html`, `csv`, `puml`, `pdf`, `png`, `svg` | `html` | The formats to write, comma-separated (`-f html,csv`) or repeated (`-f html -f csv`). Case-insensitive. Replaces the default, so include `html` to keep the page. |
 | `--embed-source` | | flag | off | Put each query's M code inside the page, so it shows without Load folder. See [the privacy note](#source-in-the-page). |
+| `--recursive` | `-r` | flag | off | With a folder, read the `.m` files in its subfolders too. Folders starting with a dot, hidden folders, and `bin`, `obj` and `node_modules` are skipped. |
+| `--folder-groups` | | flag | off | With `--recursive`, show each subfolder as a query group in the explorer. Without it, a folder's queries have no groups. |
 | `--plantuml-server` | | URL | none | PlantUML server for `pdf`, `png` and `svg`. |
 | `--on-exists` | | `prompt`, `overwrite`, `skip`, `fail` | `prompt` when interactive, otherwise `fail` | What to do when an output file already exists. |
 | `--force` | `-y` | flag | off | Same as `--on-exists overwrite`. |
@@ -175,7 +180,8 @@ Content-Security-Policy, so nothing in it can load anything from the network.
 The details panel shows the selected query's M code, with line numbers and highlighting.
 
 - By default the page doesn't contain the code. Click **Load folder** and choose the folder of `.m`
-  files once per session: the page's own folder for a workbook, or the folder you ran pqdoc on.
+  files once per session: the page's own folder for a workbook, or the folder you ran pqdoc on. Files
+  in subfolders are found at any depth below it.
   Browsers don't let a page read files next to it on their own. If a file has changed since the page
   was made, the top bar says so: run pqdoc again.
 - With `--embed-source` the code is inside the page instead, so it shows straight away.
@@ -270,6 +276,7 @@ pqdoc import Sales.xlsx --manifest pqdoc-export.json --new Toolkit.xlsx    # a n
 pqdoc import Sales.xlsx --manifest pqdoc-export.json --into Target.xlsx    # writes Target-imported.xlsx, beside it
 pqdoc import Sales.xlsx --manifest pqdoc-export.json --bundle Shared       # a folder, to bring in by hand
 pqdoc import Sales.xlsx --items "Sales Report,fnClean" --new Toolkit.xlsx  # by name, without a manifest
+pqdoc import Exported --recursive --items "Sales Report" --new Toolkit.xlsx  # from a folder and its subfolders
 ```
 
 The manifest lists what you picked and not what that brings, so running it again later picks up any new dependencies.

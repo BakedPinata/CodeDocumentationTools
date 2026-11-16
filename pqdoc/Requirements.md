@@ -6,7 +6,7 @@ This document specifies pqdoc, a .NET console application that works out which P
 
 ## 2. Input and Terminology
 
-The input is either an Excel workbook, whose queries the tool reads straight from the file (see 4.2), or a folder. From a folder, the tool reads every `*.m` file in the top level (non-recursive). Each file is one Power Query query; the query name is the file name without extension, with any escapes pqdoc wrote reversed (FR-QF-2). From a workbook, the tool also writes each query to a `.m` file (see 4.9).
+The input is either an Excel workbook, whose queries the tool reads straight from the file (see 4.2), or a folder. From a folder, the tool reads every `*.m` file in the top level, and with `--recursive` in its subfolders too (FR-IN-5). Each file is one Power Query query; the query name is the file name without extension, with any escapes pqdoc wrote reversed (FR-QF-2). From a workbook, the tool also writes each query to a `.m` file (see 4.9).
 
 ### 2.1 Terminology
 
@@ -56,6 +56,8 @@ The input, a workbook or a folder, is a required positional argument.
 | `--output` | `-o` | path | A `PowerQuery` folder next to a workbook, or the input folder | Folder to write outputs to. Created if it does not exist. |
 | `--format` | `-f` | one or more of `html`, `csv`, `puml`, `pdf`, `png`, `svg` | `html` | The formats to generate. Accepts a comma-separated list (`-f html,csv`) and MAY be repeated (`-f html -f csv`). Values are case-insensitive. Giving it replaces the default. |
 | `--embed-source` | | flag | off | Put each query's M code inside the page, so it shows without Load folder. See FR-SRC-2. |
+| `--recursive` | `-r` | flag | off | With a folder as input, read the `.m` files in its subfolders too. See FR-IN-5. |
+| `--folder-groups` | | flag | off | With `--recursive`, each subfolder is a query group in the explorer. See FR-IN-7. |
 | `--plantuml-server` | | URL | none | Base URL of the PlantUML server used for `pdf`, `png` and `svg` rendering. See FR-PUML-4. |
 | `--on-exists` | | `prompt`, `overwrite`, `skip`, `fail` | `prompt` when interactive, otherwise `fail` | Behaviour when an output file already exists. See FR-OVR. |
 | `--force` | `-y` | flag | off | Shorthand for `--on-exists overwrite`. If both are given and disagree, fail validation. |
@@ -83,6 +85,9 @@ pqdoc C:\queries -f svg,png --plantuml-server https://plantuml.example.com --for
 | FR-IN-2 | A workbook's queries MUST be read from the file itself, without Excel, following [MS-QDEFF](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-qdeff/27b1dd1e-7de8-45d9-9c84-dfcc7a802e37): the custom XML part whose root is `DataMashup` (found by its root, not its name), then the Package Parts section and its `Formulas/Section1.m`. `.xlsx`, `.xlsm` and `.xlsb` MUST all work. The file MUST be opened for shared reading, so it can be read while open in Excel. The other sections MUST NOT be read beyond checking their lengths. |
 | FR-IN-3 | `Section1.m` MUST be split into queries with the M tokeniser (FR-ANA-1), so that text and comments can't split a query. Each query's text is its expression as Excel stores it, without `shared <name> =` or the final `;`. A description (an attribute record before the query) is kept, but isn't part of the expression. A member without `shared` is still a query. |
 | FR-IN-4 | Each of these MUST stop the run with exit code 3 and a clear message, before anything is written: a file that isn't a workbook; an encrypted workbook or an older `.xls`; a workbook with no queries; damage (a length longer than the bytes left, invalid base64, a missing `Section1.m`, a section that can't be split); two queries with the same name, ignoring case. |
+| FR-IN-5 | With `--recursive` (`-r`), a folder's subfolders MUST be read too, at any depth, apart from folders starting with a dot, hidden and system folders, and `bin`, `obj` and `node_modules`. Without it only the top level is read. A workbook input ignores it. Nothing in the folder read is written or deleted: the outputs are the only files written. |
+| FR-IN-6 | When files in different folders give the same query name, ignoring case, both MUST be documented: one at the top level, or else the first by path, keeps the name, and references to the name go to it; the other is named by its path below the folder, such as `Old/Sales`. A warning MUST say so. `import` MUST refuse, with exit code 3, a choice that takes either. Two files in one folder whose names differ only by case are a duplicate: the second is ignored, with a warning. |
+| FR-IN-7 | With `--folder-groups` and `--recursive`, each subfolder MUST be a query group, nested as the folders are and ordered by name, holding the queries whose files are in it. Without it a folder's queries have no groups. |
 
 ### 4.3 Dependency Analysis
 
@@ -180,7 +185,7 @@ pqdoc C:\queries -f svg,png --plantuml-server https://plantuml.example.com --for
 | ID | Requirement |
 |----|-------------|
 | FR-SRC-1 | Selecting a query in the page MUST show its M code in the details panel, with line numbers and highlighting of comments, text, quoted names (`#"Sales Data"`), keywords (including `#date`-style constructors), numbers and type names. Highlighting MUST stay quick on a very long line, such as an Enter Data query's compressed table. |
-| FR-SRC-2 | By default the page MUST NOT contain M code, which can hold server names, file paths and other details. It holds each query's `.m` file name and the first 16 hex digits of the file's SHA-256, and **Load folder** reads the files from a folder the user picks. With `--embed-source` the page holds each query's M code instead, from the folder's files or from the files written from the workbook, HTML-escaped so it can't break out of the page. A query with no readable file has no source, and a page with none offers no source at all. |
+| FR-SRC-2 | By default the page MUST NOT contain M code, which can hold server names, file paths and other details. It holds each query's `.m` file name, as a path below the folder read when it's in a subfolder (`Sales/Orders.m`), and the first 16 hex digits of the file's SHA-256, and **Load folder** reads the files from a folder the user picks, at any depth: each at its path below the folder picked, or, if the user picked a folder above or below that one, the one file whose path ends the most like it. With `--embed-source` the page holds each query's M code instead, from the folder's files or from the files written from the workbook, HTML-escaped so it can't break out of the page. A query with no readable file has no source, and a page with none offers no source at all. |
 | FR-SRC-3 | After Load folder, the page MUST say how many files it loaded, name any that are missing, and warn when a file's hash doesn't match the one taken when the page was made. Files MUST be read as UTF-8 unless they start with a UTF-16 byte order mark. |
 | FR-SRC-4 | A button over the M code MUST copy it to the clipboard as plain text, without line numbers, and stay in view as the code scrolls. If the browser won't allow it, the code is selected for Ctrl+C instead. |
 
@@ -192,7 +197,7 @@ pqdoc C:\queries -f svg,png --plantuml-server https://plantuml.example.com --for
 | FR-IMP-2 | As the choice changes, the tab MUST show what was chosen, what comes along because something chosen uses it (functions and parameters are queries, so they come too), and what to check in the target. |
 | FR-IMP-3 | What to check MUST list what doesn't come along, and never block anything: a table or named range `Excel.CurrentWorkbook()` reads, and each function that reaches a data source, by its name only, as a query's server names and paths stay out of the page (FR-SRC-2). |
 | FR-IMP-4 | The manifest, `pqdoc-export.json`, MUST be downloaded from the tab and loadable back into it. It holds what was picked and the workbook's name. A manifest for another tool, or from a newer pqdoc, MUST be refused, saying why. |
-| FR-IMP-5 | `pqdoc import <input>` MUST take what to take from `--manifest <file>` or `--items A,B`, one or the other, from a workbook or a folder of `.m` files, and say what it comes to, as the tab does. A query the input doesn't have MUST stop it with exit code 3; a manifest made from another workbook is only mentioned. |
+| FR-IMP-5 | `pqdoc import <input>` MUST take what to take from `--manifest <file>` or `--items A,B`, one or the other, from a workbook or a folder of `.m` files (with `--recursive`, its subfolders too: FR-IN-5), and say what it comes to, as the tab does. A query the input doesn't have MUST stop it with exit code 3; a manifest made from another workbook is only mentioned. |
 | FR-IMP-6 | `--bundle <folder>` MUST write the queries' `.m` files with a `README.md` on bringing them in by hand, each query after those it uses. Without it, `--new` or `--into`, nothing is written. A bundle MUST go only into an empty folder or an earlier bundle, and a folder of other files MUST stop it with exit code 4. Replacing an earlier bundle that would change follows `--on-exists` and `--force`. |
 | FR-IMP-7 | `--new <file>` MUST write a new workbook with one sheet, holding the queries. The file has to be an `.xlsx` or `.xlsm`; anything else stops with exit code 2. |
 | FR-IMP-8 | `--into <file>` MUST take an `.xlsx`, `.xlsm` or `.xlsb` as the target and write a copy beside it, `<target>-imported`, with the target's extension. An encrypted workbook, an `.xls` and anything else MUST stop it with exit code 3. Only one of `--new`, `--into` and `--bundle` can be given. `--on-exists` and `--force` apply to the file written. `--new` can't name the source, and neither can a target changed in place: exit code 2. |
@@ -298,7 +303,6 @@ These are deliberate defaults.
 
 ## 8. Out of Scope / Possible Future Work
 
-- Recursive folder scanning (`--recursive`).
 - Local PlantUML rendering via a Java/`plantuml.jar` or Docker invocation.
 - Additional formats (Mermaid, Graphviz DOT, GraphML, JSON).
 - Reading queries from Power BI files (`.pbix`, `.pbit`).

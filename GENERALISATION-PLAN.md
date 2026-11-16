@@ -51,7 +51,7 @@ says where the work is.
 | [M3](#step-m3-the-code-model) | The code model: the views draw what a language describes, and files are apart from the things in them. vbadoc is its first language | Claude | Done |
 | [N1](#step-n1-sample-databases-and-a-spike-on-reading-them) | Sample Access databases, and a spike on getting forms and VBA out of them | Claude, then you at home and on a work machine | Claude's part is done; yours is next: run the spike at home, on a work machine and on a real database, and say whether the sample database file may be committed |
 | [S0](#steps-s0s3-folders-of-exported-files) | Folders of exported files, added on 2026-11-16 and done before N2: your answers to the questions in S0 | You | Done |
-| [S1](#step-s1-subfolders-in-pqdoc-and-in-load-folder) | pqdoc's `--recursive`, and Load folder finding each file at its place below the folder picked, in both tools | Claude | Not started |
+| [S1](#step-s1-subfolders-in-pqdoc-and-in-load-folder) | pqdoc's `--recursive`, and Load folder finding each file at its place below the folder picked, in both tools | Claude | Done |
 | [S2](#step-s2-vbadoc-documents-a-folder-of-exported-modules) | vbadoc documents a folder of exported modules, recursive or not, referring to the files where they are | Claude, then you on a real folder | Not started |
 | [S3](#step-s3-vbadoc-imports-from-a-folder-and-the-desktop-app) | `vbadoc import` from a folder of modules, and the desktop app's Folder… and Subfolders for both tools | Claude | Not started |
 | [S4](#step-s4-userforms-from-a-folder-into-a-workbook) | `vbadoc import` writes UserForms from a folder into a workbook, from their `.frm` and `.frx` | Claude | Not started: to be worked out after S3 |
@@ -887,6 +887,12 @@ them, and each tool's Requirements updated as the work needs.
 | 9 | Versions: which bump? | pqdoc and vbadoc a minor version each for S1 and S2, and the desktop app a minor version for S3 | As recommended |
 
 ### Step S1: Subfolders in pqdoc and in Load folder
+
+Done on 2026-11-16, as below, with three differences. The desktop app's part for pqdoc (Subfolders too and Subfolders
+as groups on the Document tab, Subfolders too on the Import tab) came forward from S3, as its tests require every new
+option to have a control. `import` refuses any choice that takes a clashing name, rather than taking one picked by
+path. Load folder also finds a file when the folder picked is above or below the one the tool read, by the longest
+matching end of its path. pqdoc 1.28.0, vbadoc 0.41.0 (for the shell's Load folder), codedocui 0.5.0.
 
 - pqdoc's `--recursive` (`-r`): every `.m` file below the folder, with its path relative to the folder; a query's
   name is still its file name, escapes reversed. With `--folder-groups`, subfolders become query groups (question

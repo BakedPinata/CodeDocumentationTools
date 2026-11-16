@@ -24,16 +24,18 @@ rather than repeating it.
   N1: Claude's part is done (samples, and a spike that reads a database two ways); the user's runs at home, on a
   work machine and on a real database are next, and N2–N5 are revised after them. Steps S0–S3 (folders of exported
   files, added on 2026-11-16 as urgent, approved with the answers in S0) come first, then S4 (UserForms from a
-  folder into a workbook).
-- **vbadoc 0.40.1:** stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
+  folder into a workbook). S1 is done: pqdoc reads subfolders with `--recursive`, and Load folder finds files below
+  the folder picked.
+- **vbadoc 0.41.0:** stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
   `<workbook>-vba.html`, with an explorer of modules and members, in `'@Folder` folders or by kind. It asks
   before overwriting a page that would change (`--on-exists`, `--force`), as pqdoc does. Stage 6 (UserForms) is parked;
   stage 7 waits for the generalisation plan. Since 0.31.0 (step J2) it writes into add-ins (`.xlam`) as into workbooks.
-- **pqdoc 1.27.1**, plus stages 3b–3d: reads a workbook's queries directly, or a folder of hand-exported `.m` files,
+- **pqdoc 1.28.0**, plus stages 3b–3d: reads a workbook's queries directly, or a folder of hand-exported `.m` files
+  (and its subfolders with `--recursive`, since step S1),
   and writes HTML by default as `<workbook or folder>-powerquery.html`. From a workbook it also writes each query to a
   `.m` file, kept in step with the workbook. The page shows each query's M code, highlighted, and an explorer of the
   queries in their Excel groups, nested as Excel shows them, or as queries and functions.
-- **codedocui 0.4.0** (`xldocui` until step K2), since steps I3, I4 and J2: the desktop app over both tools, in Windows Forms, published as one
+- **codedocui 0.5.0** (`xldocui` until step K2), since steps I3, I4 and J2: the desktop app over both tools, in Windows Forms, published as one
   compressed 50 MB file. It runs the tools' command lines in its own process, so it holds no logic of its own. The
   Document tab has every option of both main commands, and the Import tab every option of both `import`s, with Preview
   and the tools' questions as dialogs. See `codedocui/README.md`.
@@ -54,6 +56,18 @@ rather than repeating it.
 ## Log
 
 Newest first.
+
+### 2026-11-16: Step S1, subfolders in pqdoc and in Load folder
+
+- pqdoc `--recursive` (`-r`) reads `.m` files below the folder, skipping dot, hidden, `bin`, `obj` and
+  `node_modules` folders; `--folder-groups` makes subfolders query groups. `pqdoc import` takes `--recursive` too.
+  The same name in two subfolders keeps both, the second named by its path, and `import` refuses either.
+- The page keeps each file's path below the folder read, and the shell's Load folder finds it at that path below
+  the folder picked, or by the longest matching end of its path. Old pages load as before.
+- `SourceFolder` and `FolderOptions` are in `CodeDocumenter.Shared`, for vbadoc in S2.
+- The desktop app's part for pqdoc came forward from S3: its tests need a control for every new option.
+- Checked: every test (1836), including browser tests of Load folder on a nested folder and from a subfolder; the
+  folder read is unchanged after a run. pqdoc 1.28.0, vbadoc 0.41.0, codedocui 0.5.0.
 
 ### 2026-11-16: Folders of exported files added to the plan (steps S0–S3)
 
