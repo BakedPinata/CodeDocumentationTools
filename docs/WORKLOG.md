@@ -26,8 +26,8 @@ rather than repeating it.
   files, added on 2026-11-16 as urgent, approved with the answers in S0) come first, then S4 (UserForms from a
   folder into a workbook). S1 is done: pqdoc reads subfolders with `--recursive`, and Load folder finds files below
   the folder picked. S2, Claude's part, is done: vbadoc documents a folder of exported modules; the user's run on a
-  real outside folder is to come. S3 is done: `vbadoc import` takes from a folder. S4 (UserForms from a folder into a
-  workbook) is next, to be worked out.
+  real outside folder is to come. S3 is done: `vbadoc import` takes from a folder. S4 (UserForms into a
+  workbook) is planned and waits for the user's answers and a sample workbook.
 - **vbadoc 0.43.0** (a folder of exported modules as input since step S2, and as `import`'s source since S3): stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
   `<workbook>-vba.html`, with an explorer of modules and members, in `'@Folder` folders or by kind. It asks
   before overwriting a page that would change (`--on-exists`, `--force`), as pqdoc does. Stage 6 (UserForms) is parked;
@@ -58,6 +58,14 @@ rather than repeating it.
 ## Log
 
 Newest first.
+
+### 2026-11-16: Step S4 worked out
+
+- A UserForm in a workbook is its code, a designer storage (`f`, `o`, `CompObj`, `VBFrame`) and a `BaseClass=` line
+  in `PROJECT`. The VBA editor's `.frx` is a 24-byte header and a compound file holding `f`, `o` and `CompObj`, and
+  VBFrame is the `.frm`'s `Begin` block: found from the private workbook's form and the Access add-in's `.frx`.
+- The plan's S4 has three parts (a spike in Excel, import, and vbadoc's export writing forms) and five questions for
+  the user, with a sample workbook to make. Waiting for the answers.
 
 ### 2026-11-16: Step S3, vbadoc imports from a folder
 
