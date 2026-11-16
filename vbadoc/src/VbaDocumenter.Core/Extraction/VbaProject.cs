@@ -31,6 +31,21 @@ public sealed class VbaModule
 
   /// <summary><see cref="SourceBytes"/> decoded with the project's code page.</summary>
   public required string Source { get; init; }
+
+  /// <summary>
+  /// For a module read from a folder of files: its file's path below that folder, with <c>/</c> between the
+  /// parts, which the page refers to. Null for a module read from a workbook, whose file is the one vbadoc writes.
+  /// </summary>
+  public string? SourceFile { get; init; }
+
+  /// <summary>For a module read from a folder: its file's bytes exactly as they are, which the page and parser use.</summary>
+  public byte[]? FileBytes { get; init; }
+
+  /// <summary>
+  /// For a module read from a folder with <c>--folder-groups</c>: its subfolders, joined by dots as a <c>'@Folder</c>
+  /// is, for a module that has no <c>'@Folder</c> of its own. Null otherwise.
+  /// </summary>
+  public string? FolderFromPath { get; init; }
 }
 
 /// <summary>What a library reference points at, which says how it can be found.</summary>
@@ -94,4 +109,13 @@ public sealed class VbaProject
 
   /// <summary>The project's library references, in order.</summary>
   public IReadOnlyList<VbaReference> References { get; init; } = [];
+
+  /// <summary>
+  /// Whether the project was read from a folder of module files rather than a workbook. Such a project has
+  /// no references, as files don't record them, and nothing is written into its folder but the page.
+  /// </summary>
+  public bool FromFolder { get; init; }
+
+  /// <summary>Modules whose name a file in another subfolder shares: documented, but not imported.</summary>
+  public IReadOnlySet<string> ClashingModules { get; init; } = new HashSet<string>();
 }

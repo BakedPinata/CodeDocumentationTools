@@ -93,8 +93,20 @@ public static class CliRunner
     var interaction = services.Interaction;
     var total = Stopwatch.StartNew();
     logger.Information("Reading {Workbook}", options.WorkbookPath);
-    var project = Timed(logger, "Reading", () => WorkbookReader.Read(options.WorkbookPath));
-    logger.Information("  Project '{Project}', code page {CodePage}, {ModuleCount} module(s)", project.Name, project.CodePage, project.Modules.Count);
+    VbaProject project;
+    if (options.InputIsFolder)
+    {
+      var folder = Timed(logger, "Reading", () => ModuleFolderReader.Read(options.WorkbookPath, options.Recursive, options.FolderGroups && options.Recursive));
+      foreach (var warning in folder.Warnings) logger.Warning("{Warning:l}", warning);
+      project = folder.Project;
+      logger.Information("  {ModuleCount} module(s), read as code page {CodePage}", project.Modules.Count, project.CodePage);
+    }
+    else
+    {
+      project = Timed(logger, "Reading", () => WorkbookReader.Read(options.WorkbookPath));
+      logger.Information("  Project '{Project}', code page {CodePage}, {ModuleCount} module(s)", project.Name, project.CodePage, project.Modules.Count);
+    }
+
     cancellationToken.ThrowIfCancellationRequested();
 
     var parsed = Timed(logger, "Parsing", () => ProjectParser.Parse(project));
@@ -106,13 +118,13 @@ public static class CliRunner
     ConsoleReport.WriteDependencies(dependencies, logger);
 
     // Saved views kept in the output folder are built into the page. A file that can't be used is only a warning.
-    var title = Path.GetFileName(options.WorkbookPath);
+    var title = Path.GetFileName(Path.TrimEndingDirectorySeparator(options.WorkbookPath));
     var views = HtmlPageWriter.ReadViews(options.OutputFolder, title);
     if (views.Warning != null) logger.Warning("{Warning:l}", views.Warning);
     if (views.Count > 0) logger.Information("Building {Count} saved view(s) into the page, from {File}", views.Count, ViewsFile.FileName("vbadoc"));
 
     var html = Timed(logger, "Building the page",
-        () => HtmlPageWriter.Build(dependencies, project, title, options.EmbedSource, views.Json));
+        () => HtmlPageWriter.Build(dependencies, project, title, options.EmbedSource, views.Json, LoadFrom(options)));
     cancellationToken.ThrowIfCancellationRequested();
 
     // The page is asked about before anything is written, so quitting or refusing changes nothing on disk. A page that
@@ -128,10 +140,20 @@ public static class CliRunner
     try
     {
       logger.Information("Exporting to {Folder}", options.OutputFolder);
-      var result = Timed(logger, "Writing module files", () => ProjectExporter.Export(project, options.OutputFolder));
-      logger.Information("  {Written} written, {Unchanged} unchanged, {Deleted} deleted", result.Written.Count, result.Unchanged.Count, result.Deleted.Count);
-      foreach (var name in result.Deleted) logger.Information("    deleted {File} (no longer in the workbook)", name);
-      if (result.CreatedGitAttributes) logger.Information("  Created .gitattributes");
+
+      // A folder's module files are documented where they are: none are written, and none deleted. Only the
+      // page is, so its folder is made if --output names one that isn't there.
+      if (project.FromFolder)
+      {
+        Directory.CreateDirectory(options.OutputFolder);
+      }
+      else
+      {
+        var result = Timed(logger, "Writing module files", () => ProjectExporter.Export(project, options.OutputFolder));
+        logger.Information("  {Written} written, {Unchanged} unchanged, {Deleted} deleted", result.Written.Count, result.Unchanged.Count, result.Deleted.Count);
+        foreach (var name in result.Deleted) logger.Information("    deleted {File} (no longer in the workbook)", name);
+        if (result.CreatedGitAttributes) logger.Information("  Created .gitattributes");
+      }
 
       // A page skipped at the prompt or with --on-exists skip has already been reported.
       if (resolution.ToWrite.Count > 0)
@@ -144,9 +166,12 @@ public static class CliRunner
         services.PageWritten?.Invoke(pagePath);
       }
 
-      // Only once the new page is safely written, so there's always a page.
-      foreach (var name in HtmlPageWriter.RemoveOlderPages(options.OutputFolder, pageFile))
-        logger.Information("    deleted {File} (an older page from vbadoc)", name);
+      // Only once the new page is safely written, so there's always a page; and never in a folder vbadoc only reads.
+      if (!project.FromFolder)
+      {
+        foreach (var name in HtmlPageWriter.RemoveOlderPages(options.OutputFolder, pageFile))
+          logger.Information("    deleted {File} (an older page from vbadoc)", name);
+      }
     }
     catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
     {
@@ -158,6 +183,15 @@ public static class CliRunner
     logger.Debug("Finished in {Milliseconds} ms", total.ElapsedMilliseconds);
     return ExitCodes.Success;
   }
+
+  /// <summary>
+  /// Where Load folder finds the files, when the page isn't beside them: a folder's page written elsewhere with
+  /// <c>--output</c> says to choose the folder read. Null when the page is beside them.
+  /// </summary>
+  static string? LoadFrom(CommandLineOptions options) =>
+      options.InputIsFolder && !string.Equals(Path.GetFullPath(options.OutputFolder).TrimEnd('\\', '/'), Path.GetFullPath(options.WorkbookPath).TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase)
+        ? options.WorkbookPath
+        : null;
 
   /// <summary>Runs one step of the export, and logs how long it took (shown with --verbose).</summary>
   static T Timed<T>(ILogger logger, string step, Func<T> work)

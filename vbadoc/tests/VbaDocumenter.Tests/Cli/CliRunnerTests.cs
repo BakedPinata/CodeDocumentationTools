@@ -6,6 +6,7 @@ using Serilog.Core;
 using Serilog.Events;
 using VbaDocumenter.Cli;
 using VbaDocumenter.Cli.Logging;
+using VbaDocumenter.Core.Extraction;
 using VbaDocumenter.Tests.Support;
 
 namespace VbaDocumenter.Tests.Cli;
@@ -169,6 +170,52 @@ public sealed class CliRunnerTests : IDisposable
   }
 
   [Fact]
+  public void A_folder_vbadoc_wrote_reads_back_as_the_same_modules_and_only_the_page_is_added()
+  {
+    Assert.Equal(ExitCodes.Success, Run(Workbook, "--output", Output));
+    File.Delete(Page);
+    var before = Directory.GetFiles(Output, "*", SearchOption.AllDirectories).ToDictionary(f => f, File.ReadAllBytes);
+    var fromWorkbook = WorkbookReader.Read(Workbook).Modules.Select(m => (m.Name, m.Kind)).ToList();
+
+    Assert.Equal(ExitCodes.Success, Run(Output, "--force"));
+
+    var folderPage = Path.Combine(Output, "out-vba.html");
+    Assert.True(File.Exists(folderPage));
+    var fromFolder = ModuleFolderReader.Read(Output, recursive: false, folderGroups: false).Project.Modules.Select(m => (m.Name, m.Kind)).ToList();
+    Assert.Equal(fromWorkbook, fromFolder);
+    foreach (var (path, bytes) in before) Assert.Equal(bytes, File.ReadAllBytes(path));
+    Assert.Equal([folderPage], Directory.GetFiles(Output, "*", SearchOption.AllDirectories).Except(before.Keys));
+  }
+
+  [Fact]
+  public void A_folder_keeps_other_vbadoc_pages_and_says_where_its_files_are_when_the_page_goes_elsewhere()
+  {
+    var modules = Path.Combine(_folder, "Exported");
+    Directory.CreateDirectory(Path.Combine(modules, "Shared"));
+    File.WriteAllText(Path.Combine(modules, "Main.bas"), "Attribute VB_Name = \"Main\"\r\nSub Run()\r\n  Helper\r\nEnd Sub\r\n");
+    File.WriteAllText(Path.Combine(modules, "Shared", "Helpers.bas"), "Attribute VB_Name = \"Helpers\"\r\nSub Helper()\r\nEnd Sub\r\n");
+    var oldPage = Path.Combine(modules, "Old-vba.html");
+    File.WriteAllText(oldPage, "<meta name=\"generator\" content=\"vbadoc 0.6.0 (feacd3f)\">");
+
+    Assert.Equal(ExitCodes.Success, Run(modules, "--recursive", "--folder-groups", "--force"));
+    var page = File.ReadAllText(Path.Combine(modules, "Exported-vba.html"));
+    Assert.True(File.Exists(oldPage));
+    Assert.Contains("\"file\": \"Shared/Helpers.bas\"", page, StringComparison.Ordinal);
+    Assert.Contains("\"name\": \"Shared\"", page, StringComparison.Ordinal);
+
+    Assert.Equal(ExitCodes.Success, Run(modules, "-r", "--output", Output));
+    Assert.Contains("Choose the folder Exported", File.ReadAllText(Path.Combine(Output, "Exported-vba.html")), StringComparison.Ordinal);
+    Assert.False(Directory.EnumerateFiles(Output, "*.bas").Any());
+  }
+
+  [Fact]
+  public void A_folder_without_module_files_is_an_input_problem()
+  {
+    Assert.Equal(ExitCodes.InputError, Run(_folder, "--output", Output));
+    Assert.Contains(_log.Messages(LogEventLevel.Error), m => m.Contains("No .bas, .cls or .frm files", StringComparison.Ordinal));
+  }
+
+  [Fact]
   public void A_missing_workbook_is_an_input_problem()
   {
     Assert.Equal(ExitCodes.InputError, Run(Path.Combine(_folder, "missing.xlsm"), "--output", Output));
@@ -202,7 +249,7 @@ public sealed class CliRunnerTests : IDisposable
     Assert.Equal(ExitCodes.InvalidArguments, Run(args));
 
     Assert.NotEmpty(_log.Messages(LogEventLevel.Error));
-    Assert.Contains("Usage: vbadoc <workbook>", _error.ToString());
+    Assert.Contains("Usage: vbadoc <input>", _error.ToString());
   }
 
   // {out} is the test's output folder.
@@ -223,7 +270,7 @@ public sealed class CliRunnerTests : IDisposable
     Assert.Equal(ExitCodes.InvalidArguments, Run(args.Select(a => a == "{out}" ? Output : a).ToArray()));
 
     Assert.Contains("Unknown option '--nope'.", Assert.Single(_log.Messages(LogEventLevel.Error)));
-    Assert.Contains("Usage: vbadoc <workbook>", _error.ToString());
+    Assert.Contains("Usage: vbadoc <input>", _error.ToString());
     Assert.False(Directory.Exists(Output));
   }
 

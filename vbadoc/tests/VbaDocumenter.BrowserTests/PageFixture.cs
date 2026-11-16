@@ -298,6 +298,32 @@ public sealed class PageFixture : IAsyncLifetime
     return folder;
   }
 
+  /// <summary>
+  /// The sample's module files moved into subfolders, as an outside source might leave them, with the page vbadoc
+  /// makes from that folder with --recursive beside them. Made on first use.
+  /// </summary>
+  public string NestedFolder => _nested ??= MakeNested();
+
+  string? _nested;
+
+  string MakeNested()
+  {
+    var folder = Path.Combine(_root, "nested");
+    Directory.CreateDirectory(Path.Combine(folder, "Classes"));
+    Directory.CreateDirectory(Path.Combine(folder, "Modules", "Shared"));
+    foreach (var file in Directory.GetFiles(SampleFolder).Where(f => ModuleFolderReader.Extensions.Contains(Path.GetExtension(f))))
+    {
+      var name = Path.GetFileName(file);
+      var into = name.EndsWith(".cls", StringComparison.OrdinalIgnoreCase) ? "Classes" : name.StartsWith('U') ? Path.Combine("Modules", "Shared") : "Modules";
+      File.Copy(file, Path.Combine(folder, into, name));
+    }
+
+    var project = ModuleFolderReader.Read(folder, recursive: true, folderGroups: false).Project;
+    var model = DependencyAnalyser.Analyse(ProjectParser.Parse(project));
+    HtmlPageWriter.Write(folder, HtmlPageWriter.FileName(HtmlPageWriter.DefaultFolderName(folder)), HtmlPageWriter.Build(model, project, "nested", embedSource: false));
+    return folder;
+  }
+
   /// <summary>A copy of an output folder, for tests that change files.</summary>
   public string CopyOf(string folder)
   {

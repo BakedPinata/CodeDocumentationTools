@@ -118,6 +118,21 @@ public class SourcePanelTests(PageFixture fixture)
   }
 
   [Fact]
+  public async Task A_folders_page_finds_its_module_files_in_subfolders()
+  {
+    await using var opened = await OpenedPage.OpenAsync(fixture, fixture.NestedFolder);
+    var page = opened.Page;
+    await opened.SelectAsync("Order.Describe");
+
+    await page.SetInputFilesAsync("#load-folder", fixture.NestedFolder);
+    await page.WaitForFunctionAsync("() => document.querySelector('#side-panel-body .line') !== null");
+
+    Assert.Equal("Loaded 12 file(s)", await page.InnerTextAsync("#source-status-text"));
+    Assert.Equal(new[] { 42, 43, 44 }, await opened.ShownLinesAsync());
+    Assert.Empty(opened.Errors);
+  }
+
+  [Fact]
   public async Task Folder_mode_warns_when_files_changed_since_the_page_was_made()
   {
     var folder = fixture.CopyOf(fixture.SampleFolder);

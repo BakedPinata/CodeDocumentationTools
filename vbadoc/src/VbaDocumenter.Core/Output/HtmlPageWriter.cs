@@ -32,6 +32,10 @@ public static class HtmlPageWriter
   /// </summary>
   public static string DefaultName(string workbookPath) => SafeForAddress(Path.GetFileNameWithoutExtension(workbookPath)) + NameSuffix;
 
+  /// <summary>The page's default name for a folder of module files: the folder's name and <see cref="NameSuffix"/>.</summary>
+  public static string DefaultFolderName(string folder) =>
+      SafeForAddress(Path.GetFileName(Path.TrimEndingDirectorySeparator(folder))) + NameSuffix;
+
   /// <summary>
   /// Replaces characters that break or confuse a browser's address: <c>#</c> starts the part the page uses for Back
   /// and Forward, and <c>%</c> starts an escape. Only the file name changes; the page still shows the real name.
@@ -62,8 +66,17 @@ public static class HtmlPageWriter
   public static ToolVersion Version { get; } = ToolVersion.Of(typeof(HtmlPageWriter).Assembly);
 
   /// <param name="viewsJson">Saved views to build into the page, from <see cref="ViewsFile.Read"/>, or null for none.</param>
-  public static string Build(DependencyModel model, VbaProject project, string title, bool embedSource, string? viewsJson = null)
+  /// <param name="loadFrom">
+  /// For a folder's page written somewhere else: the folder read, whose name the page asks for in Load folder. Null
+  /// when the page is beside its files.
+  /// </param>
+  public static string Build(DependencyModel model, VbaProject project, string title, bool embedSource, string? viewsJson = null, string? loadFrom = null)
   {
+    var hint = loadFrom is not null
+      ? $"Choose the folder {Path.GetFileName(Path.TrimEndingDirectorySeparator(loadFrom))}, which this page's module files are in, to see their source"
+      : project.FromFolder
+        ? "Choose the folder this page is in, which holds its module files, to see their source"
+        : "Choose the folder that holds this page's module files, to see their source";
     var data = PageData.From(model, project, title, embedSource);
     var page = new ShellPage
     {
@@ -73,9 +86,9 @@ public static class HtmlPageWriter
       Title = title,
       Tabs = CodeViewsPage.Tabs,
       SearchHtml = EmbeddedResources.ReadText(Resources, "Page/search.html"),
-      LoadFolderHint = "Choose the folder that holds this page's module files, to see their source",
+      LoadFolderHint = hint,
       Summary = Summary(model),
-      SourceWord = "workbook",
+      SourceWord = project.FromFolder ? "folder" : "workbook",
       SourceSaved = project.Saved,
       ExportTab = true,
       PanelName = "Source",
@@ -165,7 +178,7 @@ public static class HtmlPageWriter
     var sb = new StringBuilder();
     foreach (var module in project.Modules)
     {
-      var text = encoding.GetString(ProjectExporter.FileContent(module)).ReplaceLineEndings("\n");
+      var text = Parsing.ProjectParser.FileText(encoding, module).ReplaceLineEndings("\n");
       // The HTML parser drops a newline straight after <pre>, so add one to keep a leading blank line intact.
       sb.Append($"<pre hidden class=\"vbadoc-source\" data-file=\"{PageBuilder.Escape(ProjectExporter.FileNameFor(module))}\">\n")
         .Append(PageBuilder.Escape(text))

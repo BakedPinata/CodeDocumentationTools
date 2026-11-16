@@ -16,22 +16,25 @@ public sealed class CliDefinition
 
   public CliDefinition()
   {
-    Workbook = new Argument<string>("workbook")
+    Workbook = new Argument<string>("input")
     {
-      Description = ".xlsm, .xlsb, .xlam, .xls or .xla file.",
+      Description = ".xlsm, .xlsb, .xlam, .xls or .xla file, or a folder of exported .bas, .cls and .frm files (subfolders "
+        + "too with --recursive).",
     };
 
     Output = new Option<string?>("--output", "-o")
     {
-      Description = "Where to write the source files and page. [default: a \"VBAProject\" folder next to the workbook]",
+      Description = "Where to write the source files and page. [default: a \"VBAProject\" folder next to the workbook, or the input folder]",
       HelpName = "folder",
     };
 
     OutputName = new Option<string?>("--output-name", "-n")
     {
-      Description = "The page's file name, without \".html\". [default: the workbook's name and \"-vba\", e.g. Sales-vba]",
+      Description = "The page's file name, without \".html\". [default: the workbook's or folder's name and \"-vba\", e.g. Sales-vba]",
       HelpName = "name",
     };
+
+    Folder = new FolderOptions("module files", "folders");
 
     EmbedSource = new Option<bool>("--embed-source")
     {
@@ -82,6 +85,8 @@ public sealed class CliDefinition
       Output,
       OutputName,
       EmbedSource,
+      Folder.Recursive,
+      Folder.FolderGroups,
       Overwrite.OnExists,
       Overwrite.Force,
       Verbose,
@@ -119,6 +124,9 @@ public sealed class CliDefinition
   /// <summary><c>--embed-source</c>.</summary>
   public Option<bool> EmbedSource { get; }
 
+  /// <summary><c>--recursive</c> and <c>--folder-groups</c>.</summary>
+  public FolderOptions Folder { get; }
+
   /// <summary><c>--on-exists</c> and <c>--force</c> / <c>-y</c>.</summary>
   public OverwriteOptions Overwrite { get; }
 
@@ -130,7 +138,7 @@ public sealed class CliDefinition
 
   /// <summary>Brief usage, shown after a validation error.</summary>
   public static string BriefUsage =>
-      $"Usage: {ToolName} <workbook> [options]{Environment.NewLine}Run '{ToolName} --help' for the full list of options.";
+      $"Usage: {ToolName} <input> [options]{Environment.NewLine}Run '{ToolName} --help' for the full list of options.";
 
   public ParseResult Parse(IReadOnlyList<string> args) => RootCommand.Parse(args);
 

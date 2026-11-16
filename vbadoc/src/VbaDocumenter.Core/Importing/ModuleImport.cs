@@ -27,9 +27,11 @@ public sealed partial class ModuleImport
   readonly HashSet<string> _lateBound;                       // the modules making late-bound calls
 
   /// <summary>Works out the lookups for a project.</summary>
-  public ModuleImport(DependencyModel model)
+  /// <param name="clashing">Modules whose name a file in another subfolder shares, which can't be taken.</param>
+  public ModuleImport(DependencyModel model, IReadOnlySet<string>? clashing = null)
   {
     ArgumentNullException.ThrowIfNull(model);
+    _clashing = clashing ?? new HashSet<string>();
     _modules = model.Modules.ToDictionary(m => m.Id, StringComparer.OrdinalIgnoreCase);
     _usedFrom = model.ModuleEdges.ToLookup(e => e.From, StringComparer.OrdinalIgnoreCase);
     _implementationsOf = model.ModuleEdges.Where(e => e.Kind == EdgeKind.Implements).ToLookup(e => e.To, StringComparer.OrdinalIgnoreCase);
@@ -45,12 +47,16 @@ public sealed partial class ModuleImport
   public string? Find(string name) => _modules.TryGetValue(name, out var node) ? node.Id : null;
 
   /// <summary>Why a module can't be picked, or null when it can.</summary>
-  public string? WhyNot(string id) => _modules[id].Module.Kind switch
-  {
-    VbaModuleKind.Document => "A document module belongs to its workbook",
-    VbaModuleKind.Form => "A UserForm can't be imported yet",
-    _ => null,
-  };
+  public string? WhyNot(string id) => _clashing.Contains(id)
+    ? "Another subfolder has a module of the same name, and a workbook can't hold both"
+    : _modules[id].Module.Kind switch
+    {
+      VbaModuleKind.Document => "A document module belongs to its workbook",
+      VbaModuleKind.Form => "A UserForm can't be imported yet",
+      _ => null,
+    };
+
+  readonly IReadOnlySet<string> _clashing;
 
   /// <summary>The modules a module uses that can come with it.</summary>
   public IEnumerable<string> Uses(string id) => _usedFrom[id].Select(e => e.To).Where(to => WhyNot(to) is null).Distinct();

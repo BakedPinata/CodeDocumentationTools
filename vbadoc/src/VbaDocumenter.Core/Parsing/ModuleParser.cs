@@ -78,7 +78,8 @@ public static partial class ModuleParser
   [GeneratedRegex($@"^(?:(?<name>{Id})|\[(?<bracketed>[^\]]+)\])\s*(?:=\s*(?<value>.+))?$", Opts)]
   private static partial Regex EnumItem();
 
-  public static ModuleModel Parse(string name, VbaModuleKind kind, string text)
+  /// <param name="defaultFolder">The module's folder when it has no <c>'@Folder</c> of its own, or null.</param>
+  public static ModuleModel Parse(string name, VbaModuleKind kind, string text, string? defaultFolder = null)
   {
     var lines = LogicalLineReader.Read(text);
     var state = new ParserState();
@@ -112,7 +113,7 @@ public static partial class ModuleParser
       Implements = state.Implements,
       Attributes = state.Attributes,
       Options = state.Options,
-      Folder = state.Folder,
+      Folder = state.Folder ?? defaultFolder,
       Description = Descriptions.FromAttribute(state.ModuleDescription)
           ?? Descriptions.ForModule(sourceLines, state.Members.Count > 0 ? state.Members.Min(m => m.StartLine) : null),
       LineCount = lineCount,

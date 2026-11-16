@@ -31,8 +31,10 @@ public static class ProjectExporter
       "*.frx binary\n" +
       "*.html -text diff\n";
 
+  /// <summary>The module's file: the one vbadoc writes for it, or for a module read from a folder, its own file's path.</summary>
   public static string FileNameFor(VbaModule module)
   {
+    if (module.SourceFile is not null) return module.SourceFile;
     string extension = module.Kind switch
     {
       VbaModuleKind.Standard => ".bas",
@@ -42,9 +44,13 @@ public static class ProjectExporter
     return SafeFileName(module.Name) + extension;
   }
 
-  /// <summary>The exact bytes of the exported file: the module source with CRLF line endings, plus the class header where needed.</summary>
+  /// <summary>
+  /// The exact bytes of the exported file: the module source with CRLF line endings, plus the class header where needed.
+  /// For a module read from a folder, its own file's bytes, as they are.
+  /// </summary>
   public static byte[] FileContent(VbaModule module)
   {
+    if (module.FileBytes is not null) return module.FileBytes;
     var source = NormaliseLineEndings(module.SourceBytes);
     if (module.Kind is not (VbaModuleKind.Class or VbaModuleKind.Document)) return source;
 

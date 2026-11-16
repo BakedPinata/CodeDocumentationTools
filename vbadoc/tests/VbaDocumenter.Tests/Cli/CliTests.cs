@@ -139,6 +139,6 @@ public class CliTests
     var binding = OptionsBinder.Bind(_cli.Parse([workbook]), _cli);
 
     Assert.Null(binding.Options);
-    Assert.Contains("workbook must not be empty.", binding.Errors);
+    Assert.Contains("input must not be empty.", binding.Errors);
   }
 }

@@ -16,17 +16,20 @@ static class OptionsBinder
   {
     var errors = new List<string>();
 
-    var workbook = ResolvePath(parseResult.GetValue(cli.Workbook), "workbook", errors);
+    // A folder of module files is documented where it is: the page goes in it, and nothing else is written.
+    var workbook = ResolvePath(parseResult.GetValue(cli.Workbook), "input", errors);
+    var isFolder = workbook is not null && Directory.Exists(workbook);
     var output = parseResult.GetValue(cli.Output);
     var outputFolder = output is not null
         ? ResolvePath(output, "--output", errors)
-        : workbook is null ? null : Path.Combine(Path.GetDirectoryName(workbook)!, "VBAProject");
+        : workbook is null ? null : isFolder ? workbook : Path.Combine(Path.GetDirectoryName(workbook)!, "VBAProject");
 
     if (workbook is null || outputFolder is null) return new BindingResult(null, errors);
 
-    var outputName = parseResult.GetValue(cli.OutputName) ?? HtmlPageWriter.DefaultName(workbook);
+    var outputName = parseResult.GetValue(cli.OutputName) ?? (isFolder ? HtmlPageWriter.DefaultFolderName(workbook) : HtmlPageWriter.DefaultName(workbook));
     var options = new CommandLineOptions(
-        workbook, outputFolder, outputName, parseResult.GetValue(cli.EmbedSource), cli.Overwrite.Bind(parseResult), GetVerbosity(parseResult, cli));
+        workbook, outputFolder, outputName, parseResult.GetValue(cli.EmbedSource), cli.Overwrite.Bind(parseResult), GetVerbosity(parseResult, cli),
+        parseResult.GetValue(cli.Folder.Recursive), parseResult.GetValue(cli.Folder.FolderGroups));
     return new BindingResult(options, errors);
   }
 
