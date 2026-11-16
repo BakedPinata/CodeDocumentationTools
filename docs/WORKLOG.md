@@ -29,8 +29,8 @@ rather than repeating it.
   real outside folder is to come. S3 is done: `vbadoc import` takes from a folder. S3a (added 2026-11-17) is done: the
   Import tab's error when it's first shown with a list read, and an unexpected error reported once, with a report to
   pass on, before the app closes; then `import --in-place` refused when another program was reading the target,
-  `import`'s help, and `publish.ps1` ending the build servers. S4 (UserForms from a folder into a workbook) is next, to be worked out; its branch,
-  which has only its plan so far, is to be rebased onto S3a.
+  `import`'s help, and `publish.ps1` ending the build servers. S4 (UserForms into a workbook) is planned and waits
+  for the user's answers and a sample workbook.
 - **vbadoc 0.43.2** (a folder of exported modules as input since step S2, and as `import`'s source since S3): stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
   `<workbook>-vba.html`, with an explorer of modules and members, in `'@Folder` folders or by kind. It asks
   before overwriting a page that would change (`--on-exists`, `--force`), as pqdoc does. Stage 6 (UserForms) is parked;
@@ -99,6 +99,14 @@ Newest first.
   server) and VS Code's, not the app's, which is one process of its own; `dotnet build-server shutdown` ends the build's.
 - Checked: the app's tests (187); the fix in four saved states; the dialog for an error on the window's thread and on
   another, both closing the app with exit code 1 and leaving the settings unchanged. codedocui 0.8.0.
+
+### 2026-11-16: Step S4 worked out
+
+- A UserForm in a workbook is its code, a designer storage (`f`, `o`, `CompObj`, `VBFrame`) and a `BaseClass=` line
+  in `PROJECT`. The VBA editor's `.frx` is a 24-byte header and a compound file holding `f`, `o` and `CompObj`, and
+  VBFrame is the `.frm`'s `Begin` block: found from the private workbook's form and the Access add-in's `.frx`.
+- The plan's S4 has three parts (a spike in Excel, import, and vbadoc's export writing forms) and five questions for
+  the user, with a sample workbook to make. Waiting for the answers.
 
 ### 2026-11-16: Step S3, vbadoc imports from a folder
 

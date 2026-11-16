@@ -55,7 +55,7 @@ says where the work is.
 | [S2](#step-s2-vbadoc-documents-a-folder-of-exported-modules) | vbadoc documents a folder of exported modules, recursive or not, referring to the files where they are | Claude, then you on a real folder | Claude's part is done; yours is next: run it on a real folder from an outside source |
 | [S3](#step-s3-vbadoc-imports-from-a-folder-and-the-desktop-app) | `vbadoc import` from a folder of modules, and the desktop app's Folder… and Subfolders for both tools | Claude | Done |
 | [S3a](#step-s3a-the-import-tabs-list-error-reports-and-fixes-to-import) | The desktop app: the Import tab's error when it's first shown, and an unexpected error reported once, with a report to pass on, before the app closes. Then both tools: `import --in-place` refused when another program was reading the target, and `import`'s help; and `publish.ps1` ending the build servers | Claude | Done |
-| [S4](#step-s4-userforms-from-a-folder-into-a-workbook) | `vbadoc import` writes UserForms from a folder into a workbook, from their `.frm` and `.frx` | Claude | Not started: to be worked out after S3 |
+| [S4](#step-s4-userforms-from-a-folder-into-a-workbook) | `vbadoc import` takes UserForms, from a folder's `.frm` and `.frx` or a workbook's designer: S4a a spike in Excel, S4b import, S4c vbadoc's export writes forms as the VBA editor does | Claude, then you in Excel | Planned; waiting for your answers in S4 |
 | [N2](#step-n2-accessdoc-reads-a-databases-vba) | `accessdoc`: the VBA language in a library vbadoc and accessdoc share; the tool's skeleton; a page of the database's VBA | Claude | Not started |
 | [N3](#step-n3-accessdoc-reads-forms) | `accessdoc`: forms read into sections, controls, subforms, data sources and events, with handlers linked to their controls | Claude | Not started |
 | [N4](#step-n4-the-forms-view) | `accessdoc`: the Forms view: which form holds which, each form's layout drawn, its controls, data and events | Claude, then you on a real database | Not started |
@@ -994,9 +994,56 @@ Then, asked for the same day after reviewing the above, three more, which also c
 
 ### Step S4: UserForms from a folder into a workbook
 
-Asked for on 2026-11-16 as the step after S3 (S0, question 7), and to be worked out when S3 is done: `vbadoc import`
-from a folder writing a UserForm into a new workbook or a copy of a target, from its `.frm` and `.frx` files,
-rather than only into a bundle.
+Asked for on 2026-11-16 as the step after S3 (S0, question 7): `vbadoc import` writing a UserForm into a new
+workbook or a copy of a target. Worked out on 2026-11-16; **waiting for your answers below.**
+
+**What a UserForm is, found by looking at the real workbook in `vbadoc/private/` and the one `.frx` in the
+repository** (from the Access add-in's test source):
+
+| In the workbook's VBA project | In the VBA editor's export |
+|---|---|
+| The code, in the `VBA` storage, as for a class | The `.frm` after its `Begin … End` block |
+| A storage named after the form, with streams `f`, `o` and `CompObj`: the form and its controls | A compound file inside the `.frx`, after a 24-byte header, holding those three streams |
+| The same storage's `VBFrame` stream: `VERSION 5.00`, then `Begin {C62A69F0-…} Name`, the caption, size and position, and `End`, as text | The `.frm`'s `Begin … End` block, with `OleObjectBlob = "Name.frx":0000` where VBFrame has `TypeInfoVer` |
+| `BaseClass=Name` in the `PROJECT` stream, where a class has `Class=Name` | Nothing: it's written |
+
+So everything a form needs is in its two files, and nothing has to be understood, only moved: the three streams are
+copied as they are, and VBFrame is the `Begin` block. What isn't known is whether Excel accepts a form written that
+way, as it accepts modules written as source (step H1): a form's code has a `VB_Base` naming two GUIDs that the VBA
+editor makes on import, and a form's controls are compiled into its type, which vbadoc leaves Excel to rebuild. Only
+Excel can say, so S4 starts with a spike.
+
+Two more things found:
+
+- **vbadoc's own export has no designer:** its `.frm` is the code alone, with no `Begin` block and no `.frx`
+  (DECISIONS, Export). So a folder vbadoc wrote can't bring a form back; only the VBA editor's export, or
+  Rubberduck's, which is the same, can. Question 2 is about changing that.
+- **There's no sample form to commit.** The workbook in `vbadoc/private/` has one, but it stays private. A sample
+  needs making (question 1).
+
+**Steps:**
+
+- **S4a, spike (Claude, then you in Excel):** a throwaway program in `spikes/s4-userforms/` that builds, from a sample
+  form's `.frm` and `.frx`, a new workbook holding it, in three ways: the code with its `VB_Base`, without it, and the
+  designer storage copied from a workbook rather than built from files. You open each in Excel at home and on a work
+  machine: does the form show, with its controls, and run? The findings go in vbadoc's DECISIONS, as H1's and J1's did.
+- **S4b (Claude):** `vbadoc import` takes UserForms, from a folder (`.frm` and `.frx`) and from a workbook (its
+  designer storage), into a new workbook, a copy of a target and a bundle (with the `.frx` beside the `.frm`). A form
+  the target has already is skipped, never overwritten, as now. A form whose `.frm` has no `Begin` block or whose
+  `.frx` is missing can't be taken, and says why. The Export tab can tick forms.
+- **S4c (Claude), if question 2 says so:** vbadoc's export writes each form as the VBA editor does, `.frm` with its
+  `Begin` block and a `.frx`, so its own folders bring forms back too. Then you import one of those `.frm` files into
+  the VBA editor by hand, to check the `.frx` header vbadoc writes.
+
+**Questions.** Each has my recommendation filled in; change the answer column where you want something else.
+
+| # | Question | Recommendation | Your answer |
+|---|---|---|---|
+| 1 | A sample form for the tests and the spike | You make a workbook at home with two UserForms (one plain with a label, text box, list box and button; one with a MultiPage, a frame and an image), export both from the VBA editor (File > Export File), and put the workbook and the four files in `vbadoc/private/s4/`. I scrub them (your name and folders) and, if you agree, commit the exported files as fixtures | As recommended |
+| 2 | Should vbadoc's own export write forms as the VBA editor does (S4c)? It changes what a workbook with a form exports: the `.frm` gains its `Begin` block and a `.frx` appears, which git shows as binary | Yes: otherwise vbadoc's folders are the one kind of folder it can't bring forms back from | Yes |
+| 3 | Forms from a workbook too, not only from a folder? Copying the designer storage is the easier half, and `import` from a workbook refuses forms today | Yes, in S4b | Yes |
+| 4 | Where the spike runs: Excel at home only, or a work machine too? | Both, as for H1 and J1: work machines may block forms differently | Both |
+| 5 | Versions | vbadoc a minor version for S4b and again for S4c; the desktop app a patch, as only its list changes | As recommended |
 
 ### Step N2: accessdoc reads a database's VBA
 
@@ -1154,6 +1201,7 @@ Approving this plan covers the changes below, each made in the step that causes 
 | N1 | Make Northwind 2.0 from Access's template into `accessdoc/private/`; run the spike at home, on a work machine and on one real database |
 | S0 | Answer the questions on folders of exported files |
 | S2 | Run vbadoc on a real folder of modules from an outside source |
+| S4 | Answer the questions in S4; make a sample workbook with two UserForms and export them; open the spike's workbooks in Excel at home and at work |
 | N4, N5 | Try the Forms view and the outline on a real database and a form you mean to rebuild |
 | P1 | Run the spike on a real solution, and on a work machine |
 | P4 | Try csdoc's page on a real solution |
