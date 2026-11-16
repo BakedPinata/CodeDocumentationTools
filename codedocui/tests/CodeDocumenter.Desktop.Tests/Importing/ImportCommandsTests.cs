@@ -178,7 +178,7 @@ public sealed class ImportCommandsTests
     var settings = new ImportSettings { Items = ["A"], Bundle = Bundle };
 
     Assert.Null(ImportCommands.Run(settings));
-    Assert.Equal(new[] { "Choose a workbook to take from, or for queries a folder of .m files." }, ImportCommands.Problems(settings));
+    Assert.Equal(new[] { "Choose a workbook to take from, or a folder of exported VBA modules or .m files." }, ImportCommands.Problems(settings));
   }
 
   [Fact]

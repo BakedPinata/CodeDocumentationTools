@@ -92,10 +92,10 @@ internal sealed class ImportTab : UserControl
 
     var browse = MakeButton("&Browse…", "Choose a workbook to take from");
     browse.Click += (_, _) => BrowseForSource();
-    var folder = MakeButton("&Folder…", "Choose a folder of .m files to take queries from");
+    var folder = MakeButton("&Folder…", "Choose a folder of exported VBA modules or .m files to take from");
     folder.Click += (_, _) => BrowseForFolder();
     rows.Add(Caption("&Source"), source, Flow(browse, folder));
-    rows.Add(null, Note("A workbook, or for queries a folder of .m files. You can also drop one on the window, or a manifest.", visible: true));
+    rows.Add(null, Note("A workbook, or a folder of exported VBA modules or .m files. You can also drop one on the window, or a manifest.", visible: true));
     folderRow.AddRange(rows.Add(Caption("", indent: true), recursive));
     rows.Add(Caption("Take"), Flow(vbadoc, pqdoc, toolNote));
     rows.Add(Caption("Choose"), Flow(fromList, fromManifest));
@@ -569,7 +569,7 @@ internal sealed class ImportTab : UserControl
   {
     using var picker = new FolderBrowserDialog
     {
-      Description = "Choose a folder of .m files to take queries from",
+      Description = "Choose a folder of exported VBA modules or .m files to take from",
       UseDescriptionForTitle = true,
       InitialDirectory = FolderOf(DocumentCommands.Tidy(source.Text)),
     };

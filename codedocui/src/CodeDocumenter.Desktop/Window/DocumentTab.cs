@@ -53,7 +53,7 @@ internal sealed class DocumentTab : UserControl
     browse.Click += (_, _) => BrowseForWorkbook();
     var folder = MakeButton("&Folder…", "Choose a folder of exported VBA modules or .m files");
     folder.Click += (_, _) => BrowseForFolder();
-    rows.Add(Caption("&Workbook"), input, Flow(browse, folder));
+    rows.Add(Caption("&Workbook or folder"), input, Flow(browse, folder));
     rows.Add(null, Note("A workbook, or a folder of exported VBA modules (.bas, .cls, .frm) or .m files. You can also drop one on the window.", visible: true));
     folderRow.AddRange(rows.Add(Caption("", indent: true), Flow(recursive, folderGroups)));
 

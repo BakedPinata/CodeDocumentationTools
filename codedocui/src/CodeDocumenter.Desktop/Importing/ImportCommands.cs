@@ -17,7 +17,7 @@ internal static class ImportCommands
   {
     [Tool.Vbadoc] =
     [
-      "--manifest", "--items", "--no-references", "--bundle", "--new", "--into", "--in-place", "--on-clash", "--drop-signature",
+      "--manifest", "--items", "--recursive", "--no-references", "--bundle", "--new", "--into", "--in-place", "--on-clash", "--drop-signature",
       "--on-exists", "--verbose", "--quiet",
     ],
     [Tool.Pqdoc] = ["--manifest", "--items", "--recursive", "--bundle", "--new", "--into", "--in-place", "--on-clash", "--on-exists", "--verbose", "--quiet"],
@@ -52,7 +52,7 @@ internal static class ImportCommands
     var source = DocumentCommands.Tidy(settings.Source);
     if (source.Length == 0)
     {
-      return ["Choose a workbook to take from, or for queries a folder of .m files."];
+      return ["Choose a workbook to take from, or a folder of exported VBA modules or .m files."];
     }
 
     if (ToolFor(settings) is not { } tool)
@@ -116,7 +116,7 @@ internal static class ImportCommands
       arguments.AddRange(["--items", string.Join(',', settings.Items)]);
     }
 
-    if (tool == Tool.Pqdoc && settings.Recursive && !File.Exists(source))
+    if (settings.Recursive && !File.Exists(source))
     {
       arguments.Add("--recursive");
     }

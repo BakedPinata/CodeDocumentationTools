@@ -14,7 +14,7 @@ internal static class ImportItems
   /// <exception cref="ExtractionException">The source can't be read, or has nothing of the kind.</exception>
   public static Task<IReadOnlyList<ImportableItem>> ReadAsync(Tool tool, string source, bool recursive, CancellationToken cancellationToken) => tool switch
   {
-    Tool.Vbadoc => Task.Run(() => VbaCli.ImportSource.Items(source), cancellationToken),
+    Tool.Vbadoc => Task.Run(() => VbaCli.ImportSource.Items(source, recursive), cancellationToken),
     Tool.Pqdoc => Task.Run(() => PqCli.ImportSource.ItemsAsync(source, recursive, cancellationToken), cancellationToken),
     _ => throw new ArgumentOutOfRangeException(nameof(tool), tool, null),
   };
