@@ -26,8 +26,9 @@ rather than repeating it.
   files, added on 2026-11-16 as urgent, approved with the answers in S0) come first, then S4 (UserForms from a
   folder into a workbook). S1 is done: pqdoc reads subfolders with `--recursive`, and Load folder finds files below
   the folder picked. S2, Claude's part, is done: vbadoc documents a folder of exported modules; the user's run on a
-  real outside folder is to come.
-- **vbadoc 0.42.0** (a folder of exported modules as input since step S2): stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
+  real outside folder is to come. S3 is done: `vbadoc import` takes from a folder. S4 (UserForms from a folder into a
+  workbook) is next, to be worked out.
+- **vbadoc 0.43.0** (a folder of exported modules as input since step S2, and as `import`'s source since S3): stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
   `<workbook>-vba.html`, with an explorer of modules and members, in `'@Folder` folders or by kind. It asks
   before overwriting a page that would change (`--on-exists`, `--force`), as pqdoc does. Stage 6 (UserForms) is parked;
   stage 7 waits for the generalisation plan. Since 0.31.0 (step J2) it writes into add-ins (`.xlam`) as into workbooks.
@@ -36,7 +37,7 @@ rather than repeating it.
   and writes HTML by default as `<workbook or folder>-powerquery.html`. From a workbook it also writes each query to a
   `.m` file, kept in step with the workbook. The page shows each query's M code, highlighted, and an explorer of the
   queries in their Excel groups, nested as Excel shows them, or as queries and functions.
-- **codedocui 0.6.0** (`xldocui` until step K2), since steps I3, I4 and J2: the desktop app over both tools, in Windows Forms, published as one
+- **codedocui 0.7.0** (`xldocui` until step K2), since steps I3, I4 and J2: the desktop app over both tools, in Windows Forms, published as one
   compressed 50 MB file. It runs the tools' command lines in its own process, so it holds no logic of its own. The
   Document tab has every option of both main commands, and the Import tab every option of both `import`s, with Preview
   and the tools' questions as dialogs. See `codedocui/README.md`.
@@ -57,6 +58,16 @@ rather than repeating it.
 ## Log
 
 Newest first.
+
+### 2026-11-16: Step S3, vbadoc imports from a folder
+
+- `vbadoc import <folder>` with `--recursive` takes modules as from a workbook, from a copy of the folder's project in
+  Windows-1252 without the files' paths (`ModuleFolderReader.ForImport`), so bundles and workbooks come out as they
+  do from a workbook. A name two subfolders share is refused. UserForms still can't be taken from anywhere: S4.
+- The desktop app's Import tab reads a folder's list for vbadoc too, with Subfolders too.
+- Checked: every test (1849), including a folder of UTF-8, Unix-line-ending modules into a new workbook and a bundle,
+  with the folder unchanged; the Document tab looked at with a folder of both kinds. The Import tab with a folder
+  wasn't looked at (typing into it by script failed): for the user. vbadoc 0.43.0, codedocui 0.7.0.
 
 ### 2026-11-16: Step S2, vbadoc documents a folder of exported modules
 

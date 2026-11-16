@@ -110,6 +110,7 @@ vbadoc C:\Exported --recursive --folder-groups      # with each subfolder as a f
 - **Two files of the same name in different subfolders** are both shown, the second named by its path (`Old/Utils`),
   with a warning; the Export tab and `import` won't take either.
 - **A folder has no library references**, as module files don't record them, and no saved date.
+- **`vbadoc import` takes from a folder too**, with `--recursive`, as from a workbook (see below).
 
 ### An existing page
 
@@ -136,6 +137,7 @@ vbadoc import Sales.xlsm --manifest vbadoc-export.json --into Tools.xlam     # a
 vbadoc import Sales.xlsm --manifest vbadoc-export.json --new Toolkit.xlam    # a new add-in
 vbadoc import Sales.xlsm --manifest vbadoc-export.json --bundle Shared       # a folder, to import by hand
 vbadoc import Sales.xlsm --items Logger,FilePathFromDialog --new Toolkit.xlsm  # by name, without a manifest
+vbadoc import Exported -r --items Logger --new Toolkit.xlsm                   # from a folder of module files and its subfolders
 ```
 
 The manifest lists what you picked and not what that brings, so running it again later picks up any new dependencies.

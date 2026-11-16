@@ -53,7 +53,7 @@ says where the work is.
 | [S0](#steps-s0s3-folders-of-exported-files) | Folders of exported files, added on 2026-11-16 and done before N2: your answers to the questions in S0 | You | Done |
 | [S1](#step-s1-subfolders-in-pqdoc-and-in-load-folder) | pqdoc's `--recursive`, and Load folder finding each file at its place below the folder picked, in both tools | Claude | Done |
 | [S2](#step-s2-vbadoc-documents-a-folder-of-exported-modules) | vbadoc documents a folder of exported modules, recursive or not, referring to the files where they are | Claude, then you on a real folder | Claude's part is done; yours is next: run it on a real folder from an outside source |
-| [S3](#step-s3-vbadoc-imports-from-a-folder-and-the-desktop-app) | `vbadoc import` from a folder of modules, and the desktop app's Folder… and Subfolders for both tools | Claude | Not started |
+| [S3](#step-s3-vbadoc-imports-from-a-folder-and-the-desktop-app) | `vbadoc import` from a folder of modules, and the desktop app's Folder… and Subfolders for both tools | Claude | Done |
 | [S4](#step-s4-userforms-from-a-folder-into-a-workbook) | `vbadoc import` writes UserForms from a folder into a workbook, from their `.frm` and `.frx` | Claude | Not started: to be worked out after S3 |
 | [N2](#step-n2-accessdoc-reads-a-databases-vba) | `accessdoc`: the VBA language in a library vbadoc and accessdoc share; the tool's skeleton; a page of the database's VBA | Claude | Not started |
 | [N3](#step-n3-accessdoc-reads-forms) | `accessdoc`: forms read into sections, controls, subforms, data sources and events, with handlers linked to their controls | Claude | Not started |
@@ -933,6 +933,11 @@ it; the argument is `<input>`, as pqdoc's is. vbadoc 0.42.0, codedocui 0.6.0.
 - Docs: vbadoc's Requirements, README and DECISIONS.
 
 ### Step S3: vbadoc imports from a folder, and the desktop app
+
+Done on 2026-11-16. Most of the desktop app's part came forward into S1 and S2. Differences: UserForms still can't be
+taken at all, from a folder or a workbook, so none go into a bundle either (S4 takes them up); a folder's modules go
+into a workbook or bundle in Windows-1252; and the Import tab's window wasn't looked at with a folder typed in, as typing
+into it by script didn't work, so that's for you to look at. vbadoc 0.43.0, codedocui 0.7.0.
 
 - `vbadoc import <folder>` with `--manifest` or `--items`, and `--recursive`, as `pqdoc import` takes a folder. What
   a module brings with it is worked out as from a workbook. UserForms follow question 7. A manifest made from a

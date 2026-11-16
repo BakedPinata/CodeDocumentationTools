@@ -74,13 +74,13 @@ words and with its exit code. Cancel stops a run as Ctrl+C does, and Quit in a q
 Each page is opened once it's written, unless that's turned off, and Open the page opens it again.
 
 **The Import tab** takes chosen modules and classes (vbadoc) or queries (pqdoc), with what they use, out of a workbook,
-or out of a folder of `.m` files for queries, as `vbadoc import` and `pqdoc import` do:
+or out of a folder of exported module files or `.m` files, as `vbadoc import` and `pqdoc import` do:
 
 | In the window | `import` |
 |---|---|
 | Source | the source |
 | Take: modules and classes, or queries, when both tools read the source | which tool runs |
-| Subfolders too, shown for a folder (queries) | `--recursive`, which the list is read with too |
+| Subfolders too, shown for a folder | `--recursive`, which the list is read with too |
 | Tick them in the list, or From a manifest | `--items`, or `--manifest` |
 | Write to: a bundle folder, a new workbook, a copy of a target, or the target itself | `--bundle`, `--new`, `--into`, or `--into` and `--in-place` |
 | If it's in the target: Ask, Overwrite or Skip, with a target | `--on-clash` (Ask asks in a dialog) |

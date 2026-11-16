@@ -259,7 +259,9 @@ Shared by both views.
 
 ## Importing
 
-`vbadoc import <source>` takes chosen modules and classes out of a workbook.
+`vbadoc import <source>` takes chosen modules and classes out of a workbook, or out of a folder of module files (step S3).
+
+- **From a folder,** the modules are read as in [A folder of module files](#a-folder-of-module-files), its subfolders too with `--recursive` (`-r`), and taken as a workbook's would be: a bundle has each as the VBA editor imports it (CRLF, with a class's header), and a new workbook or a target gets each module's source, in Windows-1252 if the folder was UTF-8. A folder has no references to bring. A module whose name another subfolder shares can't be taken. The folder isn't changed.
 
 - **What to take** comes from `--manifest <file>` or `--items A,B`, one or the other. It says what that comes to, as the Export tab does. A module the workbook doesn't have, or that can't be taken, stops it with exit code 3; a manifest made from another workbook is only mentioned.
 - **`--bundle <folder>`** writes the modules as the VBA editor imports them, with a `README.md` on importing them by hand: what's there and why, the references to tick, and what to check. A bundle goes only into an empty folder or an earlier bundle, and a folder of other files stops it with exit code 4. Replacing an earlier bundle that would change follows `--on-exists` and `--force`. `--no-references` leaves the references out of it.

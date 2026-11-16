@@ -116,6 +116,9 @@ or that change it. Add to this file whenever a new decision is agreed. Conventio
 - **`--folder-groups` gives a module with no `'@Folder` its subfolders as one**, joined by dots, so the explorer needs
   nothing new. It's off by default, as the user chose: only `'@Folder` places a module unless asked.
 - **The argument is `<input>`**, as pqdoc's is, now that it can be a folder.
+- **`import` from a folder takes a copy of the project in Windows-1252, without the files' paths** (0.43.0, step S3,
+  `ModuleFolderReader.ForImport`), so bundles, new workbooks and targets are written exactly as from a workbook: a VBA
+  project's code page is a Windows one, and a bundle's files are for the VBA editor's Import File.
 
 ## Writing into workbooks: what step H1 found
 
