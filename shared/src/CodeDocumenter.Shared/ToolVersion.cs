@@ -15,7 +15,7 @@ namespace CodeDocumenter.Shared;
 public sealed record ToolVersion(string Product, string Version, string? Commit, bool Dirty)
 {
   /// <summary>Where the tools live; generated pages link to it from the version.</summary>
-  public const string RepositoryUrl = "https://github.com/BakedPinata/ExcelDocumentationTools";
+  public const string RepositoryUrl = "https://github.com/BakedPinata/CodeDocumentationTools";
 
   /// <summary>
   /// The version of the tool an assembly belongs to, from its product name and informational version. Pass one of

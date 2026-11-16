@@ -122,7 +122,7 @@ public sealed partial class PageShellTests(PageFixture fixture)
     await using var opened = await OpenedPage.OpenAsync(fixture, fixture.SamplePage);
     var link = opened.Page.Locator("#tool-version");
 
-    Assert.Equal("https://github.com/BakedPinata/ExcelDocumentationTools", await link.GetAttributeAsync("href"));
+    Assert.Equal("https://github.com/BakedPinata/CodeDocumentationTools", await link.GetAttributeAsync("href"));
     Assert.Equal("_blank", await link.GetAttributeAsync("target"));
     Assert.Matches(BuildStamp(), await link.InnerTextAsync());
     Assert.True(await link.Locator("svg.github-mark").IsVisibleAsync());

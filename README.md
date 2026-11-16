@@ -1,4 +1,4 @@
-# ExcelDocumentationTools
+# CodeDocumentationTools
 
 Command-line tools that document what's inside Excel workbooks, and a desktop app that runs them without typing their
 options. Each has its own folder, solution, version and README, and they all follow the same
