@@ -24,10 +24,10 @@ sealed class ImportCommand(ILogger logger, AppServices services)
   public int Run(ImportRequest request, ImportTarget? target, bool noReferences, bool dropSignature)
   {
     var run = new ImportRun(logger, _interaction, CliDefinition.ToolName);
-    var workbook = Path.GetFileName(request.Source);
-    var project = WorkbookReader.Read(request.Source);
+    var workbook = Path.GetFileName(Path.TrimEndingDirectorySeparator(request.Source));
+    var project = ImportSource.Read(request.Source, request.Recursive, logger);
     var (items, leaveOut) = run.ReadChoice(request, workbook);
-    var import = new ModuleImport(DependencyAnalyser.Analyse(ProjectParser.Parse(project)));
+    var import = new ModuleImport(DependencyAnalyser.Analyse(ProjectParser.Parse(project)), project.ClashingModules);
 
     var unknown = items.Where(item => import.Find(item) is null).ToList();
     if (unknown.Count > 0)
@@ -98,7 +98,7 @@ sealed class ImportCommand(ILogger logger, AppServices services)
       return ExitCodes.OutputRefused;
     }
 
-    var sourceName = Path.GetFileName(request.Source);
+    var sourceName = Path.GetFileName(Path.TrimEndingDirectorySeparator(request.Source));
     var compared = ModuleClashes.Compare(project, sourceName, plan, choice.Import, workbook);
     var resolution = new ClashResolver(logger, _interaction).Resolve(compared.Clashes, target.OnClash);
     if (resolution.Aborted) return ExitCodes.OutputRefused;

@@ -57,7 +57,7 @@ public sealed class CliDefinition
       Recursive = true,
     };
 
-    Import = new ImportOptions(".xlsm, .xlsb, .xlam, .xls or .xla file to take them from.", "modules and classes");
+    Import = new ImportOptions(".xlsm, .xlsb, .xlam, .xls or .xla file, or a folder of .bas and .cls files, to take them from.", "modules and classes", "module files");
     NoReferences = new Option<bool>("--no-references")
     {
       Description = "Leave out the source's library references.",

@@ -130,6 +130,32 @@ public static partial class ModuleFolderReader
   }
 
   /// <summary>
+  /// A folder's project as <c>import</c> takes it (step S3): each module as a workbook holds it, without its file's path
+  /// or bytes, so a bundle has the files as the VBA editor imports them, CRLF and with a class's header, and in Windows-1252,
+  /// which a VBA project uses where a folder of UTF-8 files doesn't say. A character Windows-1252 hasn't becomes <c>?</c>.
+  /// </summary>
+  public static VbaProject ForImport(VbaProject project)
+  {
+    ArgumentNullException.ThrowIfNull(project);
+    var windows = CodePages.Get(WindowsCodePage);
+    return new VbaProject
+    {
+      Name = project.Name,
+      CodePage = WindowsCodePage,
+      Modules = [.. project.Modules.Select(m => new VbaModule
+      {
+        Name = m.Name,
+        Kind = m.Kind,
+        StreamName = m.StreamName,
+        SourceBytes = windows.GetBytes(m.Source),
+        Source = windows.GetString(windows.GetBytes(m.Source)),
+      })],
+      FromFolder = true,
+      ClashingModules = project.ClashingModules,
+    };
+  }
+
+  /// <summary>
   /// The code page to read every file in: UTF-8 when every file is valid UTF-8 and one has more than ASCII in
   /// it, otherwise Windows-1252, as the VBA editor writes. A folder mixing the two is read as Windows-1252, with a warning.
   /// </summary>

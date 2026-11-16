@@ -83,6 +83,66 @@ public sealed class ImportWorkbookTests : IDisposable
 
   string SourceOf(string path, string module) => Read(path).Modules.Single(m => m.Name == module).Source;
 
+  // A folder of modules from elsewhere: UTF-8, Unix line endings, a class without the editor's header, in subfolders.
+  string ModulesFolder()
+  {
+    var folder = Path.Combine(_folder, "Exported");
+    Directory.CreateDirectory(Path.Combine(folder, "Lib"));
+    File.WriteAllText(Path.Combine(folder, "Paths.bas"),
+      "Attribute VB_Name = \"Paths\"\nOption Explicit\nPrivate m_log As ILogger\nPublic Sub Pick()\n    m_log.Log \"Zürich\"\nEnd Sub\n", new System.Text.UTF8Encoding(false));
+    File.WriteAllText(Path.Combine(folder, "Lib", "ILogger.cls"), "Attribute VB_Name = \"ILogger\"\nOption Explicit\nPublic Sub Log(ByVal m As String)\nEnd Sub\n");
+    File.WriteAllText(Path.Combine(folder, "Lib", "Paths.bas"), "Attribute VB_Name = \"Paths\"\n");
+    return folder;
+  }
+
+  [Fact]
+  public void A_folder_of_modules_goes_into_a_new_workbook_as_a_workbook_would_and_is_left_as_it_was()
+  {
+    var folder = ModulesFolder();
+    var before = Directory.GetFiles(folder, "*", SearchOption.AllDirectories).ToDictionary(f => f, File.ReadAllBytes);
+    File.Delete(Path.Combine(folder, "Lib", "Paths.bas"));
+    before.Remove(Path.Combine(folder, "Lib", "Paths.bas"));
+
+    Assert.Equal(ExitCodes.Success, RunOn(folder, "--recursive", "--items", "Paths", "--new", New));
+
+    Assert.Equal(["ILogger", "Paths", "Sheet1", "ThisWorkbook"], Names(New));
+    Assert.Equal(VbaModuleKind.Class, Read(New).Modules.Single(m => m.Name == "ILogger").Kind);
+    Assert.Contains("m_log.Log \"Zürich\"\r\n", SourceOf(New, "Paths"), StringComparison.Ordinal);
+    Assert.Equal(1252, Read(New).CodePage);
+    foreach (var (path, bytes) in before) Assert.Equal(bytes, File.ReadAllBytes(path));
+  }
+
+  [Fact]
+  public void A_folder_takes_subfolders_only_with_recursive_and_refuses_a_name_two_subfolders_share()
+  {
+    var folder = ModulesFolder();
+
+    // Without --recursive, ILogger isn't there to come along.
+    Assert.Equal(ExitCodes.Success, RunOn(folder, "--items", "Paths"));
+    Assert.DoesNotContain(_log.Messages(LogEventLevel.Information), m => m.Contains("ILogger (used by", StringComparison.Ordinal));
+
+    Assert.Equal(ExitCodes.InputError, RunOn(folder, "-r", "--items", "Paths", "--new", New));
+    Assert.Contains(_log.Messages(LogEventLevel.Error), m => m.Contains("Another subfolder has a module of the same name", StringComparison.Ordinal));
+    Assert.False(File.Exists(New));
+  }
+
+  [Fact]
+  public void A_bundle_from_a_folder_has_each_file_as_the_VBA_editor_imports_it()
+  {
+    var folder = ModulesFolder();
+    File.Delete(Path.Combine(folder, "Lib", "Paths.bas"));
+    var bundle = Path.Combine(_folder, "Bundle");
+
+    Assert.Equal(ExitCodes.Success, RunOn(folder, "-r", "--items", "Paths", "--bundle", bundle));
+
+    Assert.Equal([".gitattributes", "ILogger.cls", "Paths.bas", "README.md"], Directory.GetFiles(bundle).Select(Path.GetFileName).Order(StringComparer.OrdinalIgnoreCase));
+    var logger = File.ReadAllText(Path.Combine(bundle, "ILogger.cls"));
+    Assert.StartsWith("VERSION 1.0 CLASS\r\n", logger, StringComparison.Ordinal);
+    Assert.DoesNotContain("\n", logger.Replace("\r\n", ""), StringComparison.Ordinal);
+    Assert.Contains("Zürich", File.ReadAllText(Path.Combine(bundle, "Paths.bas"), System.Text.Encoding.GetEncoding(1252)), StringComparison.Ordinal);
+    Assert.Contains("# Modules from Exported", File.ReadAllText(Path.Combine(bundle, "README.md")), StringComparison.Ordinal);
+  }
+
   [Fact]
   public void A_new_workbook_holds_what_was_chosen_and_what_it_uses_and_no_more()
   {
