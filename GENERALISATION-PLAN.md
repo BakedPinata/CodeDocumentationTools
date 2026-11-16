@@ -50,10 +50,11 @@ says where the work is.
 | [M2](#step-m2-vbadocs-views-move-to-the-code-views-library) | vbadoc's graph, class diagram and Calls tab move to the code views library | Claude | Done, with the views' browser tests left in vbadoc: see the step |
 | [M3](#step-m3-the-code-model) | The code model: the views draw what a language describes, and files are apart from the things in them. vbadoc is its first language | Claude | Done |
 | [N1](#step-n1-sample-databases-and-a-spike-on-reading-them) | Sample Access databases, and a spike on getting forms and VBA out of them | Claude, then you at home and on a work machine | Claude's part is done; yours is next: run the spike at home, on a work machine and on a real database, and say whether the sample database file may be committed |
-| [S0](#steps-s0s3-folders-of-exported-files) | Folders of exported files, added on 2026-11-16 and done before N2: your answers to the questions in S0 | You | Waiting for your answers |
+| [S0](#steps-s0s3-folders-of-exported-files) | Folders of exported files, added on 2026-11-16 and done before N2: your answers to the questions in S0 | You | Done |
 | [S1](#step-s1-subfolders-in-pqdoc-and-in-load-folder) | pqdoc's `--recursive`, and Load folder finding each file at its place below the folder picked, in both tools | Claude | Not started |
 | [S2](#step-s2-vbadoc-documents-a-folder-of-exported-modules) | vbadoc documents a folder of exported modules, recursive or not, referring to the files where they are | Claude, then you on a real folder | Not started |
 | [S3](#step-s3-vbadoc-imports-from-a-folder-and-the-desktop-app) | `vbadoc import` from a folder of modules, and the desktop app's Folder… and Subfolders for both tools | Claude | Not started |
+| [S4](#step-s4-userforms-from-a-folder-into-a-workbook) | `vbadoc import` writes UserForms from a folder into a workbook, from their `.frm` and `.frx` | Claude | Not started: to be worked out after S3 |
 | [N2](#step-n2-accessdoc-reads-a-databases-vba) | `accessdoc`: the VBA language in a library vbadoc and accessdoc share; the tool's skeleton; a page of the database's VBA | Claude | Not started |
 | [N3](#step-n3-accessdoc-reads-forms) | `accessdoc`: forms read into sections, controls, subforms, data sources and events, with handlers linked to their controls | Claude | Not started |
 | [N4](#step-n4-the-forms-view) | `accessdoc`: the Forms view: which form holds which, each form's layout drawn, its controls, data and events | Claude, then you on a real database | Not started |
@@ -870,26 +871,26 @@ only workbooks.
   now.
 - **The desktop app** gets Folder… for vbadoc as it has for pqdoc, and a Subfolders tick box for both.
 
-**Questions.** Each has my recommendation filled in; change the answer column where you want something else, then
-say so and S1 starts.
+**Questions, answered on 2026-11-16.** Plan approved the same day, with S1–S3 to be done without stopping between
+them, and each tool's Requirements updated as the work needs.
 
 | # | Question | Recommendation | Your answer |
 |---|---|---|---|
 | 1 | You said loading into the page "should always be a recursive search". I took that to mean the page's **Load folder**: it always looks in subfolders, with no option, and finds each file at the path it had when the page was made. Is that what you meant? | Yes. The tools' own reading of a folder is recursive only with `--recursive`, so a run on a folder with an `old/` or `backup/` subfolder doesn't pick those up by surprise | Yes |
 | 2 | Should a run on a folder **always** read subfolders, rather than taking `--recursive`? | No: keep `--recursive`, off by default, for the reason in 1. The desktop app's Subfolders box remembers your choice per folder | No: keep `--recursive` |
-| 3 | With `--recursive`, do subfolders become groups: pqdoc's query groups, and vbadoc's explorer folders for modules with no `'@Folder` of their own? | Yes. A subfolder is how an outside source usually groups things, and the explorer would otherwise lose it. A `'@Folder` in a module still wins | Yes |
+| 3 | With `--recursive`, do subfolders become groups: pqdoc's query groups, and vbadoc's explorer folders for modules with no `'@Folder` of their own? | Yes. A subfolder is how an outside source usually groups things, and the explorer would otherwise lose it. A `'@Folder` in a module still wins | Not by default: only `'@Folder` places a module, and a query's group is its own. An option, `--folder-groups`, makes subfolders groups as recommended |
 | 4 | Two files with the same name in different subfolders, such as `a/Utils.bas` and `b/Utils.bas`: a workbook can't hold two modules or queries of the same name | Document both, each shown with its folder, and warn. `import` refuses to take either until you pick one with `--items` by path | Document both and warn; import refuses |
 | 5 | A VBA module's name: from its `Attribute VB_Name` line, or from its file name? | `Attribute VB_Name` when the file has it, as the VBA editor does on import; the file name when it hasn't, with a warning if they differ | `VB_Name`, else the file name |
 | 6 | Exported VBA from outside is often in the Windows code page (Windows-1252), not UTF-8, and may have Unix line endings or no class header | Read UTF-8 when the file is valid UTF-8, and Windows-1252 otherwise; accept any line endings; a `.cls` without the `VERSION 1.0 CLASS` header is still a class. The page decodes files the same way when they're loaded | As recommended |
-| 7 | UserForms from a folder: a `.frm` needs its `.frx` to be imported, and turning the two back into a form inside a workbook is new work | Document UserForms from their `.frm` code. `vbadoc import` from a folder puts UserForms only in a `--bundle` (with the `.frx` beside each), and says so if `--new` or `--into` was asked for. Writing them into a workbook goes to Later | As recommended |
-| 8 | Which other files may be in such a folder? Rubberduck and the VBA editor export `.bas`, `.cls`, `.frm` and `.frx`; some tools also add `.doccls` or `.sht` for sheet modules | Read `.bas`, `.cls` and `.frm`, and `.doccls` as a document module. Anything else is skipped, with a count in the log | As recommended |
+| 7 | UserForms from a folder: a `.frm` needs its `.frx` to be imported, and turning the two back into a form inside a workbook is new work | Document UserForms from their `.frm` code. `vbadoc import` from a folder puts UserForms only in a `--bundle` (with the `.frx` beside each), and says so if `--new` or `--into` was asked for. Writing them into a workbook goes to Later | As recommended, with importing a UserForm from a folder into a workbook as the next step after S3 ([S4](#step-s4-userforms-from-a-folder-into-a-workbook), to be worked out then) |
+| 8 | Which other files may be in such a folder? Rubberduck and the VBA editor export `.bas`, `.cls`, `.frm` and `.frx`; some tools also add `.doccls` or `.sht` for sheet modules | Read `.bas`, `.cls` and `.frm`, and `.doccls` as a document module. Anything else is skipped, with a count in the log | Only what the tools already handle: `.bas`, `.cls` and `.frm` (with `.frx`), now also in subfolders. `.doccls` isn't handled anywhere today; sheet and workbook modules are `.cls` files, as the VBA editor and vbadoc write them. Anything else is skipped, with a count in the log |
 | 9 | Versions: which bump? | pqdoc and vbadoc a minor version each for S1 and S2, and the desktop app a minor version for S3 | As recommended |
 
 ### Step S1: Subfolders in pqdoc and in Load folder
 
 - pqdoc's `--recursive` (`-r`): every `.m` file below the folder, with its path relative to the folder; a query's
-  name is still its file name, escapes reversed. Subfolders become query groups (question 3). A clash of names is
-  warned about (question 4). `.git`, `bin` and `obj` folders, and hidden folders, are skipped.
+  name is still its file name, escapes reversed. With `--folder-groups`, subfolders become query groups (question
+  3). A clash of names is warned about (question 4). `.git`, `bin` and `obj` folders, and hidden folders, are skipped.
 - `pqdoc import` from a folder takes `--recursive` too.
 - The shell's Load folder matches on the path below the folder picked, with the folder's own name taken off, and
   falls back to the file name for pages made before S1, so older pages still load. It says which files it couldn't
@@ -903,9 +904,10 @@ say so and S1 starts.
 
 ### Step S2: vbadoc documents a folder of exported modules
 
-- The input may be a folder (FR-IN in Requirements), with `--recursive`. Modules are read from `.bas`, `.cls`, `.frm`
-  and `.doccls` files (question 8), named as question 5 says, decoded as question 6 says, into the same code model
+- The input may be a folder (FR-IN in Requirements), with `--recursive`. Modules are read from `.bas`, `.cls` and `.frm`
+  files (question 8), named as question 5 says, decoded as question 6 says, into the same code model
   as a workbook's, so the explorer, graph, class diagram, Calls tab, Export tab, Peek, views and printing all work.
+  `--folder-groups` puts a module with no `'@Folder` in its subfolder's folder (question 3).
 - What isn't there is shown as such: no library references (the page says they can't be known from files), no sheet
   or workbook module unless a file is one, and no project name, so the page is named after the folder
   (`<folder>-vba.html`), as pqdoc's is.
@@ -924,11 +926,17 @@ say so and S1 starts.
 - `vbadoc import <folder>` with `--manifest` or `--items`, and `--recursive`, as `pqdoc import` takes a folder. What
   a module brings with it is worked out as from a workbook. UserForms follow question 7. A manifest made from a
   folder's page names modules by path where names clash (question 4).
-- The desktop app: Folder… on both tabs for both tools, a Subfolders tick box that adds `--recursive`, remembered
-  per folder.
+- The desktop app: Folder… on both tabs for both tools, and tick boxes for Subfolders (`--recursive`) and Subfolders
+  as groups (`--folder-groups`), remembered per folder.
 - Tests: import from fixture folders into a new workbook, a copy of a target and a bundle; the desktop app's command
   lines.
 - Docs: vbadoc's Requirements and README; the desktop app's README.
+
+### Step S4: UserForms from a folder into a workbook
+
+Asked for on 2026-11-16 as the step after S3 (S0, question 7), and to be worked out when S3 is done: `vbadoc import`
+from a folder writing a UserForm into a new workbook or a copy of a target, from its `.frm` and `.frx` files,
+rather than only into a bundle.
 
 ### Step N2: accessdoc reads a database's VBA
 
@@ -1104,8 +1112,6 @@ Left out to keep this plan to what was asked for.
 - **Moving forms and modules between Access databases,** as `import` does for workbooks.
 - **A table relationships diagram** for Access.
 - **vbadoc's UserForms (its stage 6) on the Forms view.**
-- **Importing UserForms from a folder into a workbook,** from their `.frm` and `.frx` files, rather than only into
-  a bundle (S0, question 7).
 - **csdoc reading Razor components (`.razor`),** so a Blazor project's components show with the C# behind them.
 - **pqdoc on the code views,** if a query graph and a code graph turn out to want the same things.
 - **One page for a repository that holds several languages,** and links between them.

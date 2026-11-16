@@ -23,7 +23,8 @@ rather than repeating it.
   browser tests still in vbadoc (see the step). M3 is done: the code model, with VBA as its first language.
   N1: Claude's part is done (samples, and a spike that reads a database two ways); the user's runs at home, on a
   work machine and on a real database are next, and N2–N5 are revised after them. Steps S0–S3 (folders of exported
-  files, added on 2026-11-16 as urgent) come first: the user's answers to S0's questions are next.
+  files, added on 2026-11-16 as urgent, approved with the answers in S0) come first, then S4 (UserForms from a
+  folder into a workbook).
 - **vbadoc 0.40.1:** stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
   `<workbook>-vba.html`, with an explorer of modules and members, in `'@Folder` folders or by kind. It asks
   before overwriting a page that would change (`--on-exists`, `--force`), as pqdoc does. Stage 6 (UserForms) is parked;
@@ -60,7 +61,9 @@ Newest first.
   files, and both tools read subfolders with `--recursive`, for code exported by outside sources. The page refers
   to the files where they are.
 - `GENERALISATION-PLAN.md` has steps S0–S3 before N2, with nine questions in S0 for the user, each with a
-  recommendation filled in. S1 starts once they're answered.
+  recommendation filled in. Answered and approved the same day: subfolders become groups only with
+  `--folder-groups`; `.doccls` isn't a format the tools use, so it's left out; S4, importing UserForms from a
+  folder into a workbook, follows S3.
 
 ### 2026-11-16: Step K3, the repository's name, and dependabot's updates
 
