@@ -52,6 +52,12 @@ public sealed record AnalyserOptions
   /// </summary>
   public bool EmbedSource { get; init; }
 
+  /// <summary>Whether a folder's subfolders are read too (<c>--recursive</c>, FR-IN-5).</summary>
+  public bool Recursive { get; init; }
+
+  /// <summary>Whether subfolders become query groups (<c>--folder-groups</c>, FR-IN-7).</summary>
+  public bool FolderGroups { get; init; }
+
   /// <summary>PlantUML server base URL. Required when any rendered format is requested.</summary>
   public Uri? PlantUmlServer { get; init; }
 

@@ -15,4 +15,9 @@ public static class ImportSource
   /// <exception cref="CodeDocumenter.Workbooks.ExtractionException">The workbook can't be read, or has no queries.</exception>
   public static Task<IReadOnlyList<ImportableItem>> ItemsAsync(string source, CancellationToken cancellationToken) =>
     ImportApp.ItemsAsync(source, Logger.None, cancellationToken);
+
+  /// <summary>Every query, reading a folder's subfolders too when <paramref name="recursive"/>, as <c>import --recursive</c> does.</summary>
+  /// <exception cref="CodeDocumenter.Workbooks.ExtractionException">The workbook can't be read, or has no queries.</exception>
+  public static Task<IReadOnlyList<ImportableItem>> ItemsAsync(string source, bool recursive, CancellationToken cancellationToken) =>
+    ImportApp.ItemsAsync(source, recursive, Logger.None, cancellationToken);
 }

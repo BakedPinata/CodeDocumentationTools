@@ -287,13 +287,30 @@
       return Array.prototype.map.call(new Uint8Array(buffer), function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
     }
 
-    // Reads the files from the folder the user picked. Only files directly in that folder count, so a .git folder or
-    // other subfolders are ignored.
+    // Finds a wanted file among those picked. Each file's path in the page is below the folder the tool read, such as
+    // "Reports/Sales.m", and a pick's path starts with the folder picked, which is taken off. When the user picked a
+    // folder above or below the one the tool read, the file whose path shares the longest ending with the wanted one is
+    // taken instead, if only one does.
+    function findFile(byPath, wanted) {
+      var key = wanted.toLowerCase();
+      if (byPath.has(key)) return byPath.get(key);
+      var match = null;
+      var best = 0;
+      var count = 0;
+      byPath.forEach(function (file, path) {
+        if (!(path.endsWith("/" + key) || key.endsWith("/" + path))) return;
+        var length = Math.min(path.length, key.length);
+        if (length > best) { match = file; best = length; count = 1; } else if (length === best) { count++; }
+      });
+      return count === 1 ? match : null;
+    }
+
+    // Reads the files from the folder the user picked, at any depth below it (FR-SRC-2).
     function loadFolder(files) {
-      var byName = new Map();
+      var byPath = new Map();
       Array.prototype.forEach.call(files, function (file) {
         var path = (file.webkitRelativePath || file.name).split("/");
-        if (path.length <= 2) byName.set(path[path.length - 1].toLowerCase(), file);
+        byPath.set((path.length > 1 ? path.slice(1) : path).join("/").toLowerCase(), file);
       });
 
       var note = source.note || "";
@@ -301,7 +318,7 @@
       var changed = [];
       var found = 0;
       var reads = source.files().map(function (wanted) {
-        var file = byName.get(wanted.file.toLowerCase());
+        var file = findFile(byPath, wanted.file);
         if (!file) { missing.push(wanted.file); return Promise.resolve(); }
         return file.arrayBuffer().then(function (buffer) {
           found++;

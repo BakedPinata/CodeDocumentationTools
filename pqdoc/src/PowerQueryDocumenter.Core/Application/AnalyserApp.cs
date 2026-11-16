@@ -52,7 +52,7 @@ public sealed class AnalyserApp(ILogger logger, AppServices services)
     }
     else
     {
-      analysis = await AnalyseFolderAsync(options.Input, cancellationToken).ConfigureAwait(false);
+      analysis = await AnalyseFolderAsync(options.Input, options.Recursive, cancellationToken).ConfigureAwait(false);
     }
 
     if (analysis is null)
@@ -78,7 +78,7 @@ public sealed class AnalyserApp(ILogger logger, AppServices services)
     // The text outputs are made before asking, so one that would be written unchanged isn't asked about, as vbadoc's
     // page isn't. Images come from the PlantUML server, so they're only made when they're written.
     var sources = SourceFiles(queries, analysis);
-    var context = new ExportContext(options.Title, saved, sources, options.EmbedSource, Details(queries, sources), SavedViews(options));
+    var context = new ExportContext(options.Title, saved, sources, options.EmbedSource, Details(queries, sources, options.FolderGroups && options.Recursive), SavedViews(options));
     var made = await MakeTextOutputsAsync(graph, context, registry, planned, cancellationToken).ConfigureAwait(false);
     var resolution = new OverwriteResolver(logger, services.Interaction).Resolve(
       planned,
@@ -250,7 +250,7 @@ public sealed class AnalyserApp(ILogger logger, AppServices services)
   }
 
   /// <summary>Reads every .m file in a folder. Returns null after logging why, if it can't.</summary>
-  private async Task<AnalysisResult?> AnalyseFolderAsync(string folder, CancellationToken cancellationToken)
+  private async Task<AnalysisResult?> AnalyseFolderAsync(string folder, bool recursive, CancellationToken cancellationToken)
   {
     if (!Directory.Exists(folder))
     {
@@ -262,7 +262,7 @@ public sealed class AnalyserApp(ILogger logger, AppServices services)
     try
     {
       logger.Information("Analysing queries in {Folder}", folder);
-      analysis = await new DependencyAnalyser(logger).AnalyseFolderAsync(folder, cancellationToken).ConfigureAwait(false);
+      analysis = await new DependencyAnalyser(logger).AnalyseFolderAsync(folder, recursive, cancellationToken).ConfigureAwait(false);
     }
     catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
     {
@@ -274,8 +274,9 @@ public sealed class AnalyserApp(ILogger logger, AppServices services)
     if (analysis.QueryFileCount == 0)
     {
       logger.Error(
-        "No .m files were found in {Folder}. Export each Power Query query to its own .m file in that folder (subfolders are not scanned), or run pqdoc on the workbook itself",
-        folder);
+        "No .m files were found in {Folder}. Export each Power Query query to its own .m file in that folder{Subfolders}, or run pqdoc on the workbook itself",
+        folder,
+        recursive ? " or below it" : " (add --recursive to read its subfolders too)");
       return null;
     }
 
@@ -301,7 +302,7 @@ public sealed class AnalyserApp(ILogger logger, AppServices services)
     {
       try
       {
-        files.Add(QueryFile.FromBytes(name, Path.GetFileName(path), File.ReadAllBytes(path)));
+        files.Add(QueryFile.FromBytes(name, analysis.RelativePaths?.GetValueOrDefault(name) ?? Path.GetFileName(path), File.ReadAllBytes(path)));
       }
       catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
       {
@@ -314,18 +315,27 @@ public sealed class AnalyserApp(ILogger logger, AppServices services)
 
   /// <summary>
   /// Each query's kind and group, for the page's explorer (FR-HTML-11). A workbook's metadata says both; for a folder,
-  /// whether a query is a function comes from its code, and there are no groups.
+  /// whether a query is a function comes from its code, and there are no groups unless <paramref name="folderGroups"/>
+  /// makes each subfolder one (FR-IN-7).
   /// </summary>
-  private static List<QueryDetails> Details(IReadOnlyList<WorkbookQuery>? queries, IReadOnlyList<QueryFile> sources) =>
-    queries is not null
-      ? queries
+  private static List<QueryDetails> Details(IReadOnlyList<WorkbookQuery>? queries, IReadOnlyList<QueryFile> sources, bool folderGroups)
+  {
+    if (queries is not null)
+    {
+      return queries
         .Select(q => new QueryDetails(
           q.Name,
           q.ResultType is not null ? q.ResultType == "Function" : FunctionDetector.IsFunction(q.Expression),
           q.Group,
           QueryDescription.Of(q.Description, q.Expression)))
-        .ToList()
-      : sources.Select(f => new QueryDetails(f.Query, FunctionDetector.IsFunction(f.Text), null, QueryDescription.FromComments(f.Text))).ToList();
+        .ToList();
+    }
+
+    var groups = folderGroups ? FolderGroups.For(sources.Select(f => f.FileName)) : null;
+    return sources
+      .Select(f => new QueryDetails(f.Query, FunctionDetector.IsFunction(f.Text), groups?.GetValueOrDefault(f.FileName), QueryDescription.FromComments(f.Text)))
+      .ToList();
+  }
 
   /// <summary>
   /// The text outputs (the page, CSV and PlantUML source) as they'd be written, by path. One that can't be made is left

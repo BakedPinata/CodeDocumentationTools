@@ -81,6 +81,8 @@ internal static class OptionsBinder
       PlantUmlServer = server,
       OnExists = onExists,
       EmbedSource = parseResult.GetValue(cli.EmbedSource),
+      Recursive = parseResult.GetValue(cli.Folder.Recursive),
+      FolderGroups = parseResult.GetValue(cli.Folder.FolderGroups),
       Verbosity = GetVerbosity(parseResult, cli),
     };
 

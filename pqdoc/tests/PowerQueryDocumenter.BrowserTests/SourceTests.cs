@@ -126,6 +126,36 @@ public sealed class SourceTests(PageFixture fixture)
   }
 
   [Fact]
+  public async Task Load_folder_finds_each_file_at_its_path_below_the_folder_picked()
+  {
+    await using var opened = await OpenedPage.OpenAsync(fixture, fixture.NestedPage);
+    var page = opened.Page;
+
+    await LoadFolder(opened, fixture.NestedFolder, "Loaded");
+
+    Assert.Equal("Loaded 3 file(s)", await page.InnerTextAsync("#source-status-text"));
+    await opened.SelectAsync("Orders");
+    Assert.Equal(5, await page.Locator("#details-source .line").CountAsync());
+    await opened.SelectAsync("Sales/Old/Orders");
+    Assert.Equal(6, await page.Locator("#details-source .line").CountAsync());
+    Assert.Empty(opened.Errors);
+  }
+
+  [Fact]
+  public async Task Load_folder_finds_files_when_a_subfolder_is_picked_and_names_what_it_cant()
+  {
+    await using var opened = await OpenedPage.OpenAsync(fixture, fixture.NestedPage);
+    var page = opened.Page;
+
+    // Picking Sales: Orders.m and Old/Orders.m end each wanted path one way only, and Customers.m isn't there.
+    await LoadFolder(opened, Path.Combine(fixture.NestedFolder, "Sales"), "Loaded");
+
+    Assert.Equal("Loaded 2 file(s); missing: Customers.m", await page.InnerTextAsync("#source-status-text"));
+    await opened.SelectAsync("Orders");
+    Assert.Equal(5, await page.Locator("#details-source .line").CountAsync());
+  }
+
+  [Fact]
   public async Task The_panels_Load_folder_button_opens_the_folder_picker()
   {
     await using var opened = await OpenedPage.OpenAsync(fixture, fixture.FolderPage);

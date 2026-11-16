@@ -11,7 +11,9 @@ namespace CodeDocumenter.Workbooks.CommandLine;
 /// <param name="Items">The items named on the command line.</param>
 /// <param name="Bundle">The folder to write a bundle into, as a full path, or null to only say what would come.</param>
 /// <param name="OnExists">What to do when the folder holds an earlier bundle.</param>
-public sealed record ImportRequest(string Source, string? Manifest, IReadOnlyList<string> Items, string? Bundle, OnExistsBehaviour OnExists);
+/// <param name="Recursive">Whether a folder's subfolders are read too (<c>--recursive</c>).</param>
+public sealed record ImportRequest(
+  string Source, string? Manifest, IReadOnlyList<string> Items, string? Bundle, OnExistsBehaviour OnExists, bool Recursive = false);
 
 /// <summary>
 /// The <c>import</c> command, the same in every tool: which items, from a manifest the page's Export tab wrote or by name,
@@ -22,7 +24,11 @@ public sealed class ImportOptions
   /// <summary>Creates the command and its options.</summary>
   /// <param name="source">What the source is, for the help text.</param>
   /// <param name="items">What the items are, for the help text, such as "modules and classes".</param>
-  public ImportOptions(string source, string items)
+  /// <param name="files">
+  /// The files read from a folder, for <c>--recursive</c>'s help text, such as ".m files"; null for a tool that can't take
+  /// from a folder, which then has no <c>--recursive</c>.
+  /// </param>
+  public ImportOptions(string source, string items, string? files = null)
   {
     Source = new Argument<string>("source") { Description = source };
 
@@ -45,6 +51,7 @@ public sealed class ImportOptions
     };
 
     Overwrite = new OverwriteOptions("an earlier bundle", "an earlier bundle");
+    Recursive = files is null ? null : FolderOptions.CreateRecursive(files);
 
     Command = new Command("import", $"Takes chosen {items}, with what they use, out of a source. Run it with a manifest from the page's Export tab.")
     {
@@ -55,6 +62,10 @@ public sealed class ImportOptions
       Overwrite.OnExists,
       Overwrite.Force,
     };
+    if (Recursive is not null)
+    {
+      Command.Options.Add(Recursive);
+    }
 
     Command.Validators.Add(Validate);
   }
@@ -74,6 +85,9 @@ public sealed class ImportOptions
   /// <summary><c>--bundle</c> / <c>-b</c>.</summary>
   public Option<string?> Bundle { get; }
 
+  /// <summary><c>--recursive</c> / <c>-r</c>, or null for a tool that can't take from a folder.</summary>
+  public Option<bool>? Recursive { get; }
+
   /// <summary><c>--on-exists</c> and <c>--force</c> / <c>-y</c>.</summary>
   public OverwriteOptions Overwrite { get; }
 
@@ -89,7 +103,8 @@ public sealed class ImportOptions
       manifest is null ? null : Path.GetFullPath(manifest),
       items,
       bundle is null ? null : Path.GetFullPath(bundle),
-      Overwrite.Bind(parseResult));
+      Overwrite.Bind(parseResult),
+      Recursive is not null && parseResult.GetValue(Recursive));
   }
 
   private void Validate(CommandResult result)

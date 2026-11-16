@@ -50,6 +50,32 @@ public sealed class CliRunnerTests : IDisposable
   public void Dispose() => temp.Dispose();
 
   [Fact]
+  public async Task Recursive_reads_subfolders_and_the_page_keeps_each_files_path_while_folder_groups_adds_groups()
+  {
+    temp.WriteFile("queries/Alpha.m", "Beta");
+    temp.WriteFile("queries/Shared/Beta.m", "1");
+    var before = Directory.GetFiles(Queries, "*", SearchOption.AllDirectories).ToDictionary(f => f, File.ReadAllBytes);
+    using var app = App();
+
+    Assert.Equal(ExitCodes.Success, await app.RunAsync(Queries, "--recursive", "--force"));
+    var page = await File.ReadAllTextAsync(QueryFile("queries-powerquery.html"), TestContext.Current.CancellationToken);
+    Assert.Contains("\"Shared/Beta.m\"", page, StringComparison.Ordinal);
+    Assert.DoesNotContain("\"name\":\"Shared\"", page, StringComparison.Ordinal);
+
+    Assert.Equal(ExitCodes.Success, await app.RunAsync(Queries, "-r", "--folder-groups", "--force"));
+    page = await File.ReadAllTextAsync(QueryFile("queries-powerquery.html"), TestContext.Current.CancellationToken);
+    Assert.Contains("\"name\":\"Shared\"", page, StringComparison.Ordinal);
+
+    // Only the page is written: the files read are as they were, and nothing is added below them.
+    foreach (var (path, bytes) in before)
+    {
+      Assert.Equal(bytes, File.ReadAllBytes(path));
+    }
+
+    Assert.Single(Directory.GetFiles(Queries, "*", SearchOption.AllDirectories).Except(before.Keys));
+  }
+
+  [Fact]
   public async Task AC1_default_run_writes_only_the_page_next_to_the_inputs()
   {
     using var app = App();

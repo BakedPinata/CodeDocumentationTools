@@ -41,6 +41,25 @@ public sealed class ImportCommandTests : IDisposable
   }
 
   [Fact]
+  public async Task Recursive_takes_queries_from_subfolders_and_refuses_names_two_folders_share()
+  {
+    this.temp.WriteFile("queries/Shared/Lookup.m", "1\r\n");
+    this.temp.WriteFile("queries/UsesLookup.m", "Lookup\r\n");
+    this.temp.WriteFile("queries/Old/Base.m", "2\r\n");
+    using var app = App();
+
+    // Without --recursive, Lookup isn't a query it knows, so nothing brings it along.
+    Assert.Equal(ExitCodes.Success, await app.RunAsync("import", Queries, "--items", "UsesLookup"));
+    Assert.DoesNotContain(app.Log.Messages(LogEventLevel.Information), m => m.Contains("Lookup (used by", StringComparison.Ordinal));
+    Assert.Equal(ExitCodes.Success, await app.RunAsync("import", Queries, "--recursive", "--items", "UsesLookup", "--bundle", Bundle));
+    Assert.Contains(app.Log.Messages(LogEventLevel.Information), m => m.Contains("Lookup (used by UsesLookup)", StringComparison.Ordinal));
+    Assert.True(File.Exists(Path.Combine(Bundle, "Lookup.m")));
+
+    Assert.Equal(ExitCodes.InputError, await app.RunAsync("import", Queries, "-r", "--items", "Report"));
+    Assert.Contains(app.Log.Messages(LogEventLevel.Error), m => m.Contains("Base share a name with a query in another subfolder", StringComparison.Ordinal));
+  }
+
+  [Fact]
   public async Task A_bundle_holds_the_files_and_a_README_listing_each_query_after_those_it_uses()
   {
     using var app = App();

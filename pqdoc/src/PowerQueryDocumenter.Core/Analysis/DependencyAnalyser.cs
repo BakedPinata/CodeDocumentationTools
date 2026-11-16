@@ -1,4 +1,5 @@
 using System.Text;
+using CodeDocumenter.Shared.Files;
 using PowerQueryDocumenter.Core.Model;
 using PowerQueryDocumenter.Core.Output;
 using Serilog;
@@ -16,12 +17,19 @@ public sealed record QuerySource(string Name, string Content);
 /// <param name="UnreadableFiles">Files that could not be read. Their queries are in the graph, but without their own references.</param>
 /// <param name="DuplicateFiles">Files ignored because another file has the same query name (names are case-insensitive).</param>
 /// <param name="Files">The path of each query's file that was read, by query name, for the page's source view.</param>
+/// <param name="RelativePaths">
+/// Each read file's path below the folder, with <c>/</c> between the parts, by query name: the file name for one at the
+/// top level.
+/// </param>
+/// <param name="ClashingQueries">Queries whose file name another file in another folder shares (FR-IN-6).</param>
 public sealed record AnalysisResult(
   DependencyGraph Graph,
   int QueryFileCount,
   IReadOnlyList<string> UnreadableFiles,
   IReadOnlyList<string> DuplicateFiles,
-  IReadOnlyDictionary<string, string>? Files = null);
+  IReadOnlyDictionary<string, string>? Files = null,
+  IReadOnlyDictionary<string, string>? RelativePaths = null,
+  IReadOnlySet<string>? ClashingQueries = null);
 
 /// <summary>
 /// Reads Power Query .m files and builds the <see cref="DependencyGraph"/> between them.
@@ -59,41 +67,66 @@ public sealed class DependencyAnalyser
   /// <exception cref="DirectoryNotFoundException">The folder does not exist.</exception>
   /// <exception cref="UnauthorizedAccessException">The folder cannot be listed.</exception>
   /// <exception cref="IOException">The folder cannot be listed.</exception>
-  public async Task<AnalysisResult> AnalyseFolderAsync(string folderPath, CancellationToken cancellationToken)
+  public Task<AnalysisResult> AnalyseFolderAsync(string folderPath, CancellationToken cancellationToken) =>
+    AnalyseFolderAsync(folderPath, recursive: false, cancellationToken);
+
+  /// <summary>
+  /// Analyses every .m file in <paramref name="folderPath"/>, and with <paramref name="recursive"/> in its subfolders
+  /// too (FR-IN-5), apart from those <see cref="SourceFolder"/> skips. A query is named after its file. When two files
+  /// in different folders give the same name, both are kept: one at the top level, or else the first by path, keeps the name, and references
+  /// to it go to that one; the other is named by its path, such as <c>Old/Sales</c>, and both are in
+  /// <see cref="AnalysisResult.ClashingQueries"/>. Two files in one folder whose names differ only by case can't both
+  /// be told apart, so the second is ignored, as before.
+  /// </summary>
+  public async Task<AnalysisResult> AnalyseFolderAsync(string folderPath, bool recursive, CancellationToken cancellationToken)
   {
     ArgumentException.ThrowIfNullOrWhiteSpace(folderPath);
 
-    var enumeration = new EnumerationOptions
-    {
-      RecurseSubdirectories = false,
-      MatchCasing = MatchCasing.CaseInsensitive,
-      MatchType = MatchType.Simple,
-      IgnoreInaccessible = false,
-    };
-
-    var files = Directory
-      .EnumerateFiles(folderPath, "*" + QueryFileExtension, enumeration)
-      .Where(f => string.Equals(Path.GetExtension(f), QueryFileExtension, StringComparison.OrdinalIgnoreCase))
-      .Order(StringComparer.OrdinalIgnoreCase)
-      .ToArray();
-
-    logger.Debug("Found {Count} query file(s) in {Folder}", files.Length, folderPath);
+    var files = SourceFolder.Find(folderPath, [QueryFileExtension], recursive);
+    logger.Debug("Found {Count} query file(s) in {Folder}", files.Count, folderPath);
 
     var pathsByName = new Dictionary<string, string>(DependencyGraph.NameComparer);
+    var relative = new Dictionary<string, string>(DependencyGraph.NameComparer);
     var duplicates = new List<string>();
+    var clashing = new HashSet<string>(DependencyGraph.NameComparer);
     foreach (var file in files)
     {
       // A file pqdoc wrote from a workbook has escapes in its name (Sales%2FReturns.m): reverse them (FR-QF-2).
-      var name = QueryFileNames.QueryName(Path.GetFileNameWithoutExtension(file));
-      if (!pathsByName.TryAdd(name, file))
+      var name = QueryFileNames.QueryName(Path.GetFileNameWithoutExtension(file.FullPath));
+      if (pathsByName.TryAdd(name, file.FullPath))
       {
-        duplicates.Add(file);
+        relative[name] = file.RelativePath;
+        continue;
+      }
+
+      var existing = relative[name];
+      if (string.Equals(FolderOf(existing), FolderOf(file.RelativePath), StringComparison.OrdinalIgnoreCase))
+      {
+        duplicates.Add(file.FullPath);
         logger.Warning(
           "Ignoring {File}: query {Query} is already defined by {ExistingFile} (query names are not case-sensitive)",
-          file,
+          file.FullPath,
           name,
           pathsByName[name]);
+        continue;
       }
+
+      var pathName = string.Join('/', file.Folders.Append(name));
+      if (!pathsByName.TryAdd(pathName, file.FullPath))
+      {
+        duplicates.Add(file.FullPath);
+        continue;
+      }
+
+      relative[pathName] = file.RelativePath;
+      clashing.Add(name);
+      clashing.Add(pathName);
+      logger.Warning(
+        "Query {Query} is in both {ExistingFile} and {File}. Both are shown, the second as {PathName}, and references to {Query} go to {ExistingFile}. A workbook can't hold both, so import won't take either",
+        name,
+        existing,
+        file.RelativePath,
+        pathName);
     }
 
     var sources = new List<QuerySource>();
@@ -120,8 +153,12 @@ public sealed class DependencyAnalyser
     }
 
     var graph = Analyse(pathsByName.Keys, sources);
-    return new AnalysisResult(graph, files.Length, unreadable, duplicates, read);
+    var readRelative = read.Keys.ToDictionary(n => n, n => relative[n], DependencyGraph.NameComparer);
+    return new AnalysisResult(graph, files.Count, unreadable, duplicates, read, readRelative, clashing);
   }
+
+  private static string FolderOf(string relativePath) =>
+    relativePath.LastIndexOf('/') is var at and >= 0 ? relativePath[..at] : string.Empty;
 
   /// <summary>Builds a graph from in-memory query sources.</summary>
   public DependencyGraph Analyse(IEnumerable<QuerySource> sources)

@@ -29,7 +29,7 @@ public sealed class CliDefinition
     Input = new Argument<string>("input")
     {
       Description = "An Excel workbook (.xlsx, .xlsm or .xlsb), or a folder of exported Power Query .m files (one query "
-        + "per file; subfolders are not scanned).",
+        + "per file; subfolders too with --recursive).",
     };
 
     OutputName = new Option<string?>("--output-name", "-n")
@@ -72,6 +72,8 @@ public sealed class CliDefinition
       HelpName = "url",
     };
 
+    Folder = new FolderOptions(".m files", "query groups");
+
     // --on-exists and --force, the same in every tool.
     Overwrite = new OverwriteOptions("an output file", "existing output files");
 
@@ -88,7 +90,7 @@ public sealed class CliDefinition
       Recursive = true,
     };
 
-    Import = new ImportOptions("An Excel workbook (.xlsx, .xlsm or .xlsb), or a folder of .m files, to take them from.", "queries");
+    Import = new ImportOptions("An Excel workbook (.xlsx, .xlsm or .xlsb), or a folder of .m files, to take them from.", "queries", ".m files");
     ImportTarget = new ImportTargetOptions(Import, "queries", "It has to be an .xlsx or .xlsm.");
 
     RootCommand = new RootCommand(
@@ -102,6 +104,8 @@ public sealed class CliDefinition
       Formats,
       EmbedSource,
       PlantUmlServer,
+      Folder.Recursive,
+      Folder.FolderGroups,
       OnExists,
       Force,
       Verbose,
@@ -134,6 +138,9 @@ public sealed class CliDefinition
 
   /// <summary><c>--format</c> / <c>-f</c>.</summary>
   public Option<IReadOnlyList<OutputFormat>> Formats { get; }
+
+  /// <summary><c>--recursive</c> and <c>--folder-groups</c>.</summary>
+  public FolderOptions Folder { get; }
 
   /// <summary><c>--embed-source</c>.</summary>
   public Option<bool> EmbedSource { get; }

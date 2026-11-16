@@ -55,6 +55,20 @@ public sealed class PageFixture : IAsyncLifetime
 
   public string EncodingPage { get; private set; } = string.Empty;
 
+  /// <summary>.m files in subfolders, by path, for <see cref="NestedPage"/>.</summary>
+  public static IReadOnlyList<(string Path, string Text)> NestedFiles { get; } =
+  [
+    ("Customers.m", "let\r\n    Source = 1\r\nin\r\n    Source\r\n"),
+    ("Sales/Orders.m", "let\r\n    Source = Customers,\r\n    Two = 2\r\nin\r\n    Two\r\n"),
+    ("Sales/Old/Orders.m", "let\r\n    Old = 3\r\nin\r\n    Old\r\n// one\r\n// two\r\n"),
+  ];
+
+  /// <summary>The folder of <see cref="NestedFiles"/>, with <see cref="NestedPage"/> in it.</summary>
+  public string NestedFolder { get; private set; } = string.Empty;
+
+  /// <summary>A page made from <see cref="NestedFolder"/> read with its subfolders.</summary>
+  public string NestedPage { get; private set; } = string.Empty;
+
   /// <summary>An Enter Data query whose compressed table is one very long line, embedded.</summary>
   public string LongLinePage { get; private set; } = string.Empty;
 
@@ -129,6 +143,25 @@ public sealed class PageFixture : IAsyncLifetime
     File.WriteAllBytes(Path.Combine(EncodingFolder, "Little.m"), WithByteOrderMark(Encoding.Unicode, "\"Zürich\" & \"Köln\""));
     File.WriteAllBytes(Path.Combine(EncodingFolder, "Big.m"), WithByteOrderMark(Encoding.BigEndianUnicode, "\"Zürich\" & \"Köln\""));
     EncodingPage = Generate(Fixtures.Graph([], "Little", "Big"), "encoding", SourcesIn(EncodingFolder), embed: false, folder: EncodingFolder);
+
+    // Files below the folder read, two of them called Orders.m, as pqdoc --recursive gives them to the page.
+    NestedFolder = Path.Combine(root, "nested");
+    foreach (var (path, text) in NestedFiles)
+    {
+      Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(NestedFolder, path))!);
+      File.WriteAllText(Path.Combine(NestedFolder, path), text);
+    }
+
+    NestedPage = Generate(
+      Fixtures.Graph(["Customers>Orders"], "Sales/Old/Orders"),
+      "nested",
+      [
+        QueryFile.FromBytes("Customers", "Customers.m", File.ReadAllBytes(Path.Combine(NestedFolder, "Customers.m"))),
+        QueryFile.FromBytes("Orders", "Sales/Orders.m", File.ReadAllBytes(Path.Combine(NestedFolder, "Sales", "Orders.m"))),
+        QueryFile.FromBytes("Sales/Old/Orders", "Sales/Old/Orders.m", File.ReadAllBytes(Path.Combine(NestedFolder, "Sales", "Old", "Orders.m"))),
+      ],
+      embed: false,
+      folder: NestedFolder);
 
     var enterData = "let\r\n    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText(\""
       + new string('A', LongLineLength) + "\", BinaryEncoding.Base64), Compression.Deflate)), type table [Name = text])\r\nin\r\n    Source\r\n";

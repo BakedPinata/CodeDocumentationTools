@@ -236,6 +236,65 @@ public sealed class DependencyAnalyserTests : IDisposable
   }
 
   [Fact]
+  public async Task Subfolders_are_read_only_with_recursive()
+  {
+    temp.WriteFile("Orders.m", "Customers");
+    temp.WriteFile(Path.Combine("Shared", "Customers.m"), "1");
+
+    var flat = await CreateAnalyser().AnalyseFolderAsync(temp.Path, TestContext.Current.CancellationToken);
+    var deep = await CreateAnalyser().AnalyseFolderAsync(temp.Path, recursive: true, TestContext.Current.CancellationToken);
+
+    Assert.Equal(1, flat.QueryFileCount);
+    Assert.Empty(EdgeList(flat.Graph));
+    Assert.Equal(2, deep.QueryFileCount);
+    Assert.Equal(["Customers>Orders"], EdgeList(deep.Graph));
+    Assert.Equal("Shared/Customers.m", deep.RelativePaths!["Customers"]);
+    Assert.Equal("Orders.m", deep.RelativePaths!["Orders"]);
+  }
+
+  [Fact]
+  public async Task Dot_folders_and_build_folders_are_skipped()
+  {
+    temp.WriteFile("Orders.m", "1");
+    temp.WriteFile(Path.Combine(".git", "Hidden.m"), "1");
+    temp.WriteFile(Path.Combine("bin", "Built.m"), "1");
+
+    var result = await CreateAnalyser().AnalyseFolderAsync(temp.Path, recursive: true, TestContext.Current.CancellationToken);
+
+    Assert.Equal(["Orders"], result.Graph.Nodes.Select(n => n.Name));
+  }
+
+  [Fact]
+  public async Task The_same_name_in_two_folders_keeps_both_and_the_one_nearer_the_top_keeps_the_name()
+  {
+    temp.WriteFile(Path.Combine("New", "Sales.m"), "1");
+    temp.WriteFile(Path.Combine("Old", "Archive", "Sales.m"), "2");
+    temp.WriteFile("Report.m", "Sales");
+
+    var result = await CreateAnalyser().AnalyseFolderAsync(temp.Path, recursive: true, TestContext.Current.CancellationToken);
+
+    Assert.Equal(["New/Sales.m", "Old/Archive/Sales.m", "Report.m"], result.RelativePaths!.Values.Order(StringComparer.Ordinal));
+    Assert.Contains(result.Graph.Nodes, n => n.Name == "Old/Archive/Sales");
+    Assert.Equal(["Sales>Report"], EdgeList(result.Graph));
+    Assert.Equal(["Old/Archive/Sales", "Sales"], result.ClashingQueries!.Order(StringComparer.Ordinal));
+    Assert.Empty(result.DuplicateFiles);
+    Assert.Contains(log.Messages(LogEventLevel.Warning), m => m.Contains("import won't take either", StringComparison.Ordinal));
+  }
+
+  [Fact]
+  public void Subfolders_become_nested_groups_in_name_order()
+  {
+    var groups = FolderGroups.For(["Top.m", "Sales/Orders.m", "Sales/Old/Orders.m", "Admin/Users.m"]);
+
+    Assert.False(groups.ContainsKey("Top.m"));
+    Assert.Equal("Sales", groups["Sales/Orders.m"].Name);
+    Assert.Equal(1, groups["Sales/Orders.m"].Order);
+    Assert.Equal(0, groups["Admin/Users.m"].Order);
+    Assert.Equal(["Sales", "Old"], groups["Sales/Old/Orders.m"].Path().Select(g => g.Name));
+    Assert.Same(groups["Sales/Orders.m"], groups["Sales/Old/Orders.m"].Parent);
+  }
+
+  [Fact]
   public async Task Missing_folder_throws_DirectoryNotFoundException()
   {
     await Assert.ThrowsAsync<DirectoryNotFoundException>(

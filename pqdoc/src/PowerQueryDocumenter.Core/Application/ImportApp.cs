@@ -45,7 +45,7 @@ public sealed class ImportApp(ILogger logger, AppServices services)
     var run = new ImportRun(logger, services.Interaction, "pqdoc");
     var name = Path.GetFileName(request.Source.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
 
-    var source = await ReadAsync(request.Source, logger, cancellationToken).ConfigureAwait(false);
+    var source = await ReadAsync(request.Source, request.Recursive, logger, cancellationToken).ConfigureAwait(false);
     var (items, _) = run.ReadChoice(request, name);
 
     var import = new QueryImport(source.Graph, source.Queries.ToDictionary(q => q.Key, q => q.Value.Expression, DependencyGraph.NameComparer));
@@ -58,6 +58,16 @@ public sealed class ImportApp(ILogger logger, AppServices services)
 
     var plan = import.Plan(items.Select(item => import.Find(item)!));
     run.Report(plan);
+    var clashing = plan.Items.Where(source.Clashing.Contains).ToList();
+    if (clashing.Count > 0)
+    {
+      // A workbook can't hold two queries of one name (FR-IN-6): the user moves one aside, rather than pqdoc guessing.
+      logger.Error(
+        "{Items:l} share a name with a query in another subfolder of {Source:l}, and a workbook can't hold both. Move or rename one of the files, then run this again",
+        string.Join(", ", clashing),
+        name);
+      return ExitCodes.InputError;
+    }
     if (target is not null)
     {
       return WriteWorkbook(new Choice(request, target, name, source, plan, import), run);
@@ -81,7 +91,11 @@ public sealed class ImportApp(ILogger logger, AppServices services)
   private sealed record Choice(ImportRequest Request, ImportTarget Target, string SourceName, Source Source, ImportPlan Plan, QueryImport Import);
 
   /// <summary>A source's queries: what uses what, each one's file, and each one as it would be written.</summary>
-  private sealed record Source(DependencyGraph Graph, Dictionary<string, QueryBundleFile> Files, Dictionary<string, QueryToWrite> Queries);
+  private sealed record Source(DependencyGraph Graph, Dictionary<string, QueryBundleFile> Files, Dictionary<string, QueryToWrite> Queries)
+  {
+    /// <summary>Queries whose name a file in another subfolder shares (FR-IN-6).</summary>
+    public IReadOnlySet<string> Clashing { get; init; } = new HashSet<string>();
+  }
 
   private int WriteWorkbook(Choice choice, ImportRun run)
   {
@@ -197,10 +211,15 @@ public sealed class ImportApp(ILogger logger, AppServices services)
   /// <param name="logger">Takes what reading it finds to warn about.</param>
   /// <param name="cancellationToken">Stops the reading of a folder.</param>
   /// <exception cref="ExtractionException">The workbook can't be read, or has no queries.</exception>
-  public static async Task<IReadOnlyList<ImportableItem>> ItemsAsync(string source, ILogger logger, CancellationToken cancellationToken)
+  public static Task<IReadOnlyList<ImportableItem>> ItemsAsync(string source, ILogger logger, CancellationToken cancellationToken) =>
+    ItemsAsync(source, recursive: false, logger, cancellationToken);
+
+  /// <summary>Every query a workbook or folder has, reading a folder's subfolders too when <paramref name="recursive"/>.</summary>
+  /// <exception cref="ExtractionException">The workbook can't be read, or has no queries.</exception>
+  public static async Task<IReadOnlyList<ImportableItem>> ItemsAsync(string source, bool recursive, ILogger logger, CancellationToken cancellationToken)
   {
     ArgumentException.ThrowIfNullOrWhiteSpace(source);
-    var read = await ReadAsync(Path.GetFullPath(source), logger, cancellationToken).ConfigureAwait(false);
+    var read = await ReadAsync(Path.GetFullPath(source), recursive, logger, cancellationToken).ConfigureAwait(false);
     return
     [
       .. read.Queries.Values
@@ -210,13 +229,13 @@ public sealed class ImportApp(ILogger logger, AppServices services)
   }
 
   // The queries of a workbook, or of a folder of .m files, with each one's file and text.
-  private static async Task<Source> ReadAsync(string source, ILogger logger, CancellationToken cancellationToken)
+  private static async Task<Source> ReadAsync(string source, bool recursive, ILogger logger, CancellationToken cancellationToken)
   {
     var files = new Dictionary<string, QueryBundleFile>(DependencyGraph.NameComparer);
     var queries = new Dictionary<string, QueryToWrite>(DependencyGraph.NameComparer);
     if (Directory.Exists(source))
     {
-      var analysis = await new DependencyAnalyser(logger).AnalyseFolderAsync(source, cancellationToken).ConfigureAwait(false);
+      var analysis = await new DependencyAnalyser(logger).AnalyseFolderAsync(source, recursive, cancellationToken).ConfigureAwait(false);
       foreach (var (query, path) in analysis.Files ?? new Dictionary<string, string>())
       {
         var bytes = await File.ReadAllBytesAsync(path, cancellationToken).ConfigureAwait(false);
@@ -225,7 +244,7 @@ public sealed class ImportApp(ILogger logger, AppServices services)
         queries[query] = new QueryToWrite(query, QueryFileText.WithCrlfOutsideText(text), null, ResultTypeOf(text));
       }
 
-      return new Source(analysis.Graph, files, queries);
+      return new Source(analysis.Graph, files, queries) { Clashing = analysis.ClashingQueries ?? new HashSet<string>() };
     }
 
     var read = WorkbookReader.Read(WorkbookFile.ReadAllBytes(source), logger);
