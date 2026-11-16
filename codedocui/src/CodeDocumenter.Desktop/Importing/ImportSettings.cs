@@ -40,6 +40,9 @@ internal sealed class ImportSettings
   /// <summary>The workbook, or for pqdoc the folder of .m files, to take from.</summary>
   public string Source { get; set; } = "";
 
+  /// <summary><c>--recursive</c>: with a folder, take from its subfolders too.</summary>
+  public bool Recursive { get; set; }
+
   /// <summary>Whose items to take, when both tools read the source.</summary>
   public Tool Tool { get; set; } = Tool.Vbadoc;
 

@@ -21,6 +21,12 @@ internal sealed class DocumentSettings
   /// <summary>A workbook, or for pqdoc a folder of .m files.</summary>
   public string Input { get; set; } = "";
 
+  /// <summary><c>--recursive</c>: with a folder, read its subfolders too.</summary>
+  public bool Recursive { get; set; }
+
+  /// <summary><c>--folder-groups</c>: with <see cref="Recursive"/>, each subfolder is a group in the explorer.</summary>
+  public bool FolderGroups { get; set; }
+
   /// <summary><c>--embed-source</c>, for both tools.</summary>
   public bool EmbedSource { get; set; }
 

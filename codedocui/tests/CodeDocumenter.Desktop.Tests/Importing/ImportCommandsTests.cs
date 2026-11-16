@@ -41,6 +41,7 @@ public sealed class ImportCommandsTests
     LogDetail = LogDetail.Verbose,
     NoReferences = true,
     DropSignature = true,
+    Recursive = true,
   };
 
   private static Command ImportOf(Tool tool) => tool == Tool.Vbadoc ? new VbaCli.CliDefinition().Import.Command : new PqCli.CliDefinition().Import.Command;

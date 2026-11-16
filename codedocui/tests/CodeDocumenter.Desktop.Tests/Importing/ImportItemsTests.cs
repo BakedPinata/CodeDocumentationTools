@@ -16,7 +16,7 @@ public sealed class ImportItemsTests : IDisposable
   [Fact]
   public async Task Vbadoc_lists_a_workbooks_modules_with_why_some_cannot_come()
   {
-    var items = await ImportItems.ReadAsync(Tool.Vbadoc, folder.Fixture("SimpleMacro.xlsm"), TestContext.Current.CancellationToken);
+    var items = await ImportItems.ReadAsync(Tool.Vbadoc, folder.Fixture("SimpleMacro.xlsm"), recursive: false, TestContext.Current.CancellationToken);
 
     Assert.Contains(items, item => item.CanTake);
     Assert.Contains(items, item => item.Name == "ThisWorkbook" && !item.CanTake);
@@ -25,7 +25,7 @@ public sealed class ImportItemsTests : IDisposable
   [Fact]
   public async Task Pqdoc_lists_a_workbooks_queries()
   {
-    var items = await ImportItems.ReadAsync(Tool.Pqdoc, folder.Fixture("Queries.xlsx"), TestContext.Current.CancellationToken);
+    var items = await ImportItems.ReadAsync(Tool.Pqdoc, folder.Fixture("Queries.xlsx"), recursive: false, TestContext.Current.CancellationToken);
 
     Assert.Equal(14, items.Count);
   }
@@ -36,7 +36,7 @@ public sealed class ImportItemsTests : IDisposable
     var notes = folder.Combine("Notes.xlsm");
     File.WriteAllText(notes, "not a workbook");
 
-    var thrown = await Assert.ThrowsAsync<ExtractionException>(() => ImportItems.ReadAsync(Tool.Vbadoc, notes, TestContext.Current.CancellationToken));
+    var thrown = await Assert.ThrowsAsync<ExtractionException>(() => ImportItems.ReadAsync(Tool.Vbadoc, notes, recursive: false, TestContext.Current.CancellationToken));
 
     Assert.Equal(thrown.Message, ImportItems.WhyUnreadable(thrown));
     Assert.Null(ImportItems.WhyUnreadable(new InvalidOperationException("a fault of the app's")));

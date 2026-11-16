@@ -20,7 +20,7 @@ internal static class ImportCommands
       "--manifest", "--items", "--no-references", "--bundle", "--new", "--into", "--in-place", "--on-clash", "--drop-signature",
       "--on-exists", "--verbose", "--quiet",
     ],
-    [Tool.Pqdoc] = ["--manifest", "--items", "--bundle", "--new", "--into", "--in-place", "--on-clash", "--on-exists", "--verbose", "--quiet"],
+    [Tool.Pqdoc] = ["--manifest", "--items", "--recursive", "--bundle", "--new", "--into", "--in-place", "--on-clash", "--on-exists", "--verbose", "--quiet"],
   };
 
   /// <summary>Options of both tools' <c>import</c> the tab leaves out, and why.</summary>
@@ -114,6 +114,11 @@ internal static class ImportCommands
     else if (settings.Items.Count > 0)
     {
       arguments.AddRange(["--items", string.Join(',', settings.Items)]);
+    }
+
+    if (tool == Tool.Pqdoc && settings.Recursive && !File.Exists(source))
+    {
+      arguments.Add("--recursive");
     }
 
     if (tool == Tool.Vbadoc && settings.NoReferences)

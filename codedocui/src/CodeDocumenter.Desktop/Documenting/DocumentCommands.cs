@@ -17,7 +17,7 @@ internal static class DocumentCommands
   public static IReadOnlyDictionary<Tool, IReadOnlyList<string>> Covered { get; } = new Dictionary<Tool, IReadOnlyList<string>>
   {
     [Tool.Vbadoc] = ["--output", "--output-name", "--embed-source", "--on-exists", "--verbose", "--quiet"],
-    [Tool.Pqdoc] = ["--output", "--output-name", "--format", "--embed-source", "--plantuml-server", "--on-exists", "--verbose", "--quiet"],
+    [Tool.Pqdoc] = ["--output", "--output-name", "--format", "--embed-source", "--plantuml-server", "--recursive", "--folder-groups", "--on-exists", "--verbose", "--quiet"],
   };
 
   /// <summary>Options of both tools' main commands the tab leaves out, and why.</summary>
@@ -120,6 +120,7 @@ internal static class DocumentCommands
       AddValue(arguments, "--plantuml-server", pqdoc.PlantUmlServer);
     }
 
+    AddFolder(arguments, settings);
     AddShared(arguments, settings);
     return new ToolCommand(Tool.Pqdoc, arguments);
   }
@@ -149,6 +150,21 @@ internal static class DocumentCommands
     if (value.Length > 0)
     {
       arguments.AddRange([option, value]);
+    }
+  }
+
+  // --recursive and --folder-groups, only for a folder, and --folder-groups only with --recursive.
+  private static void AddFolder(List<string> arguments, DocumentSettings settings)
+  {
+    if (!settings.Recursive || File.Exists(Tidy(settings.Input)))
+    {
+      return;
+    }
+
+    arguments.Add("--recursive");
+    if (settings.FolderGroups)
+    {
+      arguments.Add("--folder-groups");
     }
   }
 

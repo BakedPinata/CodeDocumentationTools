@@ -68,6 +68,7 @@ internal sealed class ImportTab : UserControl
     new Choice<LogDetail>("Verbose", LogDetail.Verbose),
     new Choice<LogDetail>("Quiet", LogDetail.Quiet));
   private readonly FlowLayoutPanel options;
+  private readonly CheckBox recursive = new() { Text = "Su&bfolders too", AutoSize = true, AccessibleName = "Take from subfolders too" };
   private readonly CheckBox noReferences = new() { Text = "Leave out library references", AutoSize = true };
   private readonly CheckBox dropSignature = new() { Text = "Remove the target's signature, if it has one", AutoSize = true };
   private readonly List<Control> listRows = [];
@@ -76,6 +77,7 @@ internal sealed class ImportTab : UserControl
   private readonly List<Control> newRow = [];
   private readonly List<Control> targetRow = [];
   private readonly List<Control> vbadocRow = [];
+  private readonly List<Control> folderRow = [];
   private readonly System.Windows.Forms.Timer readSoon = new() { Interval = 500 };
   private List<string> ticked = [];
   private string? listed;
@@ -94,6 +96,7 @@ internal sealed class ImportTab : UserControl
     folder.Click += (_, _) => BrowseForFolder();
     rows.Add(Caption("&Source"), source, Flow(browse, folder));
     rows.Add(null, Note("A workbook, or for queries a folder of .m files. You can also drop one on the window, or a manifest.", visible: true));
+    folderRow.AddRange(rows.Add(Caption("", indent: true), recursive));
     rows.Add(Caption("Take"), Flow(vbadoc, pqdoc, toolNote));
     rows.Add(Caption("Choose"), Flow(fromList, fromManifest));
 
@@ -144,6 +147,15 @@ internal sealed class ImportTab : UserControl
         BeginInvoke(() => ChooseSource(chosen));
       }
     };
+    foreach (var radio in new CheckBox[] { recursive })
+    {
+      radio.CheckedChanged += (_, _) =>
+      {
+        OnChanged();
+        ReadSoon();
+      };
+    }
+
     foreach (var radio in new[] { vbadoc, pqdoc, fromList })
     {
       radio.CheckedChanged += (_, _) =>
@@ -240,6 +252,7 @@ internal sealed class ImportTab : UserControl
       SelectChoice(onClash, settings.OnClash);
       SelectChoice(onExists, settings.OnExists);
       SelectChoice(logDetail, settings.LogDetail);
+      recursive.Checked = settings.Recursive;
       noReferences.Checked = settings.NoReferences;
       dropSignature.Checked = settings.DropSignature;
     }
@@ -281,6 +294,7 @@ internal sealed class ImportTab : UserControl
     OnClash = Selected<OnClashBehaviour>(onClash),
     OnExists = Selected<OnExistsBehaviour>(onExists),
     LogDetail = Selected<LogDetail>(logDetail),
+    Recursive = recursive.Checked,
     NoReferences = noReferences.Checked,
     DropSignature = dropSignature.Checked,
   };
@@ -354,7 +368,7 @@ internal sealed class ImportTab : UserControl
       return;
     }
 
-    var key = $"{tool}|{Path.GetFullPath(path)}";
+    var key = $"{tool}|{Path.GetFullPath(path)}|{settings.Recursive}";
     if (key == listed && !again)
     {
       return;
@@ -364,7 +378,7 @@ internal sealed class ImportTab : UserControl
     itemsNote.Text = $"Reading {Path.GetFileName(Path.TrimEndingDirectorySeparator(path))}…";
     try
     {
-      var found = await ImportItems.ReadAsync(tool, path, CancellationToken.None);
+      var found = await ImportItems.ReadAsync(tool, path, settings.Recursive, CancellationToken.None);
       if (generation == reading)
       {
         listed = key;
@@ -506,6 +520,7 @@ internal sealed class ImportTab : UserControl
     onExistsCaption.Visible = writeTo != ImportDestination.InPlace;
     onExists.Visible = writeTo != ImportDestination.InPlace;
     vbadocRow.ForEach(control => control.Visible = tool != Tool.Pqdoc);
+    folderRow.ForEach(control => control.Visible = Directory.Exists(DocumentCommands.Tidy(settings.Source)));
     dropSignature.Visible = hasTarget;
     ResumeLayout(true);
     options.PerformLayout();
@@ -531,6 +546,7 @@ internal sealed class ImportTab : UserControl
     tips.SetToolTip(toTarget, help.Target.InPlace.Description);
     tips.SetToolTip(onClash, $"{OptionHelp.WithoutDefault(help.Target.OnClash.Description)}\n\nAsk asks in a dialog.");
     tips.SetToolTip(onExists, $"{OptionHelp.WithoutDefault(help.Import.Overwrite.OnExists.Description)}\n\nAsk asks in a dialog.");
+    tips.SetToolTip(recursive, PqdocHelp.Import.Recursive!.Description);
     tips.SetToolTip(noReferences, VbadocHelp.NoReferences.Description);
     tips.SetToolTip(dropSignature, VbadocHelp.DropSignature.Description);
   }

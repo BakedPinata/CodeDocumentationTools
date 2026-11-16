@@ -25,6 +25,9 @@ internal sealed class DocumentTab : UserControl
 
   private readonly ComboBox input = new FieldComboBox(240) { Anchor = AnchorStyles.Left | AnchorStyles.Right, Name = "Input", AccessibleName = "Workbook or folder" };
   private readonly CheckBox embedSource = new() { Text = "Put the source in the page", AutoSize = true };
+  private readonly CheckBox recursive = new() { Text = "Su&bfolders too", AutoSize = true, AccessibleName = "Read subfolders too" };
+  private readonly CheckBox folderGroups = new() { Text = "Subfolders as &groups", AutoSize = true };
+  private readonly List<Control> folderRow = [];
   private readonly ComboBox onExists = new() { DropDownStyle = ComboBoxStyle.DropDownList, AccessibleName = "If a file exists" };
   private readonly ComboBox logDetail = new() { DropDownStyle = ComboBoxStyle.DropDownList, AccessibleName = "Log" };
   private readonly CheckBox vbadoc = new() { Text = "VBA, with vbadoc", AutoSize = true, Name = "Vbadoc" };
@@ -52,6 +55,7 @@ internal sealed class DocumentTab : UserControl
     folder.Click += (_, _) => BrowseForFolder();
     rows.Add(Caption("&Workbook"), input, Flow(browse, folder));
     rows.Add(null, Note("A workbook, or for Power Query a folder of .m files. You can also drop one on the window.", visible: true));
+    folderRow.AddRange(rows.Add(Caption("", indent: true), Flow(recursive, folderGroups)));
 
     onExists.Items.AddRange(new object[]
     {
@@ -105,7 +109,7 @@ internal sealed class DocumentTab : UserControl
         BeginInvoke(() => InputChosen?.Invoke(this, chosen));
       }
     };
-    foreach (var box in new[] { embedSource, vbadoc, pqdoc }.Concat(formats.Values))
+    foreach (var box in new[] { embedSource, recursive, folderGroups, vbadoc, pqdoc }.Concat(formats.Values))
     {
       box.CheckedChanged += (_, _) => OnChanged();
     }
@@ -145,6 +149,8 @@ internal sealed class DocumentTab : UserControl
       input.SelectedIndex = -1;
       input.Text = settings.Input;
       embedSource.Checked = settings.EmbedSource;
+      recursive.Checked = settings.Recursive;
+      folderGroups.Checked = settings.FolderGroups;
       SelectChoice(onExists, settings.OnExists);
       SelectChoice(logDetail, settings.LogDetail);
       vbadoc.Checked = settings.Vbadoc.Run;
@@ -184,6 +190,8 @@ internal sealed class DocumentTab : UserControl
   {
     Input = input.Text,
     EmbedSource = embedSource.Checked,
+    Recursive = recursive.Checked,
+    FolderGroups = folderGroups.Checked,
     OnExists = Selected<OnExistsBehaviour>(onExists),
     LogDetail = Selected<LogDetail>(logDetail),
     Vbadoc = new VbadocSettings { Run = vbadoc.Checked, Output = vbadocOutput.Text, OutputName = vbadocName.Text },
@@ -234,6 +242,8 @@ internal sealed class DocumentTab : UserControl
     var showVbadoc = vbadoc.Checked && vbadocReads;
     var showPqdoc = pqdoc.Checked && pqdocReads;
     SuspendLayout();
+    folderRow.ForEach(control => control.Visible = Directory.Exists(chosen));
+    folderGroups.Enabled = recursive.Checked;
     vbadocRows.ForEach(control => control.Visible = showVbadoc);
     pqdocRows.ForEach(control => control.Visible = showPqdoc);
     var needsServer = formats.Any(f => f.Value.Checked && f.Key.IsRendered());
@@ -258,6 +268,8 @@ internal sealed class DocumentTab : UserControl
 
     tips.SetToolTip(input, $"vbadoc: {VbadocHelp.Workbook.Description}\n\npqdoc: {PqdocHelp.Input.Description}");
     tips.SetToolTip(embedSource, Both(VbadocHelp.EmbedSource, PqdocHelp.EmbedSource));
+    tips.SetToolTip(recursive, PqdocHelp.Folder.Recursive.Description);
+    tips.SetToolTip(folderGroups, PqdocHelp.Folder.FolderGroups.Description);
     tips.SetToolTip(onExists, Both(VbadocHelp.Overwrite.OnExists, PqdocHelp.OnExists) + "\n\nAsk asks in a dialog.");
     tips.SetToolTip(logDetail, $"Verbose: {VbadocHelp.Verbose.Description}\n\nQuiet: {VbadocHelp.Quiet.Description}");
     tips.SetToolTip(vbadocOutput, OptionHelp.WithoutDefault(VbadocHelp.Output.Description));

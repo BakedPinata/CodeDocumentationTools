@@ -20,6 +20,8 @@ public sealed class DocumentCommandsTests
   {
     Input = Workbook,
     EmbedSource = true,
+    Recursive = true,
+    FolderGroups = true,
     OnExists = OnExistsBehaviour.Skip,
     LogDetail = LogDetail.Verbose,
     Vbadoc = new VbadocSettings { Output = @"C:\Docs\VBA", OutputName = "Sales" },
@@ -66,9 +68,29 @@ public sealed class DocumentCommandsTests
       new[]
       {
         Workbook, "--output", @"C:\Docs\Queries", "--output-name", "Sales-queries", "--format", "html,csv,svg",
-        "--plantuml-server", "https://plantuml.example.com", "--embed-source", "--on-exists", "skip", "--verbose",
+        "--plantuml-server", "https://plantuml.example.com", "--recursive", "--folder-groups", "--embed-source", "--on-exists", "skip", "--verbose",
       },
       commands[1].Arguments);
+  }
+
+  [Fact]
+  public void Subfolders_are_only_passed_for_a_folder_and_groups_only_with_them()
+  {
+    var file = Path.GetTempFileName();
+    try
+    {
+      var onFile = Settings(file);
+      onFile.Recursive = true;
+      Assert.DoesNotContain("--recursive", DocumentCommands.Pqdoc(onFile).Arguments);
+
+      var groupsOnly = Settings(@"C:\Work\Queries");
+      groupsOnly.FolderGroups = true;
+      Assert.DoesNotContain("--folder-groups", DocumentCommands.Pqdoc(groupsOnly).Arguments);
+    }
+    finally
+    {
+      File.Delete(file);
+    }
   }
 
   public static TheoryData<string> Shapes => new() { "default", "everything", "quiet", "csv only", "overwrite", "fail" };
