@@ -51,7 +51,8 @@ To publish every tool in one step, run this from the repository root in PowerShe
 .\publish.ps1
 ```
 
-It runs this for each tool, which you can also run yourself:
+It runs this for each tool, which you can also run yourself, and then `dotnet build-server shutdown`, which ends the
+build servers dotnet keeps running for the next build (Task Manager shows them as ".NET Host"):
 
 ```
 dotnet publish vbadoc/src/VbaDocumenter -c Release -p:PublishProfile=FolderProfile

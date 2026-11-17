@@ -150,7 +150,8 @@ Agreed on 2026-11-13. Until a tool says otherwise:
   The desktop app's adds compression: Windows Forms makes it 111 MB, and compressed it's about 50 MB, for about 0.1 s
   more at start-up.
 - `publish.ps1` at the root publishes every project that has that profile, so a new tool only needs to add one. It adds
-  to the folder rather than clearing it first, so keep the profile's "delete existing files" option off.
+  to the folder rather than clearing it first, so keep the profile's "delete existing files" option off. It ends with
+  `dotnet build-server shutdown`, whether publishing worked or not, so no build server is left running.
 - The folder is for using the tools on this machine. To publish somewhere else, such as for a GitHub release, keep the
   profile and pass `-p:PublishDir=<full path>`. A relative path is taken from each project, so it scatters a copy
   through the repository.
