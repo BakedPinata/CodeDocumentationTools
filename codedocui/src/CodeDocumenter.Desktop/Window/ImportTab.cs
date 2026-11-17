@@ -83,6 +83,7 @@ internal sealed class ImportTab : UserControl
   private string? listed;
   private int reading;
   private bool showing;
+  private bool tickedSoon;
 
   public ImportTab()
   {
@@ -185,21 +186,32 @@ internal sealed class ImportTab : UserControl
       field.TextChanged += (_, _) => OnChanged();
     }
 
+    // Windows tells of each row's tick box as it puts the rows on screen, which it does when the tab is first shown, and
+    // until it's done the rows it hasn't put there yet read as missing (null). So a row is only looked at if it's there,
+    // and what's ticked is read once, after Windows is done.
     items.ItemCheck += (_, e) =>
     {
       // What can't come can't be ticked; the list says why.
-      if (items.Items[e.Index].Tag is ImportableItem { CanTake: false })
+      if (items.Items[e.Index] is { Tag: ImportableItem { CanTake: false } })
       {
         e.NewValue = e.CurrentValue;
       }
     };
     items.ItemChecked += (_, _) =>
     {
-      if (!showing)
+      if (showing || tickedSoon)
       {
-        ticked = [.. items.CheckedItems.Cast<ListViewItem>().Select(item => item.Text)];
-        ShowSummary();
-        OnChanged();
+        return;
+      }
+
+      if (IsHandleCreated)
+      {
+        tickedSoon = true;
+        BeginInvoke(ReadTicked);
+      }
+      else
+      {
+        ReadTicked();
       }
     };
     // After the layout has settled, as a resize comes in steps.
@@ -439,6 +451,15 @@ internal sealed class ImportTab : UserControl
       itemsNote.Text = note;
     }
 
+    OnChanged();
+  }
+
+  // What's ticked, after a tick box changed.
+  private void ReadTicked()
+  {
+    tickedSoon = false;
+    ticked = [.. items.CheckedItems.Cast<ListViewItem>().Select(item => item.Text)];
+    ShowSummary();
     OnChanged();
   }
 
