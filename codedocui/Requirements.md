@@ -51,7 +51,18 @@ feedback plan (in the repository's history, at the tag `feedback-plan-final`) se
 | FR-SET-1 | The app MUST remember, for each person, both tabs as they were left and which was showing, whether to open pages, and the last ten workbooks and folders, each with the output folders and names last used for it. |
 | FR-SET-2 | Settings that can't be read MUST NOT stop the app: it starts again from the defaults. |
 
-## 6. Platform
+## 6. Errors
+
+Added in step S3a of the generalisation plan, after an error on the Import tab came back each time its message was closed.
+
+| ID | Requirement |
+|---|---|
+| FR-ERR-1 | An error the app doesn't expect, on any thread, MUST be shown once, and when that's closed the app MUST close, leaving nothing running and the settings as they were last saved. It MUST NOT be shown again and again. |
+| FR-ERR-2 | Each MUST have a report saved, to read and pass on, which the dialog can open and copy. If it can't be saved, it MUST still be copyable. |
+| FR-ERR-3 | A report MUST NOT name any file or folder, or say anything of what's in them, and MUST NOT hold any error's message. It MUST say which build it was, the .NET and Windows it ran on, where in the code the error came from (with each file's name and line), and what the app was set to, in kinds and counts only. |
+| FR-ERR-4 | The dialog MUST offer to start afresh next time, by putting the settings aside where they can still be looked at. |
+
+## 7. Platform
 
 | ID | Requirement |
 |---|---|

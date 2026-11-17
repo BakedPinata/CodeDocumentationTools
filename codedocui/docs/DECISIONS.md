@@ -81,6 +81,35 @@ it. Add to this file whenever a new decision is agreed. Conventions shared with 
   `--help`. `ImportCommands.LeftOut` says why, and a test checks every other option has a control.
 - **A manifest dropped on the tab is the choice,** and anything else dropped is the source.
 - **Nothing to open after an import,** so Open the page is only on the Document tab.
+- **What's ticked is read from the list once Windows has finished with it** (step S3a). Windows tells of each row's tick
+  box as it puts the rows on screen, which it does when the tab is first shown, and until it's done the rows it hasn't
+  put there yet read as missing. Reading the list each time it told failed for every row: the app opened on the
+  Document tab, the list was read while the Import tab was hidden, and showing the tab brought an error per row.
+
+## Errors (step S3a)
+
+- **An error the app doesn't expect is reported once, and the app closes.** Carrying on could bring the same error
+  again and again, as it did on the Import tab, each time its message was closed. Errors that come while it's showing
+  are counted in its report, not shown. `ErrorHandler`, in `Errors/`, is plain code tested with no window;
+  `ErrorDialog` shows it.
+- **It closes with `Environment.Exit`,** not by closing the window, which would save the settings, reading them from a
+  window that has just failed, and would wait for a run. A run that's going stops where it is: the tools write each
+  file all at once (`AtomicFileWriter`), so what it was writing is left as it was.
+- **Every thread's errors:** the window's (`Application.ThreadException`), in making the window (around
+  `Application.Run`), and any other (`AppDomain.UnhandledException`), whose dialog is shown from a thread of the window's
+  kind (STA) while that one waits, as the app would otherwise end as soon as it returned. Errors in a tool's run are the
+  tool's, and are already in the log with their exit code.
+- **The report is a text file in `%LOCALAPPDATA%\codedocui\reports`,** beside the settings, the newest 20 kept. The
+  dialog opens it and copies it, and if it can't be saved, still copies it.
+- **The report holds nothing of yours.** No error's message, since a file's error names its path. Each stack trace's
+  paths are cut to the file's name, since they're where the app was built, which can name whoever built it. What the
+  app was set to is in kinds and counts only: whether a source is a file, a folder, not there or none, how many are
+  listed and ticked, where it was writing to, never a path or an item's name. It also has the build, the .NET and
+  Windows it ran on, and the screen's scale.
+- **Line numbers come from the PDBs beside the published file,** as they are now. With the PDBs built into the file
+  (`DebugType` embedded), a single-file app's stack traces have no line numbers.
+- **Start afresh puts the settings aside as `settings.old.json`,** in place of any before, rather than deleting them, so
+  they can still be looked at or put back.
 
 ## Settings
 

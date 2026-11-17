@@ -102,18 +102,29 @@ you're sure. Enter gives the answer that changes nothing, and closing a question
 
 **The app remembers**, for each person, both tabs as they were left and which was showing, and the last ten workbooks and
 folders, each with the output folders and names last used for it. They're in `%LOCALAPPDATA%\codedocui\settings.json`. If
-that file can't be read, the app starts again from the defaults.
+that file can't be read, the app starts again from the defaults. To start afresh yourself, close the app and rename that
+file.
+
+**If something goes wrong** that the app doesn't expect, it says so once and closes when you close the message, without
+saving the settings over the ones it had. Each time, it saves a report in `%LOCALAPPDATA%\codedocui\reports` (the newest
+20 are kept), which the message can open or copy, to pass on with the problem. A report names no file or folder and
+says nothing of what's in them: it has which build it was, the .NET and Windows it ran on, where in the code the error
+came from, and what the app was set to, as kinds and counts, such as "source a folder, 40 listed and 3 ticked". Tick
+**Start afresh next time** on the message to put the settings aside as `settings.old.json`, if what they were set to
+brings the error back. A run that fails is different: the tool says why in the log, with its exit code, and the app
+carries on.
 
 ## Project layout
 
 ```
 src/CodeDocumenter.Desktop/              the app
-  Program.cs                              opens the window
+  Program.cs                              opens the window, and reports an unexpected error
   Documenting/                            the Document tab's settings, and the commands they make
   Importing/                              the Import tab's settings, the commands they make, and its list
   Asking/                                 the tools' questions, and what each answer means
   Running/                                running a tool in the app: the command, its text, the run, the log, exit codes
   Settings/                               what's remembered, and where
+  Errors/                                 an unexpected error: its report, where reports are kept, and closing after it
   Window/                                 the window, the tabs, the log pane and the dialogs
 tests/CodeDocumenter.Desktop.Tests/      tests of everything but the window, with the real tools
 ```

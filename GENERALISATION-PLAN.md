@@ -54,6 +54,7 @@ says where the work is.
 | [S1](#step-s1-subfolders-in-pqdoc-and-in-load-folder) | pqdoc's `--recursive`, and Load folder finding each file at its place below the folder picked, in both tools | Claude | Done |
 | [S2](#step-s2-vbadoc-documents-a-folder-of-exported-modules) | vbadoc documents a folder of exported modules, recursive or not, referring to the files where they are | Claude, then you on a real folder | Claude's part is done; yours is next: run it on a real folder from an outside source |
 | [S3](#step-s3-vbadoc-imports-from-a-folder-and-the-desktop-app) | `vbadoc import` from a folder of modules, and the desktop app's Folder… and Subfolders for both tools | Claude | Done |
+| [S3a](#step-s3a-the-import-tabs-list-and-error-reports) | The desktop app: the Import tab's error when it's first shown, and an unexpected error reported once, with a report to pass on, before the app closes | Claude | Done |
 | [S4](#step-s4-userforms-from-a-folder-into-a-workbook) | `vbadoc import` writes UserForms from a folder into a workbook, from their `.frm` and `.frx` | Claude | Not started: to be worked out after S3 |
 | [N2](#step-n2-accessdoc-reads-a-databases-vba) | `accessdoc`: the VBA language in a library vbadoc and accessdoc share; the tool's skeleton; a page of the database's VBA | Claude | Not started |
 | [N3](#step-n3-accessdoc-reads-forms) | `accessdoc`: forms read into sections, controls, subforms, data sources and events, with handlers linked to their controls | Claude | Not started |
@@ -948,6 +949,27 @@ into it by script didn't work, so that's for you to look at. vbadoc 0.43.0, code
   lines.
 - Docs: vbadoc's Requirements and README; the desktop app's README.
 
+### Step S3a: The Import tab's list, and error reports
+
+Added and done on 2026-11-17, after S3 on a work machine. The app opened on the Document tab with yesterday's folder
+on the Import tab, and changing to the Import tab brought "Object reference not set to an instance of an object" in a
+message box that came back each time it was closed, until the app was ended in Task Manager. The error had been there
+since I4; S3 and endpoint protection had nothing to do with it. Main was brought up to S3 first, and S4 is to be
+rebased onto this step. codedocui 0.8.0.
+
+- The Import tab: its list is read while the tab is hidden, and when the tab is first shown, Windows puts the rows on
+  screen one at a time, telling of each tick box as it goes, with the rows not yet there read as missing. What's
+  ticked was read each time, and failed for every row. Now it's read once, after.
+- An unexpected error, on any thread, is reported once, and the app closes when its message is closed, without saving
+  the settings. Its report is saved in `%LOCALAPPDATA%\codedocui\reports`, the newest 20 kept, and the message opens and
+  copies it. A report names no file or folder and has no error's message: the build, .NET and Windows, the stack
+  trace with each path cut to the file's name, and what the app was set to in kinds and counts. A tick box on the
+  message puts the settings aside, to start afresh.
+- Tests: the reports, where they're kept, what the app was set to, the once-only handling and starting afresh, with no
+  window. The fix, and the dialog on both kinds of thread, were checked by running the window from a small program with
+  a settings file of its own, which also looked at the Import tab with a folder, left for you after S3.
+- Docs: the desktop app's Requirements (FR-ERR-1 to 4), DECISIONS and README.
+
 ### Step S4: UserForms from a folder into a workbook
 
 Asked for on 2026-11-16 as the step after S3 (S0, question 7), and to be worked out when S3 is done: `vbadoc import`
@@ -1092,6 +1114,7 @@ Approving this plan covers the changes below, each made in the step that causes 
 | `pqdoc/Requirements.md`, `pqdoc/docs/DECISIONS.md`, `pqdoc/README.md` | `--recursive`, subfolders as query groups, and Load folder finding files below the folder picked; `--recursive` comes out of "Out of scope" | S1 |
 | `vbadoc/Requirements.md`, `vbadoc/docs/DECISIONS.md`, `vbadoc/README.md` | A folder of exported modules as input and as the source of `import`, with `--recursive`; what the page can't know from files; UserForms from a folder only into a bundle | S2, S3 |
 | The desktop app's documents | Its new name; Folder… and Subfolders for both tools; then the tools it runs | K2, S3, R1 |
+| `codedocui/Requirements.md`, `codedocui/docs/DECISIONS.md`, `codedocui/README.md` | Errors (FR-ERR-1 to 4): an unexpected error is reported once, with a report that holds nothing of yours, and the app closes; start afresh. Asked for on 2026-11-17 | S3a |
 | `shared/README.md` | Split in step with the libraries | M1, N2 |
 | New | `Requirements.md`, `DECISIONS.md`, `PLAN.md`, `README.md` and `CLAUDE.md` for accessdoc, csdoc and pythondoc | N2, P2, Q2 |
 | Root `README.md` and `CLAUDE.md` | The new names, and the new tools as they arrive | K1, K3, N2, P2, Q2 |

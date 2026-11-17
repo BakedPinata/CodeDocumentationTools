@@ -8,7 +8,7 @@ rather than repeating it.
 - **Updating it:** at the end of each stage, and after any session that changes direction, update *Current state* and
   add an entry at the top of the log. Give the date, what changed and why, and commits, in a few lines.
 
-## Current state (2026-11-16)
+## Current state (2026-11-17)
 
 - **`GENERALISATION-PLAN.md`** (root): the current plan, agreed on 2026-11-13. It widens the repository to
   Access databases (forms and VBA), C# solutions and Python projects, with new names for the repository, the shared
@@ -26,8 +26,10 @@ rather than repeating it.
   files, added on 2026-11-16 as urgent, approved with the answers in S0) come first, then S4 (UserForms from a
   folder into a workbook). S1 is done: pqdoc reads subfolders with `--recursive`, and Load folder finds files below
   the folder picked. S2, Claude's part, is done: vbadoc documents a folder of exported modules; the user's run on a
-  real outside folder is to come. S3 is done: `vbadoc import` takes from a folder. S4 (UserForms from a folder into a
-  workbook) is next, to be worked out.
+  real outside folder is to come. S3 is done: `vbadoc import` takes from a folder. S3a (added 2026-11-17) is done: the
+  Import tab's error when it's first shown with a list read, and an unexpected error reported once, with a report to
+  pass on, before the app closes. S4 (UserForms from a folder into a workbook) is next, to be worked out; its branch,
+  which has only its plan so far, is to be rebased onto S3a.
 - **vbadoc 0.43.0** (a folder of exported modules as input since step S2, and as `import`'s source since S3): stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
   `<workbook>-vba.html`, with an explorer of modules and members, in `'@Folder` folders or by kind. It asks
   before overwriting a page that would change (`--on-exists`, `--force`), as pqdoc does. Stage 6 (UserForms) is parked;
@@ -37,10 +39,11 @@ rather than repeating it.
   and writes HTML by default as `<workbook or folder>-powerquery.html`. From a workbook it also writes each query to a
   `.m` file, kept in step with the workbook. The page shows each query's M code, highlighted, and an explorer of the
   queries in their Excel groups, nested as Excel shows them, or as queries and functions.
-- **codedocui 0.7.0** (`xldocui` until step K2), since steps I3, I4 and J2: the desktop app over both tools, in Windows Forms, published as one
+- **codedocui 0.8.0** (`xldocui` until step K2), since steps I3, I4 and J2: the desktop app over both tools, in Windows Forms, published as one
   compressed 50 MB file. It runs the tools' command lines in its own process, so it holds no logic of its own. The
   Document tab has every option of both main commands, and the Import tab every option of both `import`s, with Preview
-  and the tools' questions as dialogs. See `codedocui/README.md`.
+  and the tools' questions as dialogs. Since S3a, an unexpected error is reported once, with a report in
+  `%LOCALAPPDATA%\codedocui\reports` that holds nothing of the user's, and the app closes. See `codedocui/README.md`.
 - **`shared/`:** the code more than one tool uses, in three libraries since step M1: `CodeDocumenter.Shared` (what
   every tool needs, the page shell among it), `CodeDocumenter.Workbooks` (what the workbook tools need) and
   `CodeDocumenter.CodeViews` (the code model, and the page of code and its views). See its README.
@@ -51,13 +54,28 @@ rather than repeating it.
 - **The tools are in alpha** (agreed on 2026-11-13): a new version may change its pages and output files, and outputs
   needn't be compared with the version before. It's in the guidelines.
 - **Branches:** each step is worked on a branch of its own (`general/<step>`; `feedback/<step>` before), committed a change at a time; the user
-  reviews, rebases onto main and pushes.
+  reviews, rebases onto main and pushes. Local main was brought up to S3 on 2026-11-17, ahead of GitHub's until pushed.
 - **.NET 10** since step A0. `dotnet test` runs on the Microsoft Testing Platform, so it takes `--project` or
   `--solution`, not a bare path.
 
 ## Log
 
 Newest first.
+
+### 2026-11-17: Step S3a, the Import tab's list, and error reports
+
+- On a work machine, changing to the Import tab brought "Object reference not set to an instance of an object" in a
+  box that came back each time it was closed. Reproduced by running the window from a small program with a settings
+  file of its own: with the app opened on the Document tab, the list was read while the Import tab was hidden, and
+  showing it failed once for each row (42 errors for a folder of 40 modules). In the code since I4; nothing to do
+  with S3 or endpoint protection. The settings kept bringing it back; a new publish doesn't touch them.
+- Fixed: what's ticked is read once Windows has put the rows on screen. An unexpected error is now reported once, with
+  a report in `%LOCALAPPDATA%\codedocui\reports` that names no file or folder and has no error's message, and the app
+  closes when it's closed, with nothing left running and the settings as they were. Start afresh puts them aside.
+- The ".NET Host" processes left after closing the app from Task Manager are the build's (MSBuild's nodes, the compiler
+  server) and VS Code's, not the app's, which is one process of its own; `dotnet build-server shutdown` ends the build's.
+- Checked: the app's tests (187); the fix in four saved states; the dialog for an error on the window's thread and on
+  another, both closing the app with exit code 1 and leaving the settings unchanged. codedocui 0.8.0.
 
 ### 2026-11-16: Step S3, vbadoc imports from a folder
 
