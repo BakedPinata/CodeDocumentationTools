@@ -310,7 +310,8 @@ pqdoc import Sales.xlsx --manifest shared.json --into Target.xlsx --in-place --f
 `--force` answers that question and no other: an unattended run also needs `--on-clash` if the target might have any of
 the queries. With nobody to ask and no `--force`, it stops and changes nothing. The target is replaced in one step, once
 the result is finished and read back, so a failure leaves it as it was. A workbook open in Excel can't be replaced, and it
-says so.
+says so. A program that only has it open for a moment, such as endpoint protection or a sync client, is waited for,
+for up to 5 seconds (`--verbose` says so).
 
 ## Existing output files
 

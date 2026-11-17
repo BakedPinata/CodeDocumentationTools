@@ -164,7 +164,8 @@ vbadoc import Sales.xlsm --manifest shared.json --into Target.xlsm --in-place --
 the modules. With nobody to ask and no `--force`, it stops and changes nothing. The target is replaced in one step, once
 the result is finished and read back, so a failure leaves it as it was. A workbook open in Excel can't be replaced, and it
 says so. That includes an add-in Excel has loaded, so untick it in File > Options > Add-ins > Go first, or close Excel.
-An `.xlsx` can't gain modules in place.
+A program that only has it open for a moment, such as endpoint protection or a sync client, is waited for, for up to
+5 seconds (`--verbose` says so). An `.xlsx` can't gain modules in place.
 
 **Library references** come too, apart from those you unticked or `--no-references`, and any the target has. One that
 can't be found on this machine is left out and listed, because it would stop the whole project compiling, even code that

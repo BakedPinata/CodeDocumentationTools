@@ -190,7 +190,7 @@ are in the fixtures (see their README). Excel accepted all of this, at home and 
 **For J2:** go ahead as the plan has it. The writer keeps an add-in's content type, `--new` builds an add-in when the
 file it's given is an `.xlam`, and the rest is what can be a target. A loaded add-in should be caught by the check that
 an in-place target can be had to itself, as an open workbook is; the message then says it may be loaded as an add-in,
-and J2's check in Excel tries it.
+and J2's check in Excel tries it. (Since step S3a the check opens it for writing, letting others read; see below.)
 
 ## Choosing what to import (0.29.0, step H2 of the feedback plan)
 
@@ -262,9 +262,11 @@ What step J1 found is above ("Writing into add-ins: what step J1 found").
 - **Checked against what Excel accepted.** Given J1's samples directly, J2's writer wrote the spike's A1 and A2 the
   same in every part and stream, and A3 and A4 the same but for a new project's ID and the protection values encrypted
   with it, which are new on every write. The spike is deleted, and is still in the repository's history.
-- **A loaded add-in is caught as an open workbook is,** by the check that an in-place target can be had to the tool
-  alone, and the message for an `.xlam` says how to unload one. That Excel holds a loaded add-in open is for the user's
-  check in Excel.
+- **A loaded add-in is caught as an open workbook is,** by the check that an in-place target can be opened for
+  writing, and the message for an `.xlam` says how to unload one. That Excel holds a loaded add-in open is for the user's
+  check in Excel. Until step S3a the check opened the target for the tool alone, which any other program reading it
+  stopped, such as endpoint protection; Excel refuses the new check too, for a workbook and for an add-in it has open,
+  as tried with Excel on 2026-11-17 (see the shared README).
 - **An add-in with no VBA** is documented and imported from with a message that fits an add-in, rather than asking
   whether it was saved as an `.xlsx`.
 - **The desktop app's file pickers take each tool's lists** (`Extensions`, and `NewExtensions` for `--new`), so it keeps

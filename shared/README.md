@@ -22,8 +22,8 @@ Each is in `src/`, with its tests in `tests/` (`CodeDocumenter.Shared.Tests`, `C
 | Folder | What |
 |---|---|
 | (root) | `ExitCodes`, the codes every tool returns; `ToolVersion`, the build stamp read from a tool's own assembly; `ExtractionException`: what was given can't be read, exit code 3 |
-| `Files/` | `AtomicFileWriter`: write to a temporary file, then move it into place, or replace a file keeping its permissions; `SourceFolder`: find the source files in a folder a tool reads, at its top level or below it, skipping dot, hidden and build folders, each with its path below the folder for the page; `SourceFolderWriter`: keep a folder of source files in step with what they came from; `OverwriteResolver` and `OnExistsBehaviour`: what to do when an output already exists, asking through `IUserInteraction` |
-| `CommandLine/` | `OverwriteOptions`: `--on-exists` and `--force` (`-y`), checked and bound the same way in every tool; `FolderOptions`: `--recursive` (`-r`) and `--folder-groups`; `UnknownOptions`: words that look like options but aren't the command's, which System.CommandLine would take for arguments; `ConsoleUserInteraction`: the prompts, on standard error |
+| `Files/` | `AtomicFileWriter`: write to a temporary file, then move it into place, or replace a file keeping its permissions; `FileInUse`: wait a while for a file another program has open; `SourceFolder`: find the source files in a folder a tool reads, at its top level or below it, skipping dot, hidden and build folders, each with its path below the folder for the page; `SourceFolderWriter`: keep a folder of source files in step with what they came from; `OverwriteResolver` and `OnExistsBehaviour`: what to do when an output already exists, asking through `IUserInteraction` |
+| `CommandLine/` | `OverwriteOptions`: `--on-exists` and `--force` (`-y`), checked and bound the same way in every tool; `FolderOptions`: `--recursive` (`-r`) and `--folder-groups`; `UnknownOptions`: words that look like options but aren't the command's, which System.CommandLine would take for arguments; `CommandHelp`: help and usage that show each command as it's run, `import` after the tool's name; `ConsoleUserInteraction`: the prompts, on standard error |
 | `Pages/` | `ViewsFile`: a saved views file in an output folder, read for building into the page; `ShellPage`: a page built on the shell, from the parts a tool brings; `PageBuilder`: filling a template's placeholders, inlining scripts after d3 and the shell's, escaping text and JSON, the favicon; `EmbeddedResources`; `VendoredScripts` |
 | `Resources/Shell/` | The page shell: `shell.html` (the template), `export.html` (the Export tab's view, for a tool that asks for it), `shell.css` (the frame and shared colour tokens) and `shell.js` (theme, settings, tabs, the explorer, the side panel, their splitters, Load folder, which finds each file at its path below the folder picked, source view; its interface is at the top) |
 | `Resources/Vendor/` | d3 and its licence, byte-for-byte as published (see its README) |
@@ -54,6 +54,21 @@ dotnet test --solution CodeDocumentationTools.sln                # everything, s
 ```
 
 ## Decisions
+
+### Files in use, and help for `import` (step S3a of the generalisation plan)
+
+- **A file in use is waited for, up to 5 seconds,** where a tool replaces or moves one into place, and where `import`
+  checks a target before changing it in place. Endpoint protection, a sync client and Windows Search open a file for
+  a moment just after it's read or written, which made writing into a target in place fail at work with "being used
+  by another process". Only that error, and the like one for a locked part of a file, are waited for: nothing has
+  happened to the file when Windows gives them. "Access denied", which a move gives when another program is reading the destination, isn't, as a
+  read-only file gives it too. `--verbose` says when it waits.
+- **The help is System.CommandLine's own, with its usage lines changed.** Its help put the tool's input before a
+  subcommand (`vbadoc <input> [command]`, and `vbadoc <input> import <source>`) and listed it among `import`'s
+  arguments, but `import` is run straight after the tool's name. Version 3.0 keeps how help is laid out to itself, so
+  `CommandHelp` writes its help into a buffer, with the tool's arguments hidden for a subcommand's, and puts its own
+  lines under "Usage:". Anything given before a subcommand, which was quietly ignored, is an error saying how it's run,
+  and the usage shown after a mistake is the command's own.
 
 ### The code model (step M3 of the generalisation plan)
 
@@ -263,8 +278,11 @@ dotnet test --solution CodeDocumentationTools.sln                # everything, s
 - **`ClashResolver` stops rather than skips what can't be replaced** for `--on-clash overwrite`: asked to replace
   everything, leaving something out unasked would be the wrong surprise. Overwrite All goes on asking about those, as
   it's the only answer that has to.
-- **`ImportRun.ChangeInPlace` says a target can't be replaced before it asks,** by opening it for itself alone, so nobody
-  answers a question about what can't happen. The build happens after every answer, and only its finished, read-back
+- **`ImportRun.ChangeInPlace` says a target can't be replaced before it asks,** by opening it for writing, so nobody
+  answers a question about what can't happen. Excel refuses that while it has a workbook or an add-in open, as it lets
+  others read the file but not write to it. It lets others read and write meanwhile, so a program that's only reading
+  the file, and lets others write, isn't in the way (step S3a). Until then it opened it for itself alone, which any
+  other program reading the file stopped, though replacing the file needn't have failed. The build happens after every answer, and only its finished, read-back
   result reaches `AtomicFileWriter.Replace`, which uses `File.Replace` so the file keeps its permissions and creation
   time. A move would give it the folder's.
 

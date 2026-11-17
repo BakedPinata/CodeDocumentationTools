@@ -28,13 +28,14 @@ rather than repeating it.
   the folder picked. S2, Claude's part, is done: vbadoc documents a folder of exported modules; the user's run on a
   real outside folder is to come. S3 is done: `vbadoc import` takes from a folder. S3a (added 2026-11-17) is done: the
   Import tab's error when it's first shown with a list read, and an unexpected error reported once, with a report to
-  pass on, before the app closes. S4 (UserForms from a folder into a workbook) is next, to be worked out; its branch,
+  pass on, before the app closes; then `import --in-place` refused when another program was reading the target,
+  `import`'s help, and `publish.ps1` ending the build servers. S4 (UserForms from a folder into a workbook) is next, to be worked out; its branch,
   which has only its plan so far, is to be rebased onto S3a.
-- **vbadoc 0.43.0** (a folder of exported modules as input since step S2, and as `import`'s source since S3): stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
+- **vbadoc 0.43.1** (a folder of exported modules as input since step S2, and as `import`'s source since S3): stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
   `<workbook>-vba.html`, with an explorer of modules and members, in `'@Folder` folders or by kind. It asks
   before overwriting a page that would change (`--on-exists`, `--force`), as pqdoc does. Stage 6 (UserForms) is parked;
   stage 7 waits for the generalisation plan. Since 0.31.0 (step J2) it writes into add-ins (`.xlam`) as into workbooks.
-- **pqdoc 1.28.0**, plus stages 3b–3d: reads a workbook's queries directly, or a folder of hand-exported `.m` files
+- **pqdoc 1.28.1**, plus stages 3b–3d: reads a workbook's queries directly, or a folder of hand-exported `.m` files
   (and its subfolders with `--recursive`, since step S1),
   and writes HTML by default as `<workbook or folder>-powerquery.html`. From a workbook it also writes each query to a
   `.m` file, kept in step with the workbook. The page shows each query's M code, highlighted, and an explorer of the
@@ -61,6 +62,22 @@ rather than repeating it.
 ## Log
 
 Newest first.
+
+### 2026-11-17: Step S3a continued: import in place, import's help, and publish.ps1
+
+- At work, `vbadoc import <folder> --items … --into <workbook> --in-place` said the target was "being used by another
+  process" when nothing seemed to be, from vbadoc and from the app. Reproduced with another process reading the
+  target: the check before asking opened it for the tool alone, which any program reading it stopped (endpoint
+  protection, a sync client, Windows Search). It now opens it for writing while letting others read and write, which
+  Excel still refuses for a workbook and an add-in (tried with Excel here), and a file in use is waited for up to
+  5 seconds, in the check and in the write. The user agreed to this change to a recorded decision.
+- `import`'s help, in both tools, gave `vbadoc <input> import <source>`; it now shows `vbadoc import <source>`, and
+  anything before `import`, which was ignored, is an error. System.CommandLine 3.0 keeps its help layout internal, so
+  the shared `CommandHelp` changes its usage lines in the text.
+- `publish.ps1` ends with `dotnet build-server shutdown`. vbadoc 0.43.1, pqdoc 1.28.1; codedocui stays 0.8.0, as
+  this is still S3a.
+- Checked: every test (1,893: none failed, 7 skipped); vbadoc writing past another process holding the target in three
+  ways, and refusing, unchanged, with Excel holding a workbook or an add-in.
 
 ### 2026-11-17: Step S3a, the Import tab's list, and error reports
 

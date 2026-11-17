@@ -54,7 +54,7 @@ says where the work is.
 | [S1](#step-s1-subfolders-in-pqdoc-and-in-load-folder) | pqdoc's `--recursive`, and Load folder finding each file at its place below the folder picked, in both tools | Claude | Done |
 | [S2](#step-s2-vbadoc-documents-a-folder-of-exported-modules) | vbadoc documents a folder of exported modules, recursive or not, referring to the files where they are | Claude, then you on a real folder | Claude's part is done; yours is next: run it on a real folder from an outside source |
 | [S3](#step-s3-vbadoc-imports-from-a-folder-and-the-desktop-app) | `vbadoc import` from a folder of modules, and the desktop app's Folder… and Subfolders for both tools | Claude | Done |
-| [S3a](#step-s3a-the-import-tabs-list-and-error-reports) | The desktop app: the Import tab's error when it's first shown, and an unexpected error reported once, with a report to pass on, before the app closes | Claude | Done |
+| [S3a](#step-s3a-the-import-tabs-list-error-reports-and-fixes-to-import) | The desktop app: the Import tab's error when it's first shown, and an unexpected error reported once, with a report to pass on, before the app closes. Then both tools: `import --in-place` refused when another program was reading the target, and `import`'s help; and `publish.ps1` ending the build servers | Claude | Done |
 | [S4](#step-s4-userforms-from-a-folder-into-a-workbook) | `vbadoc import` writes UserForms from a folder into a workbook, from their `.frm` and `.frx` | Claude | Not started: to be worked out after S3 |
 | [N2](#step-n2-accessdoc-reads-a-databases-vba) | `accessdoc`: the VBA language in a library vbadoc and accessdoc share; the tool's skeleton; a page of the database's VBA | Claude | Not started |
 | [N3](#step-n3-accessdoc-reads-forms) | `accessdoc`: forms read into sections, controls, subforms, data sources and events, with handlers linked to their controls | Claude | Not started |
@@ -949,7 +949,7 @@ into it by script didn't work, so that's for you to look at. vbadoc 0.43.0, code
   lines.
 - Docs: vbadoc's Requirements and README; the desktop app's README.
 
-### Step S3a: The Import tab's list, and error reports
+### Step S3a: The Import tab's list, error reports, and fixes to import
 
 Added and done on 2026-11-17, after S3 on a work machine. The app opened on the Document tab with yesterday's folder
 on the Import tab, and changing to the Import tab brought "Object reference not set to an instance of an object" in a
@@ -969,6 +969,28 @@ rebased onto this step. codedocui 0.8.0.
   window. The fix, and the dialog on both kinds of thread, were checked by running the window from a small program with
   a settings file of its own, which also looked at the Import tab with a folder, left for you after S3.
 - Docs: the desktop app's Requirements (FR-ERR-1 to 4), DECISIONS and README.
+
+Then, asked for the same day after reviewing the above, three more, which also change vbadoc to 0.43.1 and pqdoc to
+1.28.1:
+
+- **Import in place, in both tools and the app:** writing into a target itself said it was "being used by another
+  process" when nothing seemed to be using it. The check before asking opened the target for the tool alone, so any
+  other program that had it open, even only reading it as endpoint protection, a sync client or Windows Search do,
+  stopped it. It now opens it for writing while letting others read and write, which Excel still refuses for a
+  workbook or an add-in it has open (tried with Excel), and a file in use is waited for up to 5 seconds, in the check
+  and in the write, with `--verbose` saying so. This goes against the shared README's decision on the check, and
+  vbadoc's DECISIONS on a loaded add-in; you agreed to the change, and both say what it does now.
+- **`import`'s help, in both tools:** `vbadoc -h` gave the usage as `vbadoc <input> [command] [options]`, and
+  `vbadoc import -h` as `vbadoc <input> import <source>`, with `<input>` among its arguments, but `import` is run as
+  `vbadoc import <source>`. The usage now lists each way to run the tool, `import`'s help lists its own arguments only,
+  anything before `import` is an error saying how it's run (it was quietly ignored), and the usage shown after a
+  mistake is the command's own.
+- **`publish.ps1`** ends with `dotnet build-server shutdown`, so the build servers that showed as ".NET Host" in Task
+  Manager aren't left running.
+- Tests: waiting for a file in use, writing and replacing past another program holding a file, the check against a
+  program reading the target, and the help and the refusal, in the shared tests and in both tools. Checked by hand:
+  vbadoc writing into a target that another process held in three ways, and refusing with Excel holding the target
+  and an add-in, leaving them unchanged.
 
 ### Step S4: UserForms from a folder into a workbook
 
@@ -1115,6 +1137,8 @@ Approving this plan covers the changes below, each made in the step that causes 
 | `vbadoc/Requirements.md`, `vbadoc/docs/DECISIONS.md`, `vbadoc/README.md` | A folder of exported modules as input and as the source of `import`, with `--recursive`; what the page can't know from files; UserForms from a folder only into a bundle | S2, S3 |
 | The desktop app's documents | Its new name; Folder… and Subfolders for both tools; then the tools it runs | K2, S3, R1 |
 | `codedocui/Requirements.md`, `codedocui/docs/DECISIONS.md`, `codedocui/README.md` | Errors (FR-ERR-1 to 4): an unexpected error is reported once, with a report that holds nothing of yours, and the app closes; start afresh. Asked for on 2026-11-17 | S3a |
+| `shared/README.md`, `vbadoc/docs/DECISIONS.md` | The check before changing a target in place opens it for writing, letting others read, in place of for the tool alone; a file in use is waited for; `import`'s help. Agreed on 2026-11-17 | S3a |
+| `docs/GUIDELINES.md`, root `README.md` | `publish.ps1` ends the build servers | S3a |
 | `shared/README.md` | Split in step with the libraries | M1, N2 |
 | New | `Requirements.md`, `DECISIONS.md`, `PLAN.md`, `README.md` and `CLAUDE.md` for accessdoc, csdoc and pythondoc | N2, P2, Q2 |
 | Root `README.md` and `CLAUDE.md` | The new names, and the new tools as they arrive | K1, K3, N2, P2, Q2 |
