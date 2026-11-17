@@ -237,6 +237,9 @@ internal sealed class ImportTab : UserControl
   /// <summary>The narrowest the tab can be and show everything it shows now.</summary>
   public int LeastWidth => rows.LeastWidth;
 
+  /// <summary>How many rows the list has, for an error report.</summary>
+  public int Listed => items.Items.Count;
+
   /// <summary>Shows settings, and the recent workbooks and folders to choose from.</summary>
   public void Show(ImportSettings settings, IEnumerable<string> recent)
   {

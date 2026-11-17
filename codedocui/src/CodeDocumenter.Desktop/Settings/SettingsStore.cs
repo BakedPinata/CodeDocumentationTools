@@ -45,4 +45,20 @@ internal static class SettingsStore
     Directory.CreateDirectory(Path.GetDirectoryName(path)!);
     AtomicFileWriter.Write(path, JsonSerializer.SerializeToUtf8Bytes(settings, Options));
   }
+
+  /// <summary>
+  /// Puts the settings aside as <c>settings.old.json</c>, in place of any put aside before, so the app starts from the
+  /// defaults next time and they can still be looked at.
+  /// </summary>
+  public static void StartAfresh(string path)
+  {
+    ArgumentNullException.ThrowIfNull(path);
+    if (File.Exists(path))
+    {
+      File.Move(path, OldPath(path), overwrite: true);
+    }
+  }
+
+  /// <summary>Where <see cref="StartAfresh"/> puts the settings.</summary>
+  public static string OldPath(string path) => Path.ChangeExtension(path, ".old.json");
 }

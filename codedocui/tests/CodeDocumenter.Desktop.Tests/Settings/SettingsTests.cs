@@ -190,4 +190,26 @@ public sealed class SettingsTests : IDisposable
     Assert.True(settings.Document.EmbedSource);
     Assert.Equal(new[] { OutputFormat.Csv }, settings.Document.Pqdoc.Formats);
   }
+
+  [Fact]
+  public void Starting_afresh_puts_the_settings_aside_in_place_of_any_before()
+  {
+    SettingsStore.Save(File, new AppSettings { Tab = "Import" });
+    System.IO.File.WriteAllText(SettingsStore.OldPath(File), "put aside before");
+
+    SettingsStore.StartAfresh(File);
+
+    Assert.False(System.IO.File.Exists(File));
+    Assert.Equal(folder.Combine("codedocui", "settings.old.json"), SettingsStore.OldPath(File));
+    Assert.Contains("\"tab\": \"Import\"", System.IO.File.ReadAllText(SettingsStore.OldPath(File)), StringComparison.Ordinal);
+    Assert.Equal("Document", SettingsStore.Load(File).Tab);
+  }
+
+  [Fact]
+  public void Starting_afresh_with_no_settings_does_nothing()
+  {
+    SettingsStore.StartAfresh(File);
+
+    Assert.False(System.IO.File.Exists(SettingsStore.OldPath(File)));
+  }
 }

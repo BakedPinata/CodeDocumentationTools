@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using CodeDocumenter.Desktop.Asking;
 using CodeDocumenter.Desktop.Documenting;
+using CodeDocumenter.Desktop.Errors;
 using CodeDocumenter.Desktop.Importing;
 using CodeDocumenter.Desktop.Running;
 using CodeDocumenter.Desktop.Settings;
@@ -133,6 +134,24 @@ internal sealed class MainWindow : Form
 
     initialInput = input;
   }
+
+  /// <summary>The app's version and the tools', as the status bar shows them.</summary>
+  public static IReadOnlyList<ToolVersion> Versions { get; } =
+  [
+    ToolVersion.Of(typeof(MainWindow).Assembly),
+    ToolVersion.Of(typeof(VbaCli.CliRunner).Assembly),
+    ToolVersion.Of(typeof(PqCli.CliRunner).Assembly),
+  ];
+
+  /// <summary>What the window is showing and set to, for an error report: kinds and counts, never a path or a name.</summary>
+  public IReadOnlyList<string> DescribeState() => StateSummary.Describe(new AppState(
+    OnImport ? ImportTabName : "Document",
+    running is not null,
+    DeviceDpi * 100 / 96,
+    document.Read(),
+    import.Read(),
+    import.Listed,
+    settings.Recent.Count));
 
   /// <summary>Makes a workbook or folder the input, with the outputs last used for it.</summary>
   public void Choose(string input)
@@ -383,16 +402,10 @@ internal sealed class MainWindow : Form
 
   private void ShowVersions()
   {
-    ToolVersion[] all =
-    [
-      ToolVersion.Of(typeof(MainWindow).Assembly),
-      ToolVersion.Of(typeof(VbaCli.CliRunner).Assembly),
-      ToolVersion.Of(typeof(PqCli.CliRunner).Assembly),
-    ];
-    versions.Text = string.Join("   ·   ", all.Select(v => v.ToString()));
+    versions.Text = string.Join("   ·   ", Versions.Select(v => v.ToString()));
     versions.ToolTipText = string.Join(
       Environment.NewLine,
-      all.Select(v => v.Commit is null
+      Versions.Select(v => v.Commit is null
         ? $"{v}, built outside git"
         : $"{v.Product} {v.Version}, commit {v.Commit}{(v.Dirty ? ", built with uncommitted changes" : "")}"));
   }
