@@ -1,4 +1,4 @@
-using System.CommandLine.Help;
+using CodeDocumenter.Shared.CommandLine;
 using System.CommandLine.Invocation;
 using CodeDocumenter.Shared.Files;
 using VbaDocumenter.Cli;
@@ -77,7 +77,7 @@ public class CliTests
   [InlineData("-?")]
   public void Help_has_its_usual_names(string name)
   {
-    Assert.IsType<HelpAction>(_cli.Parse([name]).Action);
+    Assert.IsType<CommandHelp.ToolHelpAction>(_cli.Parse([name]).Action);
   }
 
   public static TheoryData<string[]> InvalidArguments => new()

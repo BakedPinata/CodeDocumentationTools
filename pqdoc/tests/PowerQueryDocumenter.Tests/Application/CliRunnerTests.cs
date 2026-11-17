@@ -665,7 +665,21 @@ public sealed class CliRunnerTests : IDisposable
 
     Assert.Equal(ExitCodes.InvalidArguments, exitCode);
     Assert.Contains("Unknown option '--nope'.", Assert.Single(app.Log.Messages(LogEventLevel.Error)), StringComparison.Ordinal);
-    Assert.Contains("Usage: pqdoc <input>", app.Error.ToString(), StringComparison.Ordinal);
+    Assert.Contains(args[0] == "import" ? "Usage: pqdoc import <source> [options]" : "Usage: pqdoc <input> [options]", app.Error.ToString(), StringComparison.Ordinal);
+    Assert.Empty(OutputFiles());
+  }
+
+  [Fact]
+  public async Task Help_shows_import_run_after_the_tools_name_and_anything_before_it_is_refused()
+  {
+    using var app = App();
+
+    Assert.Equal(ExitCodes.Success, await app.RunAsync("import", "--help"));
+    Assert.Contains($"Usage:{Environment.NewLine}  pqdoc import <source> [options]{Environment.NewLine}", app.Output.ToString(), StringComparison.Ordinal);
+    Assert.DoesNotContain("<input>", app.Output.ToString(), StringComparison.Ordinal);
+
+    Assert.Equal(ExitCodes.InvalidArguments, await app.RunAsync(Queries, "import", Queries, "--items", "Orders"));
+    Assert.Contains("Nothing goes between pqdoc and import", Assert.Single(app.Log.Messages(LogEventLevel.Error)), StringComparison.Ordinal);
     Assert.Empty(OutputFiles());
   }
 

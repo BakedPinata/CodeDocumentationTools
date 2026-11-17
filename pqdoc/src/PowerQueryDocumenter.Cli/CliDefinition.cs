@@ -116,6 +116,9 @@ public sealed class CliDefinition
     // CliRunner does the work. A command with subcommands is only allowed to run on its own if it has an action.
     RootCommand.SetAction(_ => { });
     RootCommand.Validators.Add(Validate);
+
+    // Help that shows import as it's run, after the tool's name and not after an input.
+    CommandHelp.Apply(RootCommand, ToolName);
   }
 
   /// <summary>The root command.</summary>
@@ -163,9 +166,8 @@ public sealed class CliDefinition
   /// <summary><c>--quiet</c> / <c>-q</c>.</summary>
   public Option<bool> Quiet { get; }
 
-  /// <summary>One-line usage shown after a validation error (FR-CLI-3).</summary>
-  public static string BriefUsage =>
-    $"Usage: {ToolName} <input> [options]{Environment.NewLine}Run '{ToolName} --help' for the full list of options.";
+  /// <summary>One-line usage of the command a mistake was in, shown after a validation error (FR-CLI-3).</summary>
+  public static string BriefUsage(ParseResult parseResult) => CommandHelp.Brief(parseResult.CommandResult.Command, ToolName);
 
   /// <summary>Parses command-line arguments.</summary>
   public ParseResult Parse(IReadOnlyList<string> args) => RootCommand.Parse(args);

@@ -79,7 +79,7 @@ public static class CliRunner
     int ReportInvalidArguments(IEnumerable<string> messages)
     {
       foreach (var message in messages) logger.Error("{Message}", message);
-      services.Error.WriteLine(CliDefinition.BriefUsage);
+      services.Error.WriteLine(CliDefinition.BriefUsage(parseResult));
       return ExitCodes.InvalidArguments;
     }
   }

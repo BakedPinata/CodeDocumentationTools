@@ -1,4 +1,4 @@
-using System.CommandLine.Help;
+using CodeDocumenter.Shared.CommandLine;
 using System.CommandLine.Invocation;
 using CodeDocumenter.Shared.Files;
 using PowerQueryDocumenter.Cli;
@@ -173,7 +173,7 @@ public sealed class CliDefinitionTests
   [Fact]
   public void Help_and_version_are_generated()
   {
-    Assert.IsType<HelpAction>(cli.Parse(["--help"]).Action);
+    Assert.IsType<CommandHelp.ToolHelpAction>(cli.Parse(["--help"]).Action);
     Assert.NotNull(cli.Parse(["--version"]).Action);
     Assert.IsNotType<ParseErrorAction>(cli.Parse(["--version"]).Action);
   }

@@ -100,7 +100,7 @@ public static class CliRunner
         logger.Error("{Message}", message);
       }
 
-      services.Error.WriteLine(CliDefinition.BriefUsage);
+      services.Error.WriteLine(CliDefinition.BriefUsage(parseResult));
       return ExitCodes.InvalidArguments;
     }
   }

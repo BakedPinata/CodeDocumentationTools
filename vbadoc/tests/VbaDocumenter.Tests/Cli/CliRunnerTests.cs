@@ -270,8 +270,19 @@ public sealed class CliRunnerTests : IDisposable
     Assert.Equal(ExitCodes.InvalidArguments, Run(args.Select(a => a == "{out}" ? Output : a).ToArray()));
 
     Assert.Contains("Unknown option '--nope'.", Assert.Single(_log.Messages(LogEventLevel.Error)));
-    Assert.Contains("Usage: vbadoc <input>", _error.ToString());
+    Assert.Contains(args[0] == "import" ? "Usage: vbadoc import <source> [options]" : "Usage: vbadoc <input> [options]", _error.ToString());
     Assert.False(Directory.Exists(Output));
+  }
+
+  [Fact]
+  public void Help_shows_import_run_after_the_tools_name_and_anything_before_it_is_refused()
+  {
+    Assert.Equal(ExitCodes.Success, Run("--help"));
+    Assert.Contains("  vbadoc <input> [options]" + Environment.NewLine + "  vbadoc import <source> [options]" + Environment.NewLine, _output.ToString());
+
+    Assert.Equal(ExitCodes.InvalidArguments, Run(Workbook, "import", Workbook, "--items", "Module1"));
+    Assert.Contains("Nothing goes between vbadoc and import", Assert.Single(_log.Messages(LogEventLevel.Error)));
+    Assert.Contains("Run 'vbadoc import --help'", _error.ToString());
   }
 
   // ---- An existing page: asked about only when it would change; the module files never are ----
