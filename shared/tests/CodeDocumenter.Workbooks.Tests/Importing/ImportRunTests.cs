@@ -21,7 +21,9 @@ public sealed class ImportRunTests : IDisposable
 
   public void Dispose() => folder.Dispose();
 
-  private ImportRun Run(FakeUserInteraction interaction) => new(log.CreateLogger(), interaction, "vbadoc");
+  // A target held open is waited for only a moment, so the tests where it stays held don't wait long.
+  private ImportRun Run(FakeUserInteraction interaction, TimeSpan? inUseWait = null) =>
+    new(log.CreateLogger(), interaction, "vbadoc", inUseWait ?? TimeSpan.FromMilliseconds(100));
 
   private static FakeUserInteraction Answering(bool answer)
   {
@@ -150,6 +152,32 @@ public sealed class ImportRunTests : IDisposable
 
     Assert.Equal(Before, File.ReadAllBytes(addin));
     Assert.Contains(log.Messages(LogEventLevel.Error), m => m.Contains("Is it open in Excel? A loaded add-in is: untick it in the Add-ins dialog, or close Excel."));
+  }
+
+  [Fact]
+  public void A_target_another_program_is_only_reading_is_changed()
+  {
+    // As endpoint protection, a sync client or Windows Search might, just after the tool read it.
+    Assert.SkipUnless(OperatingSystem.IsWindows(), "Only Windows stops a file being replaced that another program has open.");
+    using (new FileStream(Target, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+    {
+      Assert.Equal(ExitCodes.Success, Run(new FakeUserInteraction(isInteractive: false)).ChangeInPlace(Target, force: true, "a change", Built));
+    }
+
+    Assert.Equal(After, File.ReadAllBytes(Target));
+  }
+
+  [Fact]
+  public void A_target_held_open_for_a_moment_is_waited_for_and_verbose_says_so()
+  {
+    Assert.SkipUnless(OperatingSystem.IsWindows(), "Only Windows stops a file being replaced that another program has open.");
+    using var holder = new FileStream(Target, FileMode.Open, FileAccess.ReadWrite, FileShare.Read);
+    using var letGo = new Timer(_ => holder.Dispose(), null, 300, Timeout.Infinite);
+
+    Assert.Equal(ExitCodes.Success, Run(new FakeUserInteraction(isInteractive: false), FileInUse.Wait).ChangeInPlace(Target, force: true, "a change", Built));
+
+    Assert.Equal(After, File.ReadAllBytes(Target));
+    Assert.Contains(log.Messages(LogEventLevel.Debug), m => m.StartsWith("Target.xlsm is in use by another program, so trying again in ", StringComparison.Ordinal));
   }
 
   [Fact]

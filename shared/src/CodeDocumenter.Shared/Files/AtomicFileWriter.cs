@@ -38,8 +38,14 @@ public static class AtomicFileWriter
     }
   }
 
-  /// <summary>Writes <paramref name="content"/> to <paramref name="destination"/>.</summary>
-  public static void Write(string destination, ReadOnlySpan<byte> content)
+  /// <summary>
+  /// Writes <paramref name="content"/> to <paramref name="destination"/>. The move at the end waits for a while if the
+  /// file just written is in use, as endpoint protection often has a new file open to look at it.
+  /// </summary>
+  /// <param name="destination">The file to write.</param>
+  /// <param name="content">What goes in it.</param>
+  /// <param name="pausing">Told of each pause while a file's in use, for a log.</param>
+  public static void Write(string destination, ReadOnlySpan<byte> content, Action<TimeSpan>? pausing = null)
   {
     var temporaryPath = TemporaryPathFor(destination);
 
@@ -50,7 +56,7 @@ public static class AtomicFileWriter
         stream.Write(content);
       }
 
-      File.Move(temporaryPath, destination, overwrite: true);
+      FileInUse.Retry(() => File.Move(temporaryPath, destination, overwrite: true), pausing: pausing);
     }
     catch
     {
@@ -62,8 +68,13 @@ public static class AtomicFileWriter
   /// <summary>
   /// Puts <paramref name="content"/> in place of a file that's there, in one step, as a move can't quite do: the file keeps
   /// its own permissions and creation time, which matter when it's someone's workbook rather than a tool's output.
+  /// Replacing waits for a while if either file is in use, as another program that has one open, even only to read it,
+  /// can stop it.
   /// </summary>
-  public static void Replace(string destination, ReadOnlySpan<byte> content)
+  /// <param name="destination">The file to replace.</param>
+  /// <param name="content">What goes in its place.</param>
+  /// <param name="pausing">Told of each pause while a file's in use, for a log.</param>
+  public static void Replace(string destination, ReadOnlySpan<byte> content, Action<TimeSpan>? pausing = null)
   {
     var temporaryPath = TemporaryPathFor(destination);
 
@@ -74,7 +85,7 @@ public static class AtomicFileWriter
         stream.Write(content);
       }
 
-      File.Replace(temporaryPath, destination, destinationBackupFileName: null);
+      FileInUse.Retry(() => File.Replace(temporaryPath, destination, destinationBackupFileName: null), pausing: pausing);
     }
     catch
     {

@@ -107,6 +107,26 @@ public sealed class AtomicFileWriterTests : IDisposable
     Assert.Equal(new[] { "out.txt" }, temp.FileNames());
   }
 
+  [Theory]
+  [InlineData(FileShare.ReadWrite)]
+  [InlineData(FileShare.Read)]
+  public void Replace_waits_for_a_program_reading_the_file_for_a_moment(FileShare sharing)
+  {
+    // Endpoint protection, a sync client or Windows Search reading it, which stops it being replaced unless it lets the
+    // file be deleted too.
+    Assert.SkipUnless(OperatingSystem.IsWindows(), "Only Windows stops a file being replaced that another program has open.");
+    var path = temp.WriteFile("out.xlsm", "original");
+    using var holder = new FileStream(path, FileMode.Open, FileAccess.Read, sharing);
+    using var letGo = new Timer(_ => holder.Dispose(), null, 300, Timeout.Infinite);
+    var pauses = 0;
+
+    AtomicFileWriter.Replace(path, "new"u8, _ => pauses++);
+
+    Assert.Equal("new", File.ReadAllText(path));
+    Assert.Equal(new[] { "out.xlsm" }, temp.FileNames());
+    Assert.True(pauses > 0);
+  }
+
   [Fact]
   public void Write_reports_a_missing_folder()
   {

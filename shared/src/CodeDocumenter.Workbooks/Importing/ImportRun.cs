@@ -19,7 +19,14 @@ public sealed record PlannedWorkbook(string Path) : IPlannedOutput
 /// What's the same in every tool's <c>import</c>: reading the choice, saying what it comes to, and writing a bundle or a
 /// workbook. The source is never changed, and nor is a target unless <c>--in-place</c> says so.
 /// </summary>
-public sealed class ImportRun(ILogger logger, IImportInteraction interaction, string tool)
+/// <param name="logger">Where to say it.</param>
+/// <param name="interaction">Who to ask.</param>
+/// <param name="tool">The tool's name, which a manifest has to be for.</param>
+/// <param name="inUseWait">
+/// How long the check before changing a target in place waits while another program has it open; <see cref="FileInUse.Wait"/>
+/// if null. Writing waits as long as <see cref="AtomicFileWriter"/> does.
+/// </param>
+public sealed class ImportRun(ILogger logger, IImportInteraction interaction, string tool, TimeSpan? inUseWait = null)
 {
   /// <summary>The items asked for, and the references to leave out.</summary>
   /// <param name="request">What was asked for.</param>
@@ -129,7 +136,7 @@ public sealed class ImportRun(ILogger logger, IImportInteraction interaction, st
       return ExitCodes.OutputRefused;
     }
 
-    return resolution.ToWrite.Count == 0 ? ExitCodes.Success : Save(path, build, AtomicFileWriter.Write);
+    return resolution.ToWrite.Count == 0 ? ExitCodes.Success : Save(path, build, (file, content) => AtomicFileWriter.Write(file, content, Pausing(file)));
   }
 
   /// <summary>
@@ -167,7 +174,7 @@ public sealed class ImportRun(ILogger logger, IImportInteraction interaction, st
       return ExitCodes.OutputRefused;
     }
 
-    return Save(path, build, AtomicFileWriter.Replace);
+    return Save(path, build, (file, content) => AtomicFileWriter.Replace(file, content, Pausing(file)));
   }
 
   private delegate void WriteFile(string path, ReadOnlySpan<byte> content);
@@ -188,12 +195,15 @@ public sealed class ImportRun(ILogger logger, IImportInteraction interaction, st
     }
   }
 
-  // Excel holds a workbook open, so one that can't be had to ourselves can't be replaced either.
-  private static string? WhyNotReplaceable(string path)
+  // Excel keeps a workbook open, letting others read it but not write to it, so a target that can't be opened for
+  // writing can't be replaced. A program that's only reading it, as endpoint protection, a sync client or Windows Search
+  // do for a moment, usually lets others write, so it isn't in the way here; one that doesn't is waited for a while, and
+  // replacing the file waits too.
+  private string? WhyNotReplaceable(string path)
   {
     try
     {
-      using var file = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+      FileInUse.Retry(() => new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete).Dispose(), inUseWait, Pausing(path));
       return null;
     }
     catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -201,4 +211,8 @@ public sealed class ImportRun(ILogger logger, IImportInteraction interaction, st
       return ex.Message;
     }
   }
+
+  // What --verbose shows of a wait, so a pause before writing can be told from a hang.
+  private Action<TimeSpan> Pausing(string path) =>
+    pause => logger.Debug("{Name:l} is in use by another program, so trying again in {Milliseconds} ms", Path.GetFileName(path), (int)pause.TotalMilliseconds);
 }
