@@ -254,6 +254,55 @@ public sealed class TargetWorkbookTests : IDisposable
   }
 
   [Fact]
+  public void An_exported_class_gets_its_missing_attributes_and_keeps_the_bytes_after_them_even_if_they_dont_decode()
+  {
+    const string Attributes = "Attribute VB_Name = \"A\"\r\nAttribute VB_Exposed = False\r\n";
+    var module = new VbaModule
+    {
+      Name = "A", Kind = VbaModuleKind.Class, StreamName = "A", Source = Attributes + "??", SourceBytes = [.. Encoding.ASCII.GetBytes(Attributes), 0x81, 0x8D],
+    };
+
+    var bytes = TargetWorkbook.SourceIn(module, 1252, 1252);
+
+    Assert.Equal([0x81, 0x8D], bytes[^2..]);
+    Assert.StartsWith("Attribute VB_Name = \"A\"\r\nAttribute VB_Base = \"0{FCFB3D2A-A0FA-1068-A738-08002B3371B5}\"\r\n", Encoding.ASCII.GetString(bytes), StringComparison.Ordinal);
+    Assert.Contains("Attribute VB_TemplateDerived = False\r\nAttribute VB_Customizable = False\r\n", Encoding.ASCII.GetString(bytes), StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void An_exported_class_going_into_another_code_page_gets_its_missing_attributes_too()
+  {
+    var source = "Attribute VB_Name = \"A\"\r\n' Zürich\r\n";
+    var module = new VbaModule { Name = "A", Kind = VbaModuleKind.Class, StreamName = "A", Source = source, SourceBytes = Encoding.UTF8.GetBytes(source) };
+
+    var text = CodePages.Get(1252).GetString(TargetWorkbook.SourceIn(module, 65001, 1252));
+
+    Assert.Equal(ClassAttributes.Complete(source), text);
+    Assert.EndsWith("Attribute VB_Customizable = False\r\n' Zürich\r\n", text, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void A_class_from_a_workbook_keeps_its_bytes()
+  {
+    var output = TargetWorkbook.New().Write(Adding(Incoming("Logger", VbaModuleKind.Class)));
+    var stored = WorkbookReader.Read(output).Modules.Single(m => m.Name == "Logger");
+
+    Assert.Same(stored.SourceBytes, TargetWorkbook.SourceIn(stored, 1252, 1252));
+  }
+
+  [Fact]
+  public void A_class_written_into_a_new_workbook_has_the_attributes_Excel_needs_to_load_it()
+  {
+    var incoming = Incoming("Logger", VbaModuleKind.Class, "Public Sub Log()\r\nEnd Sub\r\n");
+
+    var logger = WorkbookReader.Read(TargetWorkbook.New().Write(Adding(incoming))).Modules.Single(m => m.Name == "Logger");
+
+    Assert.Equal(VbaModuleKind.Class, logger.Kind);
+    Assert.Equal(ClassAttributes.Complete(incoming.Source), logger.Source);
+    Assert.Contains("Attribute VB_Base = \"0{FCFB3D2A-A0FA-1068-A738-08002B3371B5}\"\r\n", logger.Source, StringComparison.Ordinal);
+  }
+
+  [Fact]
   public void Source_goes_into_the_targets_code_page_from_a_real_workbook_in_another()
   {
     var source = WorkbookReader.Read(Fixtures.Workbook("suffix-generator.xlsm"));
@@ -333,6 +382,17 @@ public sealed class TargetWorkbookTests : IDisposable
 
     Assert.Equal(["Paths"], compared.Identical);
     Assert.Equal(["ILogger"], compared.New);
+    Assert.Empty(compared.Clashes);
+  }
+
+  [Fact]
+  public void An_exported_class_is_no_clash_with_the_same_class_as_a_workbook_stores_it()
+  {
+    var stored = Source[0] with { Source = ClassAttributes.Complete(Source[0].Source) };
+
+    var compared = Compare(Target(stored), "Paths");
+
+    Assert.Equal(["ILogger"], compared.Identical);
     Assert.Empty(compared.Clashes);
   }
 

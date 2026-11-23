@@ -17,14 +17,21 @@ public sealed class ImportWorkbookTests : IDisposable
   const string Scripting = @"*\G{420B2830-E718-11CF-893D-00A0C9054228}#1.0#0#C:\Windows\System32\scrrun.dll#Microsoft Scripting Runtime";
   const string NotInstalled = @"*\G{11111111-2222-3333-4444-555555555555}#1.0#0#C:\nope.dll#Not Installed";
 
+  // What a project stores after a class's VB_Name. A class written without them gets them (ClassAttributesTests), so
+  // these have them all, as a workbook's classes do, and come through as they are.
+  const string ClassAttributeLines =
+    "Attribute VB_Base = \"0{FCFB3D2A-A0FA-1068-A738-08002B3371B5}\"\r\nAttribute VB_GlobalNameSpace = False\r\n"
+    + "Attribute VB_Creatable = False\r\nAttribute VB_PredeclaredId = False\r\nAttribute VB_Exposed = False\r\n"
+    + "Attribute VB_TemplateDerived = False\r\nAttribute VB_Customizable = False\r\n";
+
   static readonly SyntheticModule[] Project =
   [
-    new("ILogger", VbaModuleKind.Class, "Attribute VB_Name = \"ILogger\"\r\nOption Explicit\r\nPublic Sub Log(ByVal m As String)\r\nEnd Sub\r\n"),
+    new("ILogger", VbaModuleKind.Class, "Attribute VB_Name = \"ILogger\"\r\n" + ClassAttributeLines + "Option Explicit\r\nPublic Sub Log(ByVal m As String)\r\nEnd Sub\r\n"),
     new("Paths", VbaModuleKind.Standard, "Attribute VB_Name = \"Paths\"\r\nOption Explicit\r\nPrivate m_log As ILogger\r\nPublic Sub Pick()\r\n    m_log.Log \"x\"\r\nEnd Sub\r\n"),
     new("Unrelated", VbaModuleKind.Standard, "Attribute VB_Name = \"Unrelated\"\r\nOption Explicit\r\n"),
   ];
 
-  static readonly SyntheticModule TheirLogger = new("ILogger", VbaModuleKind.Class, "Attribute VB_Name = \"ILogger\"\r\nOption Explicit\r\n' their own\r\n");
+  static readonly SyntheticModule TheirLogger = new("ILogger", VbaModuleKind.Class, "Attribute VB_Name = \"ILogger\"\r\n" + ClassAttributeLines + "Option Explicit\r\n' their own\r\n");
   static readonly SyntheticModule TheirMain = new("Main", VbaModuleKind.Standard, "Attribute VB_Name = \"Main\"\r\nOption Explicit\r\n");
 
   readonly string _folder = Path.Combine(Path.GetTempPath(), $"vbadoc-write-{Guid.NewGuid():N}");
@@ -110,6 +117,28 @@ public sealed class ImportWorkbookTests : IDisposable
     Assert.Contains("m_log.Log \"Zürich\"\r\n", SourceOf(New, "Paths"), StringComparison.Ordinal);
     Assert.Equal(1252, Read(New).CodePage);
     foreach (var (path, bytes) in before) Assert.Equal(bytes, File.ReadAllBytes(path));
+  }
+
+  // File > Export leaves out three attributes a project stores, and Excel couldn't load a project written without them
+  // ("Invalid procedure call or argument", with no line shown). File > Import puts them back, and so does vbadoc.
+  [Fact]
+  public void A_class_exported_by_the_VBA_editor_goes_into_a_new_workbook_with_the_attributes_the_export_left_out()
+  {
+    var folder = Path.Combine(_folder, "Editor");
+    Directory.CreateDirectory(folder);
+    File.WriteAllText(Path.Combine(folder, "Stopwatch.cls"),
+      "VERSION 1.0 CLASS\r\nBEGIN\r\n  MultiUse = -1  'True\r\nEND\r\nAttribute VB_Name = \"Stopwatch\"\r\nAttribute VB_GlobalNameSpace = False\r\n"
+      + "Attribute VB_Creatable = False\r\nAttribute VB_PredeclaredId = False\r\nAttribute VB_Exposed = False\r\nOption Explicit\r\n"
+      + "Public Function Seconds() As Double\r\nEnd Function\r\n");
+
+    Assert.Equal(ExitCodes.Success, RunOn(folder, "--items", "Stopwatch", "--new", New));
+
+    Assert.Equal(
+      "Attribute VB_Name = \"Stopwatch\"\r\nAttribute VB_Base = \"0{FCFB3D2A-A0FA-1068-A738-08002B3371B5}\"\r\n"
+      + "Attribute VB_GlobalNameSpace = False\r\nAttribute VB_Creatable = False\r\nAttribute VB_PredeclaredId = False\r\n"
+      + "Attribute VB_Exposed = False\r\nAttribute VB_TemplateDerived = False\r\nAttribute VB_Customizable = False\r\n"
+      + "Option Explicit\r\nPublic Function Seconds() As Double\r\nEnd Function\r\n",
+      SourceOf(New, "Stopwatch"));
   }
 
   [Fact]

@@ -65,7 +65,9 @@ public static class ModuleClashes
   }
 
   // Only what's at the end can differ without meaning anything: the VBA editor keeps or drops a last line as it likes.
-  static bool Same(VbaModule a, VbaModule b) => a.Source.TrimEnd().Equals(b.Source.TrimEnd(), StringComparison.Ordinal);
+  // They're compared as a project stores them, so a class exported by the VBA editor matches the same class in a workbook.
+  static bool Same(VbaModule a, VbaModule b) =>
+    ClassAttributes.StoredSource(a).TrimEnd().Equals(ClassAttributes.StoredSource(b).TrimEnd(), StringComparison.Ordinal);
 
   static ILookup<string, string> UsedBy(VbaProject? project) =>
     (project is null ? [] : DependencyAnalyser.Analyse(ProjectParser.Parse(project)).ModuleEdges)

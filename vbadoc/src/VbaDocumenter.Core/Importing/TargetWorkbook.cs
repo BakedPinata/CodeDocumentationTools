@@ -116,18 +116,31 @@ public sealed class TargetWorkbook
     }
   }
 
-  /// <summary>A module's source in the target's code page. Bytes are kept as they are unless it differs.</summary>
+  /// <summary>
+  /// A module's source in the target's code page, as a project stores it: a class exported by the VBA editor gets back
+  /// the attributes the export left out (<see cref="ClassAttributes"/>). Bytes are kept as they are unless the code page
+  /// differs, apart from a class's attribute lines when they change.
+  /// </summary>
   /// <exception cref="ExtractionException">It has characters the target's code page can't hold.</exception>
   public static byte[] SourceIn(VbaModule module, int sourceCodePage, int targetCodePage)
   {
     ArgumentNullException.ThrowIfNull(module);
-    if (sourceCodePage == targetCodePage) return module.SourceBytes;
+    var header = module.Kind == VbaModuleKind.Class ? ClassAttributes.Completion(module.Source) : null;
+    if (sourceCodePage == targetCodePage)
+    {
+      if (header is null) return module.SourceBytes;
+
+      // Only the attribute lines change, so everything after them keeps its bytes, even ones that don't decode.
+      var encoding = CodePages.Get(targetCodePage);
+      var replaced = encoding.GetByteCount(module.Source.AsSpan(0, header.Length));
+      return [.. encoding.GetBytes(header.Header), .. module.SourceBytes.AsSpan(replaced)];
+    }
 
     _ = CodePages.Get(targetCodePage); // says so if it's one this tool can't use
     var strict = Encoding.GetEncoding(targetCodePage, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
     try
     {
-      return strict.GetBytes(module.Source);
+      return strict.GetBytes(header is null ? module.Source : header.Header + module.Source[header.Length..]);
     }
     catch (EncoderFallbackException ex)
     {
