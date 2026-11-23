@@ -52,7 +52,7 @@ A second spike (a sequence-diagram generator, since abandoned) proved that a lig
 - The page is named after the workbook and `-vba` (`MyBook-vba.html`), the same rule as pqdoc's outputs, so a page that travels on its own says what it documents. `#` and `%` become `_` in the file name only. `--output-name` (`-n`) chooses another name.
 - Pages vbadoc wrote earlier under another name (recognised by their generator tag) are deleted from the folder after this run's page is written or kept, so an old page can't pass for the current one. Other `.html` files are left alone.
 - **An existing page that this run would change** is handled by `--on-exists`, as in pqdoc: `prompt` (the default) asks *yes / no / all / quit* on standard error when the session is interactive, and behaves as `fail` when it isn't; `overwrite` replaces it (`--force` / `-y` is the same, and conflicts with any other `--on-exists`); `skip` keeps it; `fail` stops. The check comes before anything is written, so a refusal or quitting writes nothing and exits with code 4, with a message saying how to proceed. A page that would be written unchanged isn't asked about. The source files and `.gitattributes` follow the workbook and are never asked about.
-- File extensions: `.bas` (standard module), `.cls` (class and document modules), `.frm` (forms, see below).
+- File extensions: `.bas` (standard module), `.cls` (class and document modules), `.frm` with a `.frx` beside it (forms, see below).
 - **Encoding and line endings:** write source files in the project's code page (as the VBA editor's own Export does), with CRLF line endings, so they can be imported back into the VBA editor unchanged. The HTML page must decode them with the same code page; record the code page in the page's data and use `TextDecoder`.
 - If no `.gitattributes` exists in the output folder, create one that stops git converting line endings or encoding on the source files. Never overwrite an existing one.
 - Output must be **deterministic** so git diffs only show real changes: stable sort orders, no timestamps or run-specific values in generated files. The page may say when the workbook was last saved, from the workbook's own document properties, since that changes only when the workbook does.
@@ -75,10 +75,10 @@ Added in step S2 of the generalisation plan (2026-11-16), for code exported by s
 
 Forms (UserForms) are in scope. Two forms exported from the VBA editor are in the fixtures (step S4b), but no workbook with forms is, as the sample stays private. Build this part defensively. Taking forms out of a workbook or folder is in [Importing](#importing).
 
-- Export each form's code to a `.frm` file.
+- Export each form as the VBA editor does (step S4c): a `.frm` with the designer's `Begin` block, then the code, and a `.frx` beside it holding the form and its controls, so the VBA editor's File > Import brings the form back.
 - Read the form's designer storage (MS-OFORMS format) to list its controls with their name and type, and caption where available. Use this to link event handlers such as `cmdOK_Click` to the control `cmdOK`.
-- A byte-exact, VBA-editor-compatible `.frx` file is not required.
-- If the designer data can't be parsed, still export the code, and report a warning instead of failing.
+- The `.frx` needn't match the VBA editor's byte for byte, but the VBA editor has to import it, and the same workbook gives the same `.frx` each time, as the folder is kept in git.
+- If the designer data can't be read, still export the code, as a `.frm` with no `Begin` block and no `.frx`, and report a warning instead of failing.
 
 ## HTML page
 

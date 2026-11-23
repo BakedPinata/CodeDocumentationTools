@@ -31,8 +31,9 @@ rather than repeating it.
   pass on, before the app closes; then `import --in-place` refused when another program was reading the target,
   `import`'s help, and `publish.ps1` ending the build servers. S4 (UserForms into a workbook) has its answers and sample;
   S4a is done (the spike `spikes/s4-userforms`, passed in Excel at home and at work, findings in vbadoc's DECISIONS),
-  and S4b is done: `vbadoc import` takes UserForms. S4c (vbadoc's export writes forms as the VBA editor does) is next.
-- **vbadoc 0.44.0** (a folder of exported modules as input since step S2, and as `import`'s source since S3; UserForms imported since S4b): stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
+  S4b is done (`vbadoc import` takes UserForms), and S4c, Claude's part (vbadoc exports forms as the VBA editor does);
+  the user's import of an exported `.frm` by hand is next.
+- **vbadoc 0.45.0** (a folder of exported modules as input since step S2, and as `import`'s source since S3; UserForms imported since S4b, exported with their designers since S4c): stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
   `<workbook>-vba.html`, with an explorer of modules and members, in `'@Folder` folders or by kind. It asks
   before overwriting a page that would change (`--on-exists`, `--force`), as pqdoc does. Stage 6 (UserForms) is parked;
   stage 7 waits for the generalisation plan. Since 0.31.0 (step J2) it writes into add-ins (`.xlam`) as into workbooks.
@@ -63,6 +64,17 @@ rather than repeating it.
 ## Log
 
 Newest first.
+
+### 2026-11-23: Step S4c, Claude's part: vbadoc exports forms as the VBA editor does
+
+- vbadoc's export, page and bundles write each form as a `.frm` with its `Begin` block and a `.frx` beside it, so its
+  own folders bring forms back. `.frx` is one of the export's extensions, so it goes when its form does. A form whose
+  designer can't be read is written as its code, with a warning. vbadoc 0.45.0; codedocui unchanged.
+- A `.frx` vbadoc built differed on every run, as OpenMcdf stamped its storages with the time. Each storage's times
+  are now copied from where it came from.
+- Checked: every test (1,931 passed, 7 skipped), and in Excel here, the VBA editor's File > Import of vbadoc's exported
+  `.frm` files, through its object model, brought both forms back with every control. Next: the user's import by
+  hand, ideally at work too.
 
 ### 2026-11-23: Step S4b: vbadoc import takes UserForms
 

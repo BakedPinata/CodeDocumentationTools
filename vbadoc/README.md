@@ -155,7 +155,7 @@ UserForm, can't be overwritten, only skipped.
 
 **UserForms come too,** with their controls, from a workbook or from a folder the VBA editor exported (File > Export
 File), where each form is a `.frm` with a `.frx` beside it. A module that shows a form brings it along. A form whose
-`.frx` is missing, or whose `.frm` has no designer, as vbadoc's own export writes for now, can't be taken, and says why.
+`.frx` is missing, or whose `.frm` has no designer, as vbadoc's export wrote before 0.45.0, can't be taken, and says why.
 Forms bring a reference to the Microsoft Forms 2.0 Object Library when the target has none, as their code may need it.
 In a bundle, each form is a `.frm` and a `.frx`, as the VBA editor exports them: keep the two together.
 
@@ -301,7 +301,8 @@ copies the lines shown.
 
 ### What it writes
 
-- One file per module: `.bas` (standard module), `.cls` (class, ThisWorkbook and sheets), `.frm` (UserForm).
+- One file per module: `.bas` (standard module), `.cls` (class, ThisWorkbook and sheets), `.frm` (UserForm), and for a
+  UserForm a `.frx` beside it, holding its controls, as the VBA editor exports a form, so File > Import brings it back.
   Files use the project's code page and CRLF line endings, as the VBA editor's own Export does.
   Classes get the VBA editor's `VERSION 1.0 CLASS` header so they import back as classes.
 - A `.gitattributes` that stops git converting those files, unless the folder already has one.
@@ -320,8 +321,8 @@ copies the lines shown.
 already committed, and commit that on its own (for example "Regenerate with vbadoc 0.6.0"). Everything that changes
 in that commit comes from the tool, so any later diff comes from the workbook alone.
 
-On each run the folder is brought in line with the workbook. Module files (`.bas`, `.cls`, `.frm`) at the top level
-of the folder that are no longer in the workbook are deleted, so **don't keep hand-written module files there**.
+On each run the folder is brought in line with the workbook. Module files (`.bas`, `.cls`, `.frm`, `.frx`) at the top
+level of the folder that are no longer in the workbook are deleted, so **don't keep hand-written module files there**.
 Other files, such as a README or `.git/`, are never touched. Two workbooks in the same directory would share the
 default `VBAProject` folder, so give one of them `--output`.
 

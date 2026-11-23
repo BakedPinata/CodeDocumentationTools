@@ -74,13 +74,16 @@ or that change it. Add to this file whenever a new decision is agreed. Conventio
 
 - The default output folder is **`VBAProject` next to the workbook**; `--output <folder>` overrides it.
   Two workbooks in one directory would share that folder, so one needs `--output`.
-- **There is no manifest.** Every top-level `.bas`, `.cls` and `.frm` file in the output folder is assumed to come from
-  the tool. Ones no longer in the workbook are deleted; all other files (README, `.gitattributes`, `.git/`) are left alone.
+- **There is no manifest.** Every top-level `.bas`, `.cls`, `.frm` and (since 0.45.0) `.frx` file in the output folder is
+  assumed to come from the tool. Ones no longer in the workbook are deleted; all other files (README, `.gitattributes`,
+  `.git/`) are left alone.
 - **Document modules (ThisWorkbook, sheets) use `.cls`**, as the VBA editor does, not `.doc.cls` as the probe did.
 - **Class and document files get the VBA editor's header** (`VERSION 1.0 CLASS` … `END`). It isn't stored in the workbook,
   but without it the editor imports a `.cls` as a standard module.
-- **Forms (`.frm`) contain only code and `Attribute` lines**, with no designer `Begin … End` block, because there is no
-  `.frx` for it to refer to. Forms therefore can't be imported back into the VBA editor.
+- **Forms are written as the VBA editor exports them** (0.45.0, step S4c, as the user chose in S4's question 2): a
+  `.frm` with the designer's `Begin … End` block, then the code, and a `.frx` beside it, so the VBA editor's File >
+  Import, and `vbadoc import`, bring them back. Until then a `.frm` had only the code, as there was no `.frx` for a
+  `Begin` block to refer to, and a form couldn't be imported back. See "Exporting UserForms" below.
 - **Source is kept as raw code-page bytes**, so export is lossless. Line endings are normalised to CRLF.
 - **Only changed files are rewritten.** Stale files are deleted before writing, so a module renamed only by case gets its
   new file name even on Windows.
@@ -244,13 +247,30 @@ What step S4a found, above, is what's written. The rest:
   loaded with every control (tried through the editor's object model in Excel here, 2026-11-23). The `.frm` is the
   `Begin` block with `OleObjectBlob` put back in its place among the properties, which are in alphabetical order, and
   the code without the three attributes the export leaves out, so a fixture comes back as it was exported.
-- **An earlier bundle's `.frx` files are replaced with it** (`ModuleBundle.Extensions`). vbadoc's own export doesn't
-  own `.frx` files until S4c writes them, so a folder of its modules keeps any `.frx` someone put there.
+- **An earlier bundle's `.frx` files are replaced with it.** (Since S4c a bundle has the export's files and
+  extensions, `.frx` among them: see below.)
 - **The fixtures' pictures were replaced** (see their README): the sample form's frame and image held photographs that
   weren't ours to publish.
 - **Checked in Excel here** (2026-11-23), with the fixtures and the spike's `SpikeTest` module: from the folder into a
   new workbook, then from that workbook into a copy of a target that had one of the forms, which was left as identical.
   Both forms loaded with every control in each.
+
+## Exporting UserForms (0.45.0, step S4c of the generalisation plan)
+
+- **The export, the page and a bundle write a form the same way** (`ProjectExporter.FileContent` and `Files`), so the
+  page's source, its hashes for Load folder, and the parser's line numbers are the `.frm` with its `Begin` block, as
+  the file on disk is. `FileContent` takes the project's code page for that block; the code after the attribute lines
+  keeps its bytes, as any module's does.
+- **The same workbook gives the same `.frx` each time.** A storage in a compound file keeps when it was made and
+  changed, which OpenMcdf sets to now on a copy, so the form's `.frx` would have changed on every run. Each storage's
+  times are copied from the one it came from (a root keeps a creation time of zero, which OpenMcdf requires).
+- **`.frx` is one of the export's own extensions,** so an `.frx` whose form has gone is deleted with its `.frm`. The
+  `.gitattributes` vbadoc creates has marked `*.frx` as binary since 0.8.0.
+- **A form whose designer can't be read is written as its code,** with a warning, as the Requirements ask, rather than
+  failing the export.
+- **Checked in Excel here** (2026-11-23): a workbook with the fixtures' forms, exported by vbadoc, and its `.bas` and
+  `.frm` files brought into a new workbook with the VBA editor's File > Import (through its object model). Both came
+  in as UserForms and loaded with every control. Each fixture's `.frm` comes back from the workbook byte for byte.
 
 ## Choosing what to import (0.29.0, step H2 of the feedback plan)
 

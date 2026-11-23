@@ -55,7 +55,7 @@ says where the work is.
 | [S2](#step-s2-vbadoc-documents-a-folder-of-exported-modules) | vbadoc documents a folder of exported modules, recursive or not, referring to the files where they are | Claude, then you on a real folder | Claude's part is done; yours is next: run it on a real folder from an outside source |
 | [S3](#step-s3-vbadoc-imports-from-a-folder-and-the-desktop-app) | `vbadoc import` from a folder of modules, and the desktop app's Folder… and Subfolders for both tools | Claude | Done |
 | [S3a](#step-s3a-the-import-tabs-list-error-reports-and-fixes-to-import) | The desktop app: the Import tab's error when it's first shown, and an unexpected error reported once, with a report to pass on, before the app closes. Then both tools: `import --in-place` refused when another program was reading the target, and `import`'s help; and `publish.ps1` ending the build servers | Claude | Done |
-| [S4](#step-s4-userforms-from-a-folder-into-a-workbook) | `vbadoc import` takes UserForms, from a folder's `.frm` and `.frx` or a workbook's designer: S4a a spike in Excel, S4b import, S4c vbadoc's export writes forms as the VBA editor does | Claude, then you in Excel | S4a and S4b done: `vbadoc import` takes forms. S4c is next |
+| [S4](#step-s4-userforms-from-a-folder-into-a-workbook) | `vbadoc import` takes UserForms, from a folder's `.frm` and `.frx` or a workbook's designer: S4a a spike in Excel, S4b import, S4c vbadoc's export writes forms as the VBA editor does | Claude, then you in Excel | Claude's part of S4a–S4c is done: forms go into workbooks, and vbadoc exports them as the VBA editor does. Yours is next: import one of vbadoc's exported `.frm` files into the VBA editor by hand |
 | [N2](#step-n2-accessdoc-reads-a-databases-vba) | `accessdoc`: the VBA language in a library vbadoc and accessdoc share; the tool's skeleton; a page of the database's VBA | Claude | Not started |
 | [N3](#step-n3-accessdoc-reads-forms) | `accessdoc`: forms read into sections, controls, subforms, data sources and events, with handlers linked to their controls | Claude | Not started |
 | [N4](#step-n4-the-forms-view) | `accessdoc`: the Forms view: which form holds which, each form's layout drawn, its controls, data and events | Claude, then you on a real database | Not started |
@@ -1048,6 +1048,11 @@ Two more things found:
 - **S4c (Claude), if question 2 says so:** vbadoc's export writes each form as the VBA editor does, `.frm` with its
   `Begin` block and a `.frx`, so its own folders bring forms back too. Then you import one of those `.frm` files into
   the VBA editor by hand, to check the `.frx` header vbadoc writes.
+  **Claude's part done on 2026-11-23** (vbadoc 0.45.0): each form is exported as a `.frm` with its `Begin` block and a
+  `.frx`, the same bytes on every run, and an `.frx` whose form has gone is deleted with it. A form whose designer
+  can't be read is exported as its code, with a warning. Checked in Excel here: the VBA editor's File > Import, through
+  its object model, brought vbadoc's exported forms back with every control, and each fixture's `.frm` comes back from
+  a workbook byte for byte. Next: your import by hand, ideally at work too.
 
 **Questions.** Each has my recommendation filled in; change the answer column where you want something else.
 
