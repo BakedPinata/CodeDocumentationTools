@@ -5,6 +5,7 @@ return args switch
   ["inspect", var path] => Inspector.Run(path),
   ["build", var sample, var output, .. var only] => Builder.Run(sample, output, only),
   ["dir", var workbook] => DirDump.Run(workbook),
+  ["replace-image", var frx, var jpeg, var output] => ImageReplacer.Run(frx, jpeg, output),
   ["compare", var workbook, var frx] => Compare.Run(workbook, frx),
   _ => Usage(),
 };
