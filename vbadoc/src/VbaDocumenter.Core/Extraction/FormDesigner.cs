@@ -42,6 +42,7 @@ public sealed partial record FormDesigner(string Frame, byte[] Storage)
     {
       root.CLSID = storage.CLSID;
       CopyChildren(storage, root, skip: FrameStream);
+      CopyTimes(storage, root);
     }
 
     return new FormDesigner(frame.ReplaceLineEndings("\r\n"), buffer.ToArray());
@@ -104,6 +105,7 @@ public sealed partial record FormDesigner(string Frame, byte[] Storage)
     designer.CLSID = source.CLSID;
     CopyChildren(source, designer);
     Write(designer, FrameStream, encoding.GetBytes(Frame));
+    CopyTimes(source, designer);
   }
 
   /// <summary>
@@ -186,12 +188,21 @@ public sealed partial record FormDesigner(string Frame, byte[] Storage)
         var child = to.CreateStorage(entry.Name);
         child.CLSID = source.CLSID;
         CopyChildren(source, child);
+        CopyTimes(source, child);
       }
       else
       {
         Write(to, entry.Name, Read(from, entry.Name));
       }
     }
+  }
+
+  // A storage keeps when it was made and changed, which a copy would otherwise get as now, so the same form would give a
+  // different .frx each time it's exported. A root has no creation time.
+  static void CopyTimes(Storage from, Storage to)
+  {
+    if (to is not RootStorage) to.CreationTime = from.CreationTime;
+    to.ModifiedTime = from.ModifiedTime;
   }
 
   static byte[] Read(Storage storage, string name)
