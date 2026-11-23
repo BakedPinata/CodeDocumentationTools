@@ -46,6 +46,12 @@ public sealed class VbaModule
   /// is, for a module that has no <c>'@Folder</c> of its own. Null otherwise.
   /// </summary>
   public string? FolderFromPath { get; init; }
+
+  /// <summary>For a UserForm: its designer, which it can't be imported without, or null when it has none.</summary>
+  public FormDesigner? Designer { get; init; }
+
+  /// <summary>For a UserForm with no <see cref="Designer"/>: why, as a sentence. Null otherwise.</summary>
+  public string? DesignerProblem { get; init; }
 }
 
 /// <summary>What a library reference points at, which says how it can be found.</summary>
@@ -118,4 +124,9 @@ public sealed class VbaProject
 
   /// <summary>Modules whose name a file in another subfolder shares: documented, but not imported.</summary>
   public IReadOnlySet<string> ClashingModules { get; init; } = new HashSet<string>();
+
+  /// <summary>The UserForms that can't be imported, as they have no designer, with why.</summary>
+  public IReadOnlyDictionary<string, string> FormsWithoutDesigner() =>
+    Modules.Where(m => m.Kind == VbaModuleKind.Form && m.Designer is null)
+      .ToDictionary(m => m.Name, m => m.DesignerProblem ?? "It has no designer, so the form's controls aren't there to take", StringComparer.OrdinalIgnoreCase);
 }

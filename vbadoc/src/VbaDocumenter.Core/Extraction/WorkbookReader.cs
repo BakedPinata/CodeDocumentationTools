@@ -39,7 +39,6 @@ public static class WorkbookReader
   // The saved time is only for the page's summary, so reading it fails safe (WorkbookFile.LastSaved).
   static VbaProject WithSaved(VbaProject project, byte[] fileBytes) =>
       new() { Name = project.Name, CodePage = project.CodePage, Modules = project.Modules, References = project.References, Saved = WorkbookFile.LastSaved(fileBytes) };
-
   static VbaProject ReadZipBased(byte[] fileBytes)
   {
     using var zip = new ZipArchive(new MemoryStream(fileBytes), ZipArchiveMode.Read);
@@ -121,6 +120,7 @@ public static class WorkbookReader
       }
 
       var kind = m.IsProcedural ? VbaModuleKind.Standard : kinds.GetValueOrDefault(m.Name, VbaModuleKind.Class);
+      var (designer, problem) = kind == VbaModuleKind.Form ? ReadDesigner(projectStorage, m.Name, encoding) : (null, null);
       modules.Add(new VbaModule
       {
         Name = m.Name,
@@ -128,6 +128,8 @@ public static class WorkbookReader
         StreamName = m.StreamName,
         SourceBytes = source,
         Source = encoding.GetString(source),
+        Designer = designer,
+        DesignerProblem = problem,
       });
     }
 
@@ -141,6 +143,23 @@ public static class WorkbookReader
             .ThenBy(m => m.Name, StringComparer.Ordinal)
             .ToList(),
     };
+  }
+
+  // A form's designer is the storage named after it, beside the VBA storage. It's only needed to import the form, so
+  // one that's missing or can't be read is a reason the form can't be taken, never a failure to read the project.
+  static (FormDesigner? Designer, string? Problem) ReadDesigner(Storage projectStorage, string name, System.Text.Encoding encoding)
+  {
+    try
+    {
+      if (!projectStorage.TryOpenStorage(name, out var storage) || storage is null)
+        return (null, "The workbook has no designer for it, so the form's controls aren't there to take");
+      var designer = FormDesigner.FromStorage(storage, encoding);
+      return designer.Frame.Length == 0 ? (null, "Its designer has no VBFrame, which says what the form is") : (designer, null);
+    }
+    catch (Exception ex) when (ex is OpenMcdf.FileFormatException or InvalidDataException or EndOfStreamException or IOException)
+    {
+      return (null, $"Its designer can't be read: {ex.Message}");
+    }
   }
 
   static byte[] ReadStream(Storage storage, string name)

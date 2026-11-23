@@ -105,10 +105,14 @@ public static partial class ModuleFolderReader
 
       byName[name] = file;
       var source = WithoutHeader(text);
+      var kind = KindOf(Path.GetExtension(file.RelativePath), text);
+      var (designer, problem) = kind == VbaModuleKind.Form ? FormDesigner.FromFiles(text, frx => ReadBeside(file.FullPath, frx)) : (null, null);
       modules.Add(new VbaModule
       {
         Name = name,
-        Kind = KindOf(Path.GetExtension(file.RelativePath), text),
+        Kind = kind,
+        Designer = designer,
+        DesignerProblem = problem,
         StreamName = name,
         SourceBytes = encoding.GetBytes(source),
         Source = source,
@@ -149,6 +153,8 @@ public static partial class ModuleFolderReader
         StreamName = m.StreamName,
         SourceBytes = windows.GetBytes(m.Source),
         Source = windows.GetString(windows.GetBytes(m.Source)),
+        Designer = m.Designer,
+        DesignerProblem = m.DesignerProblem,
       })],
       FromFolder = true,
       ClashingModules = project.ClashingModules,
@@ -208,6 +214,20 @@ public static partial class ModuleFolderReader
     if (!crlf.StartsWith("VERSION ", StringComparison.OrdinalIgnoreCase)) return crlf;
     var at = VbName().Match(crlf);
     return at.Success ? crlf[at.Index..] : crlf;
+  }
+
+  // A form's .frx, which its .frm names, beside it. Only a file name is taken, so a name can't reach out of the folder.
+  static byte[]? ReadBeside(string frm, string frx)
+  {
+    var path = Path.Combine(Path.GetDirectoryName(frm)!, Path.GetFileName(frx));
+    try
+    {
+      return File.Exists(path) ? File.ReadAllBytes(path) : null;
+    }
+    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+    {
+      return null;
+    }
   }
 
   static string FolderOf(string relativePath) =>
