@@ -31,7 +31,7 @@ rather than repeating it.
   pass on, before the app closes; then `import --in-place` refused when another program was reading the target,
   `import`'s help, and `publish.ps1` ending the build servers. S4 (UserForms from a folder into a workbook) is next, to be worked out; its branch,
   which has only its plan so far, is to be rebased onto S3a.
-- **vbadoc 0.43.1** (a folder of exported modules as input since step S2, and as `import`'s source since S3): stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
+- **vbadoc 0.43.2** (a folder of exported modules as input since step S2, and as `import`'s source since S3): stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
   `<workbook>-vba.html`, with an explorer of modules and members, in `'@Folder` folders or by kind. It asks
   before overwriting a page that would change (`--on-exists`, `--force`), as pqdoc does. Stage 6 (UserForms) is parked;
   stage 7 waits for the generalisation plan. Since 0.31.0 (step J2) it writes into add-ins (`.xlam`) as into workbooks.
@@ -62,6 +62,12 @@ rather than repeating it.
 ## Log
 
 Newest first.
+
+### 2026-11-23: vbadoc import gives a class back its attributes
+
+- A class exported by the VBA editor loses the attributes Excel needs, so `vbadoc import` now adds them back
+  (`ClassAttributes`). vbadoc 0.43.2; pqdoc and codedocui are unchanged.
+- Checked: every test (1,903 passed, 7 skipped, none failed).
 
 ### 2026-11-17: Step S3a continued: import in place, import's help, and publish.ps1
 
