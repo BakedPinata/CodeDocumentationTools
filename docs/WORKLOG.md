@@ -29,10 +29,9 @@ rather than repeating it.
   real outside folder is to come. S3 is done: `vbadoc import` takes from a folder. S3a (added 2026-11-17) is done: the
   Import tab's error when it's first shown with a list read, and an unexpected error reported once, with a report to
   pass on, before the app closes; then `import --in-place` refused when another program was reading the target,
-  `import`'s help, and `publish.ps1` ending the build servers. S4 (UserForms into a workbook) has its answers and sample;
-  S4a is done (the spike `spikes/s4-userforms`, passed in Excel at home and at work, findings in vbadoc's DECISIONS),
-  S4b is done (`vbadoc import` takes UserForms), and S4c, Claude's part (vbadoc exports forms as the VBA editor does);
-  the user's import of an exported `.frm` by hand is next.
+  `import`'s help, and `publish.ps1` ending the build servers. S4 (UserForms into a workbook) is done:
+  `vbadoc import` takes forms from a workbook or folder (S4b), and vbadoc exports them as the VBA editor does (S4c),
+  after a spike in Excel (S4a). N1's runs by the user are next, then N2–N5.
 - **vbadoc 0.45.0** (a folder of exported modules as input since step S2, and as `import`'s source since S3; UserForms imported since S4b, exported with their designers since S4c): stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
   `<workbook>-vba.html`, with an explorer of modules and members, in `'@Folder` folders or by kind. It asks
   before overwriting a page that would change (`--on-exists`, `--force`), as pqdoc does. Stage 6 (UserForms) is parked;
@@ -64,6 +63,11 @@ rather than repeating it.
 ## Log
 
 Newest first.
+
+### 2026-11-23: Step S4 closed
+
+- The user imported both forms vbadoc exported into the VBA editor by hand, at home and on a work machine, and both
+  were fine. So S4 is done. The spike `spikes/s4-userforms` is deleted, and is still in the repository's history.
 
 ### 2026-11-23: Step S4c, Claude's part: vbadoc exports forms as the VBA editor does
 

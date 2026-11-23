@@ -12,8 +12,8 @@ the code) and a `.frx` (a 24-byte header, then a compound file holding the form 
 **The pictures were replaced.** The sample's frame and image held a collage of product photographs that weren't ours
 to publish. Each was replaced with a plain picture of the same size (860 × 645) saying "vbadoc fixture image", padded
 with JPEG comment segments to exactly the same number of bytes, so every stream, length and offset in the `.frx` is
-as the VBA editor wrote it. This was done with the S4 spike's `replace-image` command. Nothing else was changed, and
-none of the four files holds a user name or a path.
+as the VBA editor wrote it. This was done with the S4 spike's `replace-image` command, in the repository's history
+(`spikes/s4-userforms`). Nothing else was changed, and none of the four files holds a user name or a path.
 
 SHA-256 of the files as committed:
 

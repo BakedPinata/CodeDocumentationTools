@@ -55,7 +55,7 @@ says where the work is.
 | [S2](#step-s2-vbadoc-documents-a-folder-of-exported-modules) | vbadoc documents a folder of exported modules, recursive or not, referring to the files where they are | Claude, then you on a real folder | Claude's part is done; yours is next: run it on a real folder from an outside source |
 | [S3](#step-s3-vbadoc-imports-from-a-folder-and-the-desktop-app) | `vbadoc import` from a folder of modules, and the desktop app's Folder… and Subfolders for both tools | Claude | Done |
 | [S3a](#step-s3a-the-import-tabs-list-error-reports-and-fixes-to-import) | The desktop app: the Import tab's error when it's first shown, and an unexpected error reported once, with a report to pass on, before the app closes. Then both tools: `import --in-place` refused when another program was reading the target, and `import`'s help; and `publish.ps1` ending the build servers | Claude | Done |
-| [S4](#step-s4-userforms-from-a-folder-into-a-workbook) | `vbadoc import` takes UserForms, from a folder's `.frm` and `.frx` or a workbook's designer: S4a a spike in Excel, S4b import, S4c vbadoc's export writes forms as the VBA editor does | Claude, then you in Excel | Claude's part of S4a–S4c is done: forms go into workbooks, and vbadoc exports them as the VBA editor does. Yours is next: import one of vbadoc's exported `.frm` files into the VBA editor by hand |
+| [S4](#step-s4-userforms-from-a-folder-into-a-workbook) | `vbadoc import` takes UserForms, from a folder's `.frm` and `.frx` or a workbook's designer: S4a a spike in Excel, S4b import, S4c vbadoc's export writes forms as the VBA editor does | Claude, then you in Excel | Done: forms go into workbooks, and vbadoc exports them as the VBA editor does |
 | [N2](#step-n2-accessdoc-reads-a-databases-vba) | `accessdoc`: the VBA language in a library vbadoc and accessdoc share; the tool's skeleton; a page of the database's VBA | Claude | Not started |
 | [N3](#step-n3-accessdoc-reads-forms) | `accessdoc`: forms read into sections, controls, subforms, data sources and events, with handlers linked to their controls | Claude | Not started |
 | [N4](#step-n4-the-forms-view) | `accessdoc`: the Forms view: which form holds which, each form's layout drawn, its controls, data and events | Claude, then you on a real database | Not started |
@@ -1052,7 +1052,8 @@ Two more things found:
   `.frx`, the same bytes on every run, and an `.frx` whose form has gone is deleted with it. A form whose designer
   can't be read is exported as its code, with a warning. Checked in Excel here: the VBA editor's File > Import, through
   its object model, brought vbadoc's exported forms back with every control, and each fixture's `.frm` comes back from
-  a workbook byte for byte. Next: your import by hand, ideally at work too.
+  a workbook byte for byte. You then imported both exported forms by hand, at home and at work, and both were fine,
+  so **S4 is done** (2026-11-23). The spike is deleted, and is still in the repository's history.
 
 **Questions.** Each has my recommendation filled in; change the answer column where you want something else.
 
@@ -1220,7 +1221,6 @@ Approving this plan covers the changes below, each made in the step that causes 
 | N1 | Make Northwind 2.0 from Access's template into `accessdoc/private/`; run the spike at home, on a work machine and on one real database |
 | S0 | Answer the questions on folders of exported files |
 | S2 | Run vbadoc on a real folder of modules from an outside source |
-| S4 | After S4c, import one of vbadoc's own `.frm` files into the VBA editor by hand (S4a's runs are done) |
 | N4, N5 | Try the Forms view and the outline on a real database and a form you mean to rebuild |
 | P1 | Run the spike on a real solution, and on a work machine |
 | P4 | Try csdoc's page on a real solution |

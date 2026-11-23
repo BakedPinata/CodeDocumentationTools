@@ -197,8 +197,9 @@ and J2's check in Excel tries it. (Since step S3a the check opens it for writing
 
 ## Writing UserForms into workbooks: what step S4a found
 
-The spike is `spikes/s4-userforms`, with the workbooks it builds and the details in its README. It's kept until S4b
-has been checked against it. Excel accepted all of this, at home and on a work machine (2026-11-23), apart from F2.
+The spike was `spikes/s4-userforms`, deleted when S4 closed and still in the repository's history, with the workbooks
+it built and the details in its README. Excel accepted all of this, at home and on a work machine (2026-11-23), apart
+from F2.
 
 - **A form can be written from its `.frm` and `.frx`, and nothing in them needs to be understood.** The designer is a
   storage at the top of the project, named after the form, holding the `.frx`'s compound file after its 24-byte header:
@@ -271,6 +272,7 @@ What step S4a found, above, is what's written. The rest:
 - **Checked in Excel here** (2026-11-23): a workbook with the fixtures' forms, exported by vbadoc, and its `.bas` and
   `.frm` files brought into a new workbook with the VBA editor's File > Import (through its object model). Both came
   in as UserForms and loaded with every control. Each fixture's `.frm` comes back from the workbook byte for byte.
+  The user then imported both exported forms by hand, at home and on a work machine, and both were fine.
 
 ## Choosing what to import (0.29.0, step H2 of the feedback plan)
 
