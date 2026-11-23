@@ -14,39 +14,16 @@ namespace VbaDocumenter.Core.Importing;
 /// </summary>
 public static class ModuleBundle
 {
-  /// <summary>The extensions of the files a bundle holds, which an earlier bundle's are replaced by: a form's .frx too.</summary>
-  public static IReadOnlyList<string> Extensions { get; } = [.. ProjectExporter.ModuleExtensions, ".frx"];
-
-  /// <summary>Each module's file name and bytes, with each UserForm's <c>.frx</c> beside its <c>.frm</c>.</summary>
+  /// <summary>
+  /// Each module's file name and bytes, as vbadoc exports them, with each UserForm's <c>.frx</c> beside its <c>.frm</c>.
+  /// </summary>
   /// <exception cref="ExtractionException">Two modules map to the same file name.</exception>
   public static Dictionary<string, byte[]> Files(VbaProject project, ImportPlan plan)
   {
     ArgumentNullException.ThrowIfNull(project);
     ArgumentNullException.ThrowIfNull(plan);
     var byName = project.Modules.ToDictionary(m => m.Name, StringComparer.OrdinalIgnoreCase);
-    var files = new Dictionary<string, byte[]>(StringComparer.Ordinal);
-    void Add(string name, byte[] content)
-    {
-      if (files.Keys.Any(existing => existing.Equals(name, StringComparison.OrdinalIgnoreCase)))
-        throw new ExtractionException($"Two modules map to the same file name '{name}'.");
-      files[name] = content;
-    }
-
-    foreach (var module in plan.Items.Select(id => byName[id]))
-    {
-      var name = ProjectExporter.FileNameFor(module);
-      if (module.Designer is { } designer)
-      {
-        Add(name, FormFiles.Frm(module, name, project.CodePage));
-        Add(FormFiles.FrxNameFor(name), designer.FrxBytes());
-      }
-      else
-      {
-        Add(name, ProjectExporter.FileContent(module));
-      }
-    }
-
-    return files;
+    return ProjectExporter.Files(plan.Items.Select(id => byName[id]), project.CodePage);
   }
 
   /// <summary>The README, whose first line marks the folder as a bundle (see <see cref="BundleFolder"/>).</summary>

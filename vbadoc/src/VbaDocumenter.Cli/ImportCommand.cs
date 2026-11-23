@@ -62,7 +62,7 @@ sealed class ImportCommand(ILogger logger, AppServices services)
     }
 
     return run.WriteBundle(request, ModuleBundle.Files(project, plan), ModuleBundle.Readme(workbook, project, plan, references),
-        ModuleBundle.Extensions.ToList(), ProjectExporter.GitAttributesContent);
+        ProjectExporter.ModuleExtensions.ToList(), ProjectExporter.GitAttributesContent);
   }
 
   /// <summary>Everything a workbook is written from.</summary>

@@ -54,7 +54,7 @@ public sealed class ModuleFolderReaderTests : IDisposable
 
     // The page and the parser see the file as it is; import sees the source a workbook holds, without the header.
     var logger = read.Project.Modules[1];
-    Assert.Equal(File.ReadAllBytes(Path.Combine(_folder, "Logger.cls")), ProjectExporter.FileContent(logger));
+    Assert.Equal(File.ReadAllBytes(Path.Combine(_folder, "Logger.cls")), ProjectExporter.FileContent(logger, 1252));
     Assert.StartsWith("Attribute VB_Name", logger.Source, StringComparison.Ordinal);
   }
 

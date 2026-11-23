@@ -149,6 +149,8 @@ public static class CliRunner
       }
       else
       {
+        foreach (var (form, why) in project.FormsWithoutDesigner())
+          logger.Warning("{Form:l} is written as its code alone, which the VBA editor can't import as a form. {Why:l}", form, why);
         var result = Timed(logger, "Writing module files", () => ProjectExporter.Export(project, options.OutputFolder));
         logger.Information("  {Written} written, {Unchanged} unchanged, {Deleted} deleted", result.Written.Count, result.Unchanged.Count, result.Deleted.Count);
         foreach (var name in result.Deleted) logger.Information("    deleted {File} (no longer in the workbook)", name);

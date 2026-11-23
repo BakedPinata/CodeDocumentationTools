@@ -28,7 +28,7 @@ public static class ProjectParser
   /// </summary>
   public static string FileText(System.Text.Encoding encoding, VbaModule module)
   {
-    var text = encoding.GetString(ProjectExporter.FileContent(module));
+    var text = encoding.GetString(ProjectExporter.FileContent(module, encoding.CodePage));
     return text.StartsWith('﻿') ? text[1..] : text;
   }
 }

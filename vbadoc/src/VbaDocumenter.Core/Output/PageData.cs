@@ -47,7 +47,7 @@ public static class PageData
 
     var files = model.Modules.Select(node =>
     {
-      var content = ProjectExporter.FileContent(filesByName[node.Id]);
+      var content = ProjectExporter.FileContent(filesByName[node.Id], project.CodePage);
       return new CodeFile(FileOf(node.Id), FileOf(node.Id), Convert.ToHexStringLower(SHA256.HashData(content))[..16], node.Module.LineCount);
     }).ToList();
 

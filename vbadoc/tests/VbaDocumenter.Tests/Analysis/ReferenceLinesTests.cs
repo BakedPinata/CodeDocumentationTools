@@ -22,7 +22,7 @@ public class ReferenceLinesTests
 
   // The file the page shows, split as the page splits it.
   static string[] FileLines(string module) =>
-      Encoding.Latin1.GetString(ProjectExporter.FileContent(Project.Modules.Single(m => m.Name == module)))
+      Encoding.Latin1.GetString(ProjectExporter.FileContent(Project.Modules.Single(m => m.Name == module), Project.CodePage))
           .Split(["\r\n", "\n", "\r"], StringSplitOptions.None);
 
   [Fact]

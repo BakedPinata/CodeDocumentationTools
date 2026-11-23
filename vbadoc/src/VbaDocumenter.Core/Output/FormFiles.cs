@@ -14,8 +14,8 @@ public static partial class FormFiles
 
   /// <summary>
   /// The <c>.frm</c>: <c>VERSION 5.00</c>, the <c>Begin</c> block naming the <c>.frx</c>, and the code with CRLF line
-  /// endings and the attributes the VBA editor leaves out of an export (<c>VB_Base</c>, <c>VB_TemplateDerived</c> and
-  /// <c>VB_Customizable</c>), in the project's code page.
+  /// endings, without the attributes the VBA editor leaves out of an export (<c>VB_Base</c>, <c>VB_TemplateDerived</c>
+  /// and <c>VB_Customizable</c>). The code after its attribute lines keeps its bytes, as a module's file does.
   /// </summary>
   /// <param name="form">A form with its designer.</param>
   /// <param name="frmName">The <c>.frm</c>'s file name, whose <c>.frx</c> it names.</param>
@@ -24,10 +24,17 @@ public static partial class FormFiles
   {
     ArgumentNullException.ThrowIfNull(form);
     var designer = form.Designer ?? throw new ArgumentException($"{form.Name} has no designer.", nameof(form));
-    var code = ExportLeavesOut().Replace(form.Source.ReplaceLineEndings("\r\n"), "");
-    return CodePages.Get(codePage).GetBytes(designer.ExportedFrame(Path.GetFileName(FrxNameFor(frmName))) + code);
+    var encoding = CodePages.Get(codePage);
+    var attributes = AttributeLines().Match(form.Source).Value;
+    var kept = ExportLeavesOut().Replace(attributes, "").ReplaceLineEndings("\r\n");
+    var rest = form.SourceBytes.AsSpan(encoding.GetByteCount(attributes)).ToArray();
+    return [.. encoding.GetBytes(designer.ExportedFrame(Path.GetFileName(FrxNameFor(frmName))) + kept), .. ProjectExporter.NormaliseLineEndings(rest)];
   }
 
-  [GeneratedRegex(@"^Attribute[ \t]+VB_(Base|TemplateDerived|Customizable)[ \t]*=[^\r\n]*\r\n", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
+  // The attribute lines at the top of a module, each with its line break.
+  [GeneratedRegex(@"\A(Attribute[ \t]+VB_\w+[ \t]*=[^\r\n]*(\r\n|\n|\r))*", RegexOptions.IgnoreCase)]
+  private static partial Regex AttributeLines();
+
+  [GeneratedRegex(@"^Attribute[ \t]+VB_(Base|TemplateDerived|Customizable)[ \t]*=[^\r\n]*(\r\n|\n|\r)", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
   private static partial Regex ExportLeavesOut();
 }

@@ -52,12 +52,12 @@ public sealed class ProjectExporterTests : IDisposable
   }
 
   [Fact]
-  public void Forms_are_written_as_frm_without_a_designer_header()
+  public void A_form_with_no_designer_is_written_as_its_code_alone()
   {
     var form = Module("UserForm1", VbaModuleKind.Form, "Attribute VB_Name = \"UserForm1\"\r\n"u8.ToArray());
 
     Assert.Equal("UserForm1.frm", ProjectExporter.FileNameFor(form));
-    Assert.Equal(form.SourceBytes, ProjectExporter.FileContent(form));
+    Assert.Equal(form.SourceBytes, ProjectExporter.FileContent(form, 1252));
   }
 
   [Fact]
@@ -66,7 +66,7 @@ public sealed class ProjectExporterTests : IDisposable
     // "é" as a single code page 1252 byte, with a mix of line endings.
     byte[] source = [.. "Attribute VB_Name = \"M\"\n' caf"u8, 0xE9, .. "\r' x\r\n' y"u8];
 
-    var content = ProjectExporter.FileContent(Module("M", VbaModuleKind.Standard, source));
+    var content = ProjectExporter.FileContent(Module("M", VbaModuleKind.Standard, source), 1252);
 
     Assert.Equal([.. "Attribute VB_Name = \"M\"\r\n' caf"u8, 0xE9, .. "\r\n' x\r\n' y"u8], content);
   }
@@ -96,10 +96,9 @@ public sealed class ProjectExporterTests : IDisposable
 
     var result = ProjectExporter.Export(SampleProject(), _folder);
 
-    Assert.Equal(["OldClass.cls", "OldForm.frm", "Removed.bas"], result.Deleted);
+    Assert.Equal(["OldClass.cls", "OldForm.frm", "OldForm.frx", "Removed.bas"], result.Deleted);
     Assert.True(File.Exists(Path.Combine(_folder, "README.md")));
     Assert.True(File.Exists(Path.Combine(_folder, "notes.txt")));
-    Assert.True(File.Exists(Path.Combine(_folder, "OldForm.frx")));
     Assert.True(File.Exists(Path.Combine(_folder, ".git", "Keep.bas")));
   }
 
