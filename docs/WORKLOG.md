@@ -30,8 +30,8 @@ rather than repeating it.
   Import tab's error when it's first shown with a list read, and an unexpected error reported once, with a report to
   pass on, before the app closes; then `import --in-place` refused when another program was reading the target,
   `import`'s help, and `publish.ps1` ending the build servers. S4 (UserForms into a workbook) has its answers and sample;
-  S4a, Claude's part, is done (the spike `spikes/s4-userforms`), and the user's runs in Excel at home and at work are
-  next, before S4b.
+  S4a is done (the spike `spikes/s4-userforms`, passed in Excel at home and at work, findings in vbadoc's DECISIONS),
+  and S4b, `vbadoc import` taking forms, is next.
 - **vbadoc 0.43.2** (a folder of exported modules as input since step S2, and as `import`'s source since S3): stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
   `<workbook>-vba.html`, with an explorer of modules and members, in `'@Folder` folders or by kind. It asks
   before overwriting a page that would change (`--on-exists`, `--force`), as pqdoc does. Stage 6 (UserForms) is parked;
@@ -63,6 +63,14 @@ rather than repeating it.
 ## Log
 
 Newest first.
+
+### 2026-11-23: Step S4a done: the user's runs in Excel
+
+- At home and on a work machine, every spike workbook but F2 passed: the forms showed in the designer, `?Check` found
+  every control, `ShowForms` showed both, and F1 worked again after saving. F2, without `VB_Base`, crashed Excel on
+  compiling at both; `?Check` crashed it at home, and at work said "Circular dependencies between modules".
+- The findings are in vbadoc's DECISIONS ("Writing UserForms into workbooks: what step S4a found"). The spike is kept
+  until S4b is checked against it. Next: S4b.
 
 ### 2026-11-23: Step S4a, Claude's part: a spike writing UserForms into workbooks
 

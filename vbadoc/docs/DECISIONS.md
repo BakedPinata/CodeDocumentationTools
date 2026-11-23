@@ -192,6 +192,35 @@ file it's given is an `.xlam`, and the rest is what can be a target. A loaded ad
 an in-place target can be had to itself, as an open workbook is; the message then says it may be loaded as an add-in,
 and J2's check in Excel tries it. (Since step S3a the check opens it for writing, letting others read; see below.)
 
+## Writing UserForms into workbooks: what step S4a found
+
+The spike is `spikes/s4-userforms`, with the workbooks it builds and the details in its README. It's kept until S4b
+has been checked against it. Excel accepted all of this, at home and on a work machine (2026-11-23), apart from F2.
+
+- **A form can be written from its `.frm` and `.frx`, and nothing in them needs to be understood.** The designer is a
+  storage at the top of the project, named after the form, holding the `.frx`'s compound file after its 24-byte header:
+  a whole tree, as a MultiPage, a frame or an image is a storage of its own inside it. Its `VBFrame` stream
+  (`\x03VBFrame`) is the `.frm`'s `Begin … End` block without its `OleObjectBlob` line. Both forms loaded with every
+  control, their code ran, and a copy saved by Excel opened and ran again.
+- **A form's code needs a `VB_Base`, but not a particular one.** Without one (F2), Excel at home crashed on compiling
+  the project or on running the form's code, and at work crashed on compiling and said "Circular dependencies between
+  modules" on running it. Excel gave every form two new GUIDs when it compiled, the copied ones included, so the writer
+  makes up its own, as the VBA editor does on import. `VB_TemplateDerived` and `VB_Customizable` are added as for a
+  class.
+- **The project needs, for a form:** a `BaseClass=<form>` line in `PROJECT`, one
+  `Package={AC9F2F90-E877-11CE-9F68-00AA00574A4F}` line for every form, and the form's `dir` records, which are a
+  class's with `MODULEPRIVATE` (`0x0028`) before the end.
+- **How the `.frx` differs from a workbook's storage doesn't matter.** The `.frx` gives its root the form's class id
+  and its `CompObj` the ProgID `Forms.Form.1`, where a workbook has zeros and no ProgID. Both work (F4), and Excel keeps
+  what it was given. The `f` streams also differ in a few padding bytes.
+- **The MSForms reference:** a project with no MSForms reference gets one to `FM20.DLL` by its GUID, which Excel keeps
+  as given (F1). Forms work without any (F3), and Excel doesn't add one, but code naming an MSForms type, as event
+  handlers such as `KeyPress` do, needs it. A workbook's own reference, a control reference to a cache of MSForms made
+  on each machine, works when copied as it stands (C1).
+- **From a workbook,** the form's storage, `VBFrame` and stored code are copied as they are (C1).
+- **The `.frx` header** is `LB`, `08 00`, the size of the rest, eight zeros, and two numbers that look like the form's
+  outer size (`ClientWidth` plus 192 and `ClientHeight` plus 512 in both samples). Only S4c, writing a `.frx`, needs it.
+
 ## Choosing what to import (0.29.0, step H2 of the feedback plan)
 
 The Export tab, the manifest and bundles are mostly the shell's and `shared/`'s: see `shared/README.md`.

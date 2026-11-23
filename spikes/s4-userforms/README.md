@@ -92,7 +92,13 @@ MSForms made on each machine, with a path in the user's Temp folder, and copied 
 outer size: the `.frm`'s `ClientWidth` plus 192 and `ClientHeight` plus 512 in both samples. Only S4c, writing a
 `.frx`, needs them.
 
-## For S4b, before your runs
+## What the user's runs found (2026-11-23, at home and on a work machine)
+
+Every workbook but F2 passed every check, at both. F2 crashed Excel at both when the project was compiled. Running
+`?Check` crashed Excel at home, and at work gave "Circular dependencies between modules". The findings are in vbadoc's
+DECISIONS ("Writing UserForms into workbooks: what step S4a found").
+
+## For S4b
 
 As the plan has it, with these:
 
