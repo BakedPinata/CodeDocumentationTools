@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Step S4a of the generalisation plan: throwaway code, kept out of the tools and their solutions. It builds new
+       workbooks holding UserForms, from the VBA editor's .frm and .frx or from a workbook's designer storage, for Excel
+       to say whether it accepts them. See README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>S4Spike</RootNamespace>
+    <AssemblyName>s4spike</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- vbadoc's own writing of projects and workbooks, which the forms are added to. -->
+    <ProjectReference Include="..\..\vbadoc\src\VbaDocumenter.Core\VbaDocumenter.Core.csproj" />
+    <PackageReference Include="OpenMcdf" />
+  </ItemGroup>
+
+</Project>
