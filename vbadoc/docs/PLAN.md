@@ -37,8 +37,6 @@ Decisions agreed along the way are in [DECISIONS.md](DECISIONS.md). The specific
   other workbooks.
 - **Import individual procedures,** not only whole modules: writing part of a module, with the declarations it uses.
 - **A Merge choice when the target has a module of that name,** bringing in what's missing, or something else to settle.
-- **Import UserForms.** A text export has no `.frx`, but copying from project to project could bring the form's designer
-  storage too. Not tried; forms are seldom used.
 - **Templates (`.xltm`) as targets.** Not asked for with add-ins, and not tried in Excel.
 - Ideas that involve more than one tool, such as combining them into one program, are in the
   [generalisation plan's Later section](../../GENERALISATION-PLAN.md#9-later).

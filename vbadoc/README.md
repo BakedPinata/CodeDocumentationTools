@@ -153,6 +153,12 @@ saying what's at stake, before anything is written: skip, overwrite, skip all, o
 ask, it stops unless `--on-clash overwrite` or `--on-clash skip` says what to do. A sheet's or the workbook's module, or a
 UserForm, can't be overwritten, only skipped.
 
+**UserForms come too,** with their controls, from a workbook or from a folder the VBA editor exported (File > Export
+File), where each form is a `.frm` with a `.frx` beside it. A module that shows a form brings it along. A form whose
+`.frx` is missing, or whose `.frm` has no designer, as vbadoc's own export writes for now, can't be taken, and says why.
+Forms bring a reference to the Microsoft Forms 2.0 Object Library when the target has none, as their code may need it.
+In a bundle, each form is a `.frm` and a `.frx`, as the VBA editor exports them: keep the two together.
+
 **To change the target itself,** which can't be undone, add `--in-place`. It says what will change and asks first:
 
 ```bash

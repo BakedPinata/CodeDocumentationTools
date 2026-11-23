@@ -55,7 +55,7 @@ says where the work is.
 | [S2](#step-s2-vbadoc-documents-a-folder-of-exported-modules) | vbadoc documents a folder of exported modules, recursive or not, referring to the files where they are | Claude, then you on a real folder | Claude's part is done; yours is next: run it on a real folder from an outside source |
 | [S3](#step-s3-vbadoc-imports-from-a-folder-and-the-desktop-app) | `vbadoc import` from a folder of modules, and the desktop app's Folder… and Subfolders for both tools | Claude | Done |
 | [S3a](#step-s3a-the-import-tabs-list-error-reports-and-fixes-to-import) | The desktop app: the Import tab's error when it's first shown, and an unexpected error reported once, with a report to pass on, before the app closes. Then both tools: `import --in-place` refused when another program was reading the target, and `import`'s help; and `publish.ps1` ending the build servers | Claude | Done |
-| [S4](#step-s4-userforms-from-a-folder-into-a-workbook) | `vbadoc import` takes UserForms, from a folder's `.frm` and `.frx` or a workbook's designer: S4a a spike in Excel, S4b import, S4c vbadoc's export writes forms as the VBA editor does | Claude, then you in Excel | S4a done: Excel accepts forms written from their files, at home and at work. S4b is next |
+| [S4](#step-s4-userforms-from-a-folder-into-a-workbook) | `vbadoc import` takes UserForms, from a folder's `.frm` and `.frx` or a workbook's designer: S4a a spike in Excel, S4b import, S4c vbadoc's export writes forms as the VBA editor does | Claude, then you in Excel | S4a and S4b done: `vbadoc import` takes forms. S4c is next |
 | [N2](#step-n2-accessdoc-reads-a-databases-vba) | `accessdoc`: the VBA language in a library vbadoc and accessdoc share; the tool's skeleton; a page of the database's VBA | Claude | Not started |
 | [N3](#step-n3-accessdoc-reads-forms) | `accessdoc`: forms read into sections, controls, subforms, data sources and events, with handlers linked to their controls | Claude | Not started |
 | [N4](#step-n4-the-forms-view) | `accessdoc`: the Forms view: which form holds which, each form's layout drawn, its controls, data and events | Claude, then you on a real database | Not started |
@@ -1002,7 +1002,7 @@ README has the workbooks, what to do with each in Excel, and what it found here.
 Excel makes new ones), and a reference to `FM20.DLL` works where a project has no MSForms reference. **S4a is done**
 (2026-11-23): your runs at home and on a work machine passed for every workbook but F2, without `VB_Base`, which
 crashed Excel on compiling at both, and at work said "Circular dependencies between modules" on running `?Check`. The
-findings are in vbadoc's DECISIONS ("Writing UserForms into workbooks: what step S4a found"). S4b is next.
+findings are in vbadoc's DECISIONS ("Writing UserForms into workbooks: what step S4a found"). **S4b is done** (2026-11-23, vbadoc 0.44.0, codedocui 0.8.1): see below.
 
 **What a UserForm is, found by looking at the real workbook in `vbadoc/private/` and the one `.frx` in the
 repository** (from the Access add-in's test source):
@@ -1038,6 +1038,13 @@ Two more things found:
   designer storage), into a new workbook, a copy of a target and a bundle (with the `.frx` beside the `.frm`). A form
   the target has already is skipped, never overwritten, as now. A form whose `.frm` has no `Begin` block or whose
   `.frx` is missing can't be taken, and says why. The Export tab can tick forms.
+  **Done on 2026-11-23** (vbadoc 0.44.0, codedocui 0.8.1 for its list), as above, with: forms bring a reference to
+  `FM20.DLL` when the target has no MSForms reference; a form the target has is identical only with the same code and
+  designer, and skipped otherwise; a bundle from a folder has the `.frx` as it was, and from a workbook one vbadoc
+  builds, which the VBA editor's File > Import took, in Excel here. Your four exported files are the fixtures, with
+  form 2's pictures (photographs that weren't ours to publish) replaced by a plain one of the same size. Checked in
+  Excel here: from the fixtures into a new workbook, and from that into a copy of a target with one of the forms.
+  Details in vbadoc's DECISIONS ("Importing UserForms").
 - **S4c (Claude), if question 2 says so:** vbadoc's export writes each form as the VBA editor does, `.frm` with its
   `Begin` block and a `.frx`, so its own folders bring forms back too. Then you import one of those `.frm` files into
   the VBA editor by hand, to check the `.frx` header vbadoc writes.

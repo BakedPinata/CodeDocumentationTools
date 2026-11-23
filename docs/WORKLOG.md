@@ -31,8 +31,8 @@ rather than repeating it.
   pass on, before the app closes; then `import --in-place` refused when another program was reading the target,
   `import`'s help, and `publish.ps1` ending the build servers. S4 (UserForms into a workbook) has its answers and sample;
   S4a is done (the spike `spikes/s4-userforms`, passed in Excel at home and at work, findings in vbadoc's DECISIONS),
-  and S4b, `vbadoc import` taking forms, is next.
-- **vbadoc 0.43.2** (a folder of exported modules as input since step S2, and as `import`'s source since S3): stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
+  and S4b is done: `vbadoc import` takes UserForms. S4c (vbadoc's export writes forms as the VBA editor does) is next.
+- **vbadoc 0.44.0** (a folder of exported modules as input since step S2, and as `import`'s source since S3; UserForms imported since S4b): stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
   `<workbook>-vba.html`, with an explorer of modules and members, in `'@Folder` folders or by kind. It asks
   before overwriting a page that would change (`--on-exists`, `--force`), as pqdoc does. Stage 6 (UserForms) is parked;
   stage 7 waits for the generalisation plan. Since 0.31.0 (step J2) it writes into add-ins (`.xlam`) as into workbooks.
@@ -41,7 +41,7 @@ rather than repeating it.
   and writes HTML by default as `<workbook or folder>-powerquery.html`. From a workbook it also writes each query to a
   `.m` file, kept in step with the workbook. The page shows each query's M code, highlighted, and an explorer of the
   queries in their Excel groups, nested as Excel shows them, or as queries and functions.
-- **codedocui 0.8.0** (`xldocui` until step K2), since steps I3, I4 and J2: the desktop app over both tools, in Windows Forms, published as one
+- **codedocui 0.8.1** (`xldocui` until step K2), since steps I3, I4 and J2: the desktop app over both tools, in Windows Forms, published as one
   compressed 50 MB file. It runs the tools' command lines in its own process, so it holds no logic of its own. The
   Document tab has every option of both main commands, and the Import tab every option of both `import`s, with Preview
   and the tools' questions as dialogs. Since S3a, an unexpected error is reported once, with a report in
@@ -63,6 +63,20 @@ rather than repeating it.
 ## Log
 
 Newest first.
+
+### 2026-11-23: Step S4b: vbadoc import takes UserForms
+
+- `vbadoc import` takes forms with their designers, from a workbook (its storage) and from a folder (the `.frm`'s
+  `Begin` block and the `.frx`), into a new workbook, a copy of a target, the target itself and a bundle, as S4a found
+  Excel accepts. A form without a designer can't be taken and says why; forms bring a reference to `FM20.DLL` when the
+  target has no MSForms; a form the target has is identical with the same code and designer, else only skipped. The
+  Export tab and the app's Import tab can tick forms, with no change of their own. vbadoc 0.44.0, codedocui 0.8.1.
+- The user's four exported files are fixtures. Form 2's frame and image held product photographs that weren't ours to
+  publish; the user chose to replace them in place with a plain picture padded to the same length (the spike's
+  `replace-image`).
+- Checked: every test (1,924 passed, 7 skipped; a browser speed test failed once under the full run's load and passed
+  on its own). In Excel here: the fixtures into a new workbook, that into a copy of a target with one of the forms,
+  and a bundle's files through the VBA editor's File > Import; every form loaded with all its controls.
 
 ### 2026-11-23: Step S4a done: the user's runs in Excel
 

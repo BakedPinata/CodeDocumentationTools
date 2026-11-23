@@ -73,7 +73,7 @@ Added in step S2 of the generalisation plan (2026-11-16), for code exported by s
 
 ## Forms
 
-Forms (UserForms) are in scope, but no sample workbook with forms has been available for testing yet. Build this part defensively.
+Forms (UserForms) are in scope. Two forms exported from the VBA editor are in the fixtures (step S4b), but no workbook with forms is, as the sample stays private. Build this part defensively. Taking forms out of a workbook or folder is in [Importing](#importing).
 
 - Export each form's code to a `.frm` file.
 - Read the form's designer storage (MS-OFORMS format) to list its controls with their name and type, and caption where available. Use this to link event handlers such as `cmdOK_Click` to the control `cmdOK`.
@@ -251,15 +251,17 @@ Shared by both views.
 ### Export tab
 
 - **The Export tab** chooses modules and classes to take out of the workbook, for `vbadoc import`. It lists every module, in the explorer's layout, whatever the filter, hiding and Show… choices are doing. Ticking a folder picks all that's in it, and it can start from what's ticked in the explorer. The choice is remembered per workbook, and is apart from the explorer's filter.
-- **Only whole standard modules and classes can be picked.** Document modules and forms can't, and say why.
+- **Only whole standard modules, classes and UserForms can be picked.** Document modules can't, and neither can a form
+  with no designer: one read from a `.frm` with no `Begin` block or no `.frx` beside it, or from a workbook without its
+  designer storage. Each says why.
 - **As the choice changes, it shows what it comes to:** what was chosen, what comes along because something chosen uses it (following Uses, Implements and Events), an interface's implementations, offered because nothing uses them, what to check in the target, and the library references.
-- **To check in the target** lists what doesn't come along, and never blocks anything: a sheet's code name, a procedure of the source's own on ThisWorkbook, a form, a procedure run by name (`Application.Run`, `CallByName`, `OnAction`), and late-bound calls. Plain `ThisWorkbook` isn't listed, as it simply means the target's own.
+- **To check in the target** lists what doesn't come along, and never blocks anything: a sheet's code name, a procedure of the source's own on ThisWorkbook, a form that can't be taken, a procedure run by name (`Application.Run`, `CallByName`, `OnAction`), and late-bound calls. Plain `ThisWorkbook` isn't listed, as it simply means the target's own.
 - **Library references** are listed to untick, apart from the two every project has.
 - **The manifest,** `vbadoc-export.json`, is downloaded from the tab and can be loaded back into it. It holds what was picked, the references to leave out and the workbook's name. A manifest for another tool, or from a newer vbadoc, is refused, saying why.
 
 ## Importing
 
-`vbadoc import <source>` takes chosen modules and classes out of a workbook, or out of a folder of module files (step S3).
+`vbadoc import <source>` takes chosen modules, classes and UserForms out of a workbook, or out of a folder of module files (step S3; forms since step S4b).
 
 - **From a folder,** the modules are read as in [A folder of module files](#a-folder-of-module-files), its subfolders too with `--recursive` (`-r`), and taken as a workbook's would be: a bundle has each as the VBA editor imports it (CRLF, with a class's header), and a new workbook or a target gets each module's source, in Windows-1252 if the folder was UTF-8. A folder has no references to bring. A module whose name another subfolder shares can't be taken. The folder isn't changed.
 
@@ -277,7 +279,15 @@ Shared by both views.
 - **`--in-place`** changes the target itself. It says what will change and asks first; a no stops with exit code 4. `--force` answers yes. With nobody to ask and no `--force`, it stops with exit code 4. The target is replaced in one step once the result is finished and read back, keeping its permissions, so a failure leaves it as it was. One that can't be had to the tool alone, as when Excel has it open, stops with exit code 5 before anything is asked; for an add-in, it says to untick it in the Add-ins dialog or close Excel. An `.xlsx` is refused with exit code 4, as it can't hold modules. `--on-exists` can't be given with it.
 - **Library references** are added, apart from the two every project has, any left out by the manifest or `--no-references`, and any the target has, known by the library's GUID. One that can't be found on this machine (in the registry by GUID alone, or another project's file) is left out and listed, as it would stop the whole project compiling. So is one whose name the target gives to a different library. Off Windows nothing can be looked up, so they're added and that's said.
 - **A signed target** stops with exit code 4, unless `--drop-signature` says to remove the signature, which the change would break.
-- **What's written is read back** before anything is replaced or created: every module has to be there, word for word.
+- **What's written is read back** before anything is replaced or created: every module has to be there, word for word,
+  and every form's designer as it was given.
+- **UserForms** (step S4b) go into a new workbook, a copy of a target or the target itself with their designers: from a
+  workbook, the form's designer storage, copied as it stands; from a folder, the `.frm`'s `Begin` block and the `.frx`
+  beside it. A form's code gets the attributes the VBA editor's export leaves out, with a `VB_Base` of new GUIDs. Forms
+  bring a reference to the Microsoft Forms 2.0 Object Library (`FM20.DLL`) when the target has none and none is coming,
+  even with `--no-references`. A form the target has with the same code and designer is identical; any other is a clash
+  that can only be skipped. In a bundle, each form is a `.frm` with its `Begin` block and a `.frx` beside it, as the VBA
+  editor exports them: from a folder, the `.frx` as it was.
 - **Source in another code page** is converted to the target's. A character it can't hold stops the run with exit code 3, rather than turning into a question mark.
 
 ## Out of scope

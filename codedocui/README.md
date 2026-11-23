@@ -73,8 +73,8 @@ on the clipboard, ready for a Command Prompt or PowerShell. Anything the tool's 
 words and with its exit code. Cancel stops a run as Ctrl+C does, and Quit in a question stops the rest of the run too.
 Each page is opened once it's written, unless that's turned off, and Open the page opens it again.
 
-**The Import tab** takes chosen modules and classes (vbadoc) or queries (pqdoc), with what they use, out of a workbook,
-or out of a folder of exported module files or `.m` files, as `vbadoc import` and `pqdoc import` do:
+**The Import tab** takes chosen modules, classes and UserForms (vbadoc) or queries (pqdoc), with what they use, out of
+a workbook, or out of a folder of exported module files or `.m` files, as `vbadoc import` and `pqdoc import` do:
 
 | In the window | `import` |
 |---|---|

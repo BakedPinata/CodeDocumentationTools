@@ -221,6 +221,37 @@ has been checked against it. Excel accepted all of this, at home and on a work m
 - **The `.frx` header** is `LB`, `08 00`, the size of the rest, eight zeros, and two numbers that look like the form's
   outer size (`ClientWidth` plus 192 and `ClientHeight` plus 512 in both samples). Only S4c, writing a `.frx`, needs it.
 
+## Importing UserForms (0.44.0, step S4b of the generalisation plan)
+
+What step S4a found, above, is what's written. The rest:
+
+- **A form carries its designer as it was read** (`FormDesigner`, on `VbaModule.Designer`): the `VBFrame` text, and a
+  compound file whose root is the designer, which is what a `.frx` holds after its header. So a form from a workbook
+  and one from a folder are written the same way. A form without one has the reason instead (`DesignerProblem`), which
+  is why it can't be taken. A designer that can't be read never stops a page being made.
+- **The `.frx` is found by the name the `.frm`'s `OleObjectBlob` line gives,** beside the `.frm`, by its file name
+  alone, so a name can't reach outside the folder. Only the blob at the offset given is read, as each form has one.
+- **The MSForms reference is added in the command, not the writer** (`FormsLibrary.IsNeeded`), so it's reported with
+  the other references and is in what `--in-place` asks about. It's added with `--no-references` too: it's always
+  installed, and a form's code may not compile without it.
+- **A form the target has is identical only if its code and designer are**, comparing the code without `VB_Base`,
+  which each copy has its own of, and the designers by their streams, wherever they are in the compound file, and
+  `VBFrame` without the `TypeInfoVer` a workbook adds. A `.frx` and the same form in a workbook differ in a few padding
+  bytes of `f` (S4a), so they count as different, and the form is skipped, which is all a clash with a form can be.
+- **A bundle from a folder has the `.frx` as it was.** From a workbook, vbadoc builds one: its header is `LB`, 8, the
+  size, eight zeros and the form's client size plus 192 and 512, which gives the VBA editor's header byte for byte for
+  both fixtures. The VBA editor's File > Import took a bundle's `.frm` and `.frx` from a workbook, and both forms
+  loaded with every control (tried through the editor's object model in Excel here, 2026-11-23). The `.frm` is the
+  `Begin` block with `OleObjectBlob` put back in its place among the properties, which are in alphabetical order, and
+  the code without the three attributes the export leaves out, so a fixture comes back as it was exported.
+- **An earlier bundle's `.frx` files are replaced with it** (`ModuleBundle.Extensions`). vbadoc's own export doesn't
+  own `.frx` files until S4c writes them, so a folder of its modules keeps any `.frx` someone put there.
+- **The fixtures' pictures were replaced** (see their README): the sample form's frame and image held photographs that
+  weren't ours to publish.
+- **Checked in Excel here** (2026-11-23), with the fixtures and the spike's `SpikeTest` module: from the folder into a
+  new workbook, then from that workbook into a copy of a target that had one of the forms, which was left as identical.
+  Both forms loaded with every control in each.
+
 ## Choosing what to import (0.29.0, step H2 of the feedback plan)
 
 The Export tab, the manifest and bundles are mostly the shell's and `shared/`'s: see `shared/README.md`.
