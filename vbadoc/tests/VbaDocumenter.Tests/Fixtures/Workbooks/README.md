@@ -29,7 +29,7 @@ f76c986f4ebc25c2cc57c088b2511a1269f4bd61d6223a2ab58db351da348ba6  SimpleMacro.xl
 e9ac8d566a43e3c3b6949e7de538705211b22af3fa1d147762d6ff1383df8092  xlmmacro.xlsm
 ```
 
-None of these contain a UserForm, so forms are still tested only with synthetic data.
+None of these contain a UserForm: two forms exported from the VBA editor are in `../UserForms/`.
 
 ## Sample add-ins
 
