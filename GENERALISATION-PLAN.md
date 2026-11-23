@@ -55,7 +55,7 @@ says where the work is.
 | [S2](#step-s2-vbadoc-documents-a-folder-of-exported-modules) | vbadoc documents a folder of exported modules, recursive or not, referring to the files where they are | Claude, then you on a real folder | Claude's part is done; yours is next: run it on a real folder from an outside source |
 | [S3](#step-s3-vbadoc-imports-from-a-folder-and-the-desktop-app) | `vbadoc import` from a folder of modules, and the desktop app's Folder… and Subfolders for both tools | Claude | Done |
 | [S3a](#step-s3a-the-import-tabs-list-error-reports-and-fixes-to-import) | The desktop app: the Import tab's error when it's first shown, and an unexpected error reported once, with a report to pass on, before the app closes. Then both tools: `import --in-place` refused when another program was reading the target, and `import`'s help; and `publish.ps1` ending the build servers | Claude | Done |
-| [S4](#step-s4-userforms-from-a-folder-into-a-workbook) | `vbadoc import` takes UserForms, from a folder's `.frm` and `.frx` or a workbook's designer: S4a a spike in Excel, S4b import, S4c vbadoc's export writes forms as the VBA editor does | Claude, then you in Excel | Planned; waiting for your answers in S4 |
+| [S4](#step-s4-userforms-from-a-folder-into-a-workbook) | `vbadoc import` takes UserForms, from a folder's `.frm` and `.frx` or a workbook's designer: S4a a spike in Excel, S4b import, S4c vbadoc's export writes forms as the VBA editor does | Claude, then you in Excel | S4a: Claude's part is done (Excel here accepted forms written from their files); yours is next: open the spike's workbooks in Excel at home and on a work machine |
 | [N2](#step-n2-accessdoc-reads-a-databases-vba) | `accessdoc`: the VBA language in a library vbadoc and accessdoc share; the tool's skeleton; a page of the database's VBA | Claude | Not started |
 | [N3](#step-n3-accessdoc-reads-forms) | `accessdoc`: forms read into sections, controls, subforms, data sources and events, with handlers linked to their controls | Claude | Not started |
 | [N4](#step-n4-the-forms-view) | `accessdoc`: the Forms view: which form holds which, each form's layout drawn, its controls, data and events | Claude, then you on a real database | Not started |
@@ -995,7 +995,12 @@ Then, asked for the same day after reviewing the above, three more, which also c
 ### Step S4: UserForms from a folder into a workbook
 
 Asked for on 2026-11-16 as the step after S3 (S0, question 7): `vbadoc import` writing a UserForm into a new
-workbook or a copy of a target. Worked out on 2026-11-16; **waiting for your answers below.**
+workbook or a copy of a target. Worked out on 2026-11-16. Your answers below came on 2026-11-23, all as recommended,
+with the sample in `vbadoc/private/s4/`. **S4a, Claude's part, is done:** the spike is `spikes/s4-userforms`, and its
+README has the workbooks, what to do with each in Excel, and what it found here. In short: a form written from its
+`.frm` and `.frx` loads with every control and runs, in Excel here, once its code has a `VB_Base` (any GUIDs do, as
+Excel makes new ones), and a reference to `FM20.DLL` works where a project has no MSForms reference. Next: your runs
+at home and on a work machine, then the findings go into vbadoc's DECISIONS and S4b starts.
 
 **What a UserForm is, found by looking at the real workbook in `vbadoc/private/` and the one `.frx` in the
 repository** (from the Access add-in's test source):
@@ -1201,7 +1206,7 @@ Approving this plan covers the changes below, each made in the step that causes 
 | N1 | Make Northwind 2.0 from Access's template into `accessdoc/private/`; run the spike at home, on a work machine and on one real database |
 | S0 | Answer the questions on folders of exported files |
 | S2 | Run vbadoc on a real folder of modules from an outside source |
-| S4 | Answer the questions in S4; make a sample workbook with two UserForms and export them; open the spike's workbooks in Excel at home and at work |
+| S4 | Open the spike's workbooks in Excel at home and at work, as its README says (the answers and the sample are done) |
 | N4, N5 | Try the Forms view and the outline on a real database and a form you mean to rebuild |
 | P1 | Run the spike on a real solution, and on a work machine |
 | P4 | Try csdoc's page on a real solution |

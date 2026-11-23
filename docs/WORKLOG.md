@@ -8,7 +8,7 @@ rather than repeating it.
 - **Updating it:** at the end of each stage, and after any session that changes direction, update *Current state* and
   add an entry at the top of the log. Give the date, what changed and why, and commits, in a few lines.
 
-## Current state (2026-11-17)
+## Current state (2026-11-23)
 
 - **`GENERALISATION-PLAN.md`** (root): the current plan, agreed on 2026-11-13. It widens the repository to
   Access databases (forms and VBA), C# solutions and Python projects, with new names for the repository, the shared
@@ -29,8 +29,9 @@ rather than repeating it.
   real outside folder is to come. S3 is done: `vbadoc import` takes from a folder. S3a (added 2026-11-17) is done: the
   Import tab's error when it's first shown with a list read, and an unexpected error reported once, with a report to
   pass on, before the app closes; then `import --in-place` refused when another program was reading the target,
-  `import`'s help, and `publish.ps1` ending the build servers. S4 (UserForms into a workbook) is planned and waits
-  for the user's answers and a sample workbook.
+  `import`'s help, and `publish.ps1` ending the build servers. S4 (UserForms into a workbook) has its answers and sample;
+  S4a, Claude's part, is done (the spike `spikes/s4-userforms`), and the user's runs in Excel at home and at work are
+  next, before S4b.
 - **vbadoc 0.43.2** (a folder of exported modules as input since step S2, and as `import`'s source since S3): stages 0–5e are done, the class diagram is drawn with d3 (no Mermaid), and the page is
   `<workbook>-vba.html`, with an explorer of modules and members, in `'@Folder` folders or by kind. It asks
   before overwriting a page that would change (`--on-exists`, `--force`), as pqdoc does. Stage 6 (UserForms) is parked;
@@ -62,6 +63,18 @@ rather than repeating it.
 ## Log
 
 Newest first.
+
+### 2026-11-23: Step S4a, Claude's part: a spike writing UserForms into workbooks
+
+- The user answered S4's questions as recommended and made the sample (`vbadoc/private/s4/`: a workbook with two
+  forms, and both exported). Its four exported files hold nothing of the user's; the workbook does, and stays private.
+- `spikes/s4-userforms` builds five new workbooks holding both forms, one way each: from the `.frm` and `.frx` (F1), F1
+  without `VB_Base` (F2), with no MSForms reference (F3), with the designer as a workbook keeps it (F4), and copied from
+  the workbook (C1). A hidden Excel here loaded every form with its controls in all but F2, which stopped on a dialog,
+  and F1 saved by Excel opened and ran again. Excel makes new `VB_Base` GUIDs on compiling, and keeps a reference to
+  `FM20.DLL` as given. The details are in the spike's README.
+- Next: the user opens the workbooks in Excel at home and on a work machine; then the findings go into vbadoc's
+  DECISIONS, and S4b. No tool changed, so no versions.
 
 ### 2026-11-23: vbadoc import gives a class back its attributes
 
