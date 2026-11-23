@@ -14,7 +14,10 @@ namespace VbaDocumenter.Core.Importing;
 /// </summary>
 public static class ModuleBundle
 {
-  /// <summary>Each module's file name and bytes.</summary>
+  /// <summary>The extensions of the files a bundle holds, which an earlier bundle's are replaced by: a form's .frx too.</summary>
+  public static IReadOnlyList<string> Extensions { get; } = [.. ProjectExporter.ModuleExtensions, ".frx"];
+
+  /// <summary>Each module's file name and bytes, with each UserForm's <c>.frx</c> beside its <c>.frm</c>.</summary>
   /// <exception cref="ExtractionException">Two modules map to the same file name.</exception>
   public static Dictionary<string, byte[]> Files(VbaProject project, ImportPlan plan)
   {
@@ -22,12 +25,25 @@ public static class ModuleBundle
     ArgumentNullException.ThrowIfNull(plan);
     var byName = project.Modules.ToDictionary(m => m.Name, StringComparer.OrdinalIgnoreCase);
     var files = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+    void Add(string name, byte[] content)
+    {
+      if (files.Keys.Any(existing => existing.Equals(name, StringComparison.OrdinalIgnoreCase)))
+        throw new ExtractionException($"Two modules map to the same file name '{name}'.");
+      files[name] = content;
+    }
+
     foreach (var module in plan.Items.Select(id => byName[id]))
     {
       var name = ProjectExporter.FileNameFor(module);
-      if (files.Keys.Any(existing => existing.Equals(name, StringComparison.OrdinalIgnoreCase)))
-        throw new ExtractionException($"Two modules map to the same file name '{name}'.");
-      files[name] = ProjectExporter.FileContent(module);
+      if (module.Designer is { } designer)
+      {
+        Add(name, FormFiles.Frm(module, name, project.CodePage));
+        Add(FormFiles.FrxNameFor(name), designer.FrxBytes());
+      }
+      else
+      {
+        Add(name, ProjectExporter.FileContent(module));
+      }
     }
 
     return files;
@@ -50,6 +66,7 @@ public static class ModuleBundle
     text.Append("Chosen with vbadoc, with everything they use. To bring them into a workbook by hand:\n\n");
     text.Append("1. Open the workbook and the VBA editor (Alt+F11).\n");
     text.Append("2. Choose **File > Import File** for each file below, in any order.\n");
+    var hasForms = plan.Items.Any(id => byName[id].Kind == VbaModuleKind.Form);
     text.Append(references.Count > 0
       ? "3. Tick the library references below in **Tools > References**.\n4. Choose **Debug > Compile VBAProject**.\n"
       : "3. Choose **Debug > Compile VBAProject**.\n");
@@ -57,6 +74,7 @@ public static class ModuleBundle
     text.Append("\n| File | Module | Why it's here |\n|---|---|---|\n");
     foreach (var id in plan.Picked) text.Append($"| `{ProjectExporter.FileNameFor(byName[id])}` | {id} | Chosen |\n");
     foreach (var item in plan.Brought) text.Append($"| `{ProjectExporter.FileNameFor(byName[item.Id])}` | {item.Id} | Used by {string.Join(", ", item.UsedBy)} |\n");
+    if (hasForms) text.Append("\nA UserForm's `.frx` holds its controls, and is read with its `.frm`: keep the two together.\n");
 
     if (references.Count > 0)
     {

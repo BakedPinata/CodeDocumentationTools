@@ -9,7 +9,11 @@ namespace VbaDocumenter.Core.Importing;
 /// <param name="Name">Its name.</param>
 /// <param name="Kind">Its kind.</param>
 /// <param name="Source">Its source as the project stores it, in the project's code page.</param>
-public sealed record ModuleToWrite(string Name, VbaModuleKind Kind, byte[] Source);
+public sealed record ModuleToWrite(string Name, VbaModuleKind Kind, byte[] Source)
+{
+  /// <summary>A UserForm's designer, which a form can't be written without.</summary>
+  public FormDesigner? Designer { get; init; }
+}
 
 /// <summary>What to change in a project.</summary>
 /// <param name="Add">The modules to add.</param>
@@ -34,6 +38,9 @@ public static class ProjectWriter
   const ushort ModuleTypeProcedural = 0x0021, ModuleTypeOther = 0x0022;
 
   const string ProjectStream = "PROJECT", NameMapStream = "PROJECTwm", DirStream = "dir", PerformanceCache = "_VBA_PROJECT";
+
+  // The designer every UserForm has, MSForms, named once in PROJECT when a project has a form (MS-OVBA's ProjectPackage).
+  const string PackageLine = "Package={AC9F2F90-E877-11CE-9F68-00AA00574A4F}";
 
   /// <summary>
   /// Changes an existing project. Everything else in it stays: other modules, references, protection, and the storages
@@ -71,6 +78,7 @@ public static class ProjectWriter
         dir.InsertRange(dir.FindIndex(r => r.Id == Terminator), ModuleRecords(module, stream, encoding));
         project = AddModuleLine(project, module);
         nameMap?.Add(module.Name);
+        WriteDesigner(root, module, encoding);
       }
 
       int at = dir.FindIndex(r => r.Id == ModulesCount);
@@ -115,6 +123,7 @@ public static class ProjectWriter
         var stream = FreeStreamName(vba, module.Name);
         Write(vba, stream, OvbaCompressor.Compress(module.Source));
         moduleRecords.AddRange(ModuleRecords(module, stream, encoding));
+        WriteDesigner(root, module, encoding);
       }
 
       var dir = NewDir(modules.Count, references, encoding, codePage);
@@ -136,7 +145,9 @@ public static class ProjectWriter
     Random.Shared.NextBytes(seeds);
 
     var text = new StringBuilder($"ID=\"{id}\"\r\n");
-    foreach (var module in modules) text.Append(ModuleLine(module)).Append("\r\n");
+    foreach (var module in modules.Where(m => m.Kind != VbaModuleKind.Form)) text.Append(ModuleLine(module)).Append("\r\n");
+    if (modules.Any(m => m.Kind == VbaModuleKind.Form)) text.Append(PackageLine).Append("\r\n");
+    foreach (var module in modules.Where(m => m.Kind == VbaModuleKind.Form)) text.Append(ModuleLine(module)).Append("\r\n");
     text.Append("Name=\"VBAProject\"\r\nHelpContextID=\"0\"\r\nVersionCompatible32=\"393222000\"\r\n");
     text.Append($"CMG=\"{ProjectEncryption.Encrypt([0, 0, 0, 0], key, seeds[0])}\"\r\n");  // not protected
     text.Append($"DPB=\"{ProjectEncryption.Encrypt([0], key, seeds[1])}\"\r\n");           // no password
@@ -196,8 +207,17 @@ public static class ProjectWriter
     new(0x001E, [0, 0, 0, 0]),                              // MODULEHELPCONTEXT
     new(0x002C, [0xFF, 0xFF]),                              // MODULECOOKIE
     new(module.Kind == VbaModuleKind.Standard ? ModuleTypeProcedural : ModuleTypeOther, []),
+    .. module.Kind == VbaModuleKind.Form ? [new DirRecord(0x0028, [])] : Array.Empty<DirRecord>(), // MODULEPRIVATE, as Excel gives a form
     new(ModuleEnd, []),
   ];
+
+  // A form's designer is a storage beside the VBA storage, named after it (step S4a).
+  static void WriteDesigner(Storage root, ModuleToWrite module, Encoding encoding)
+  {
+    if (module.Kind != VbaModuleKind.Form) return;
+    var designer = module.Designer ?? throw new InvalidDataException($"The UserForm {module.Name} has no designer to write.");
+    designer.WriteInto(root, module.Name, encoding);
+  }
 
   // A module can be called Dir, but its stream can't: names in a compound file ignore case, and that one is the project's.
   static string FreeStreamName(Storage vba, string module)
@@ -235,16 +255,21 @@ public static class ProjectWriter
   {
     VbaModuleKind.Standard => $"Module={module.Name}",
     VbaModuleKind.Class => $"Class={module.Name}",
+    VbaModuleKind.Form => $"BaseClass={module.Name}",
     _ => $"Document={module.Name}/&H00000000",
   };
 
-  // A module's line goes after the others, before the project's own properties.
+  // A module's line goes after the others, before the project's own properties. The first form brings the Package line
+  // every form shares, before it.
   static string AddModuleLine(string project, ModuleToWrite module)
   {
     var lines = project.Split("\r\n").ToList();
     int at = lines.FindIndex(l => l.StartsWith("HelpFile=", StringComparison.Ordinal) || l.StartsWith("ExeName32=", StringComparison.Ordinal)
       || l.StartsWith("Name=", StringComparison.Ordinal));
-    lines.Insert(at < 0 ? Math.Min(1, lines.Count) : at, ModuleLine(module));
+    at = at < 0 ? Math.Min(1, lines.Count) : at;
+    lines.Insert(at, ModuleLine(module));
+    if (module.Kind == VbaModuleKind.Form && !lines.Take(at).Any(l => l.StartsWith("Package=", StringComparison.OrdinalIgnoreCase)))
+      lines.Insert(at, PackageLine);
     return string.Join("\r\n", lines);
   }
 
@@ -261,7 +286,7 @@ public static class ProjectWriter
       if (line.StartsWith('[')) section = line;
       bool itsLine = section switch
       {
-        null => Names(line, "Module=") || Names(line, "Class=") || Names(line, "Document="),
+        null => Names(line, "Module=") || Names(line, "Class=") || Names(line, "Document=") || Names(line, "BaseClass="),
         "[Workspace]" => line.Split('=')[0].Equals(name, StringComparison.OrdinalIgnoreCase),
         _ => false,
       };

@@ -82,11 +82,48 @@ public sealed class ClassAttributesTests
   [Theory]
   [InlineData(VbaModuleKind.Standard)]
   [InlineData(VbaModuleKind.Document)]
-  [InlineData(VbaModuleKind.Form)]
-  public void Only_a_class_is_changed(VbaModuleKind kind)
+  public void Only_a_class_or_a_form_is_changed(VbaModuleKind kind)
   {
     var module = new VbaModule { Name = "Router", Kind = kind, StreamName = "Router", Source = Exported, SourceBytes = [] };
 
     Assert.Same(Exported, ClassAttributes.StoredSource(module));
+  }
+
+  // A form without VB_Base crashed Excel (step S4a). Its VB_Base names two GUIDs of its own, which Excel replaces when it
+  // compiles, so any will do, and a form is predeclared.
+  [Fact]
+  public void An_exported_form_gets_a_VB_Base_of_its_own_and_the_other_two()
+  {
+    var form = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "UserForms", "frmDemoForm2.frm"));
+    var exported = form[form.IndexOf("Attribute VB_Name", StringComparison.Ordinal)..];
+
+    var lines = ClassAttributes.Complete(exported, VbaModuleKind.Form).Split("\r\n");
+
+    Assert.Equal("Attribute VB_Name = \"frmDemoForm2\"", lines[0]);
+    Assert.Matches(@"^Attribute VB_Base = ""0\{[0-9A-F-]{36}\}\{[0-9A-F-]{36}\}""$", lines[1]);
+    Assert.Equal(
+      ["Attribute VB_GlobalNameSpace = False", "Attribute VB_Creatable = False", "Attribute VB_PredeclaredId = True",
+       "Attribute VB_Exposed = False", "Attribute VB_TemplateDerived = False", "Attribute VB_Customizable = False"],
+      lines[2..8]);
+  }
+
+  [Fact]
+  public void Each_form_gets_a_new_VB_Base_and_a_form_that_has_one_keeps_it()
+  {
+    var exported = "Attribute VB_Name = \"Pick\"\r\nOption Explicit\r\n";
+    var first = ClassAttributes.Complete(exported, VbaModuleKind.Form);
+
+    Assert.NotEqual(first, ClassAttributes.Complete(exported, VbaModuleKind.Form));
+    Assert.Same(first, ClassAttributes.Complete(first, VbaModuleKind.Form));
+  }
+
+  [Fact]
+  public void Two_copies_of_a_form_compare_the_same_whatever_their_VB_Base()
+  {
+    VbaModule Form(string source) => new() { Name = "Pick", Kind = VbaModuleKind.Form, StreamName = "Pick", Source = source, SourceBytes = [] };
+    var exported = "Attribute VB_Name = \"Pick\"\r\nOption Explicit\r\n";
+
+    Assert.Equal(ClassAttributes.Comparable(Form(exported)), ClassAttributes.Comparable(Form(ClassAttributes.Complete(exported, VbaModuleKind.Form))));
+    Assert.DoesNotContain("VB_Base", ClassAttributes.Comparable(Form(exported)), StringComparison.Ordinal);
   }
 }

@@ -88,7 +88,7 @@ public class ModuleImportTests
   ];
 
   static readonly ModuleImport Import =
-      new(DependencyAnalyser.Analyse(ProjectParser.Parse(WorkbookReader.Read(SyntheticWorkbook.Xlsm(Project)))));
+      ModuleImport.For(WorkbookReader.Read(SyntheticWorkbook.Xlsm(Project)));
 
   [Fact]
   public void A_class_brings_what_it_uses_and_the_interface_it_implements()
@@ -118,12 +118,12 @@ public class ModuleImportTests
   }
 
   [Fact]
-  public void Document_modules_and_forms_cant_be_picked_and_say_why()
+  public void Document_modules_and_forms_without_a_designer_cant_be_picked_and_say_why()
   {
     Assert.Null(Import.WhyNot("Reports"));
     Assert.Equal("A document module belongs to its workbook", Import.WhyNot("ThisWorkbook"));
     Assert.Equal("A document module belongs to its workbook", Import.WhyNot("Sheet1"));
-    Assert.Equal("A UserForm can't be imported yet", Import.WhyNot("UserForm1"));
+    Assert.Equal("The workbook has no designer for it, so the form's controls aren't there to take", Import.WhyNot("UserForm1"));
   }
 
   [Fact]

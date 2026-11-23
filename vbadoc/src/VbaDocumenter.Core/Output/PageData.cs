@@ -42,7 +42,7 @@ public static class PageData
     string Camel(Enum value) => JsonNamingPolicy.CamelCase.ConvertName(value.ToString());
     var usedBy = Usage.UsedByOtherModules(model);
     int? UsedBy(string id) => usedBy.TryGetValue(id, out var count) ? count : null;
-    var import = new ModuleImport(model, project.ClashingModules);
+    var import = ModuleImport.For(project, model);
     string FileOf(string module) => ProjectExporter.FileNameFor(filesByName[module]);
 
     var files = model.Modules.Select(node =>

@@ -89,7 +89,9 @@ public sealed class TargetWorkbook
   {
     ArgumentNullException.ThrowIfNull(change);
     var codePage = Project?.CodePage ?? change.SourceCodePage;
-    var modules = change.Add.Select(m => new ModuleToWrite(m.Name, m.Kind, SourceIn(m, change.SourceCodePage, codePage))).ToList();
+    var modules = change.Add.Select(m => new ModuleToWrite(m.Name, m.Kind, SourceIn(m, change.SourceCodePage, codePage)) { Designer = m.Designer }).ToList();
+    if (change.Add.FirstOrDefault(m => m.Kind == VbaModuleKind.Form && m.Designer is null) is { } bare)
+      throw new ExtractionException($"The UserForm {bare.Name} has no designer, so it can't be written. Nothing was written.");
 
     if (IsSigned) RemoveSignature();
     if (_projectPart is { } part)
@@ -100,7 +102,21 @@ public sealed class TargetWorkbook
     var output = _package.Write();
     var kept = (Project?.Modules ?? []).Where(m => !change.Replace.Contains(m.Name, StringComparer.OrdinalIgnoreCase)).Select(m => (m.Name, m.SourceBytes));
     CheckReadsBack(output, [.. kept, .. modules.Select(m => (m.Name, m.Source))]);
+    CheckDesignersReadBack(output, modules);
     return output;
+  }
+
+  // Each form written has its designer, as it was given.
+  static void CheckDesignersReadBack(byte[] output, IReadOnlyList<ModuleToWrite> modules)
+  {
+    var forms = modules.Where(m => m.Kind == VbaModuleKind.Form).ToList();
+    if (forms.Count == 0) return;
+    var read = WorkbookReader.Read(output).Modules.ToDictionary(m => m.Name, StringComparer.OrdinalIgnoreCase);
+    foreach (var form in forms)
+    {
+      if (!read.TryGetValue(form.Name, out var module) || module.Kind != VbaModuleKind.Form || module.Designer is null || !module.Designer.SameAs(form.Designer!))
+        throw new ExtractionException($"The result didn't read back as written ({form.Name}'s designer), so nothing was written.");
+    }
   }
 
   /// <summary>Reads a written workbook back: every module expected has to be there, word for word.</summary>
@@ -117,15 +133,15 @@ public sealed class TargetWorkbook
   }
 
   /// <summary>
-  /// A module's source in the target's code page, as a project stores it: a class exported by the VBA editor gets back
-  /// the attributes the export left out (<see cref="ClassAttributes"/>). Bytes are kept as they are unless the code page
-  /// differs, apart from a class's attribute lines when they change.
+  /// A module's source in the target's code page, as a project stores it: a class or form exported by the VBA editor
+  /// gets back the attributes the export left out (<see cref="ClassAttributes"/>). Bytes are kept as they are unless the
+  /// code page differs, apart from the attribute lines when they change.
   /// </summary>
   /// <exception cref="ExtractionException">It has characters the target's code page can't hold.</exception>
   public static byte[] SourceIn(VbaModule module, int sourceCodePage, int targetCodePage)
   {
     ArgumentNullException.ThrowIfNull(module);
-    var header = module.Kind == VbaModuleKind.Class ? ClassAttributes.Completion(module.Source) : null;
+    var header = ClassAttributes.Completion(module.Source, module.Kind);
     if (sourceCodePage == targetCodePage)
     {
       if (header is null) return module.SourceBytes;

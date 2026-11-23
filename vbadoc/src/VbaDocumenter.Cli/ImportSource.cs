@@ -24,7 +24,7 @@ public static class ImportSource
   {
     ArgumentException.ThrowIfNullOrWhiteSpace(source);
     var project = Read(Path.GetFullPath(source), recursive, null);
-    return new ModuleImport(DependencyAnalyser.Analyse(ProjectParser.Parse(project)), project.ClashingModules).Items();
+    return ModuleImport.For(project).Items();
   }
 
   /// <summary>

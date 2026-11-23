@@ -44,7 +44,7 @@ public static class ModuleClashes
       {
         added.Add(id);
       }
-      else if (existing.Kind == module.Kind && Same(existing, module))
+      else if (existing.Kind == module.Kind && Same(existing, module) && SameDesigner(existing, module))
       {
         identical.Add(id);
       }
@@ -64,10 +64,15 @@ public static class ModuleClashes
     return new TargetComparison(added, identical, clashes);
   }
 
+  // A form is the same only if its designer is: the same code with other controls is another form.
+  static bool SameDesigner(VbaModule a, VbaModule b) =>
+    a.Kind != VbaModuleKind.Form || a.Designer is not null && b.Designer is not null && a.Designer.SameAs(b.Designer);
+
   // Only what's at the end can differ without meaning anything: the VBA editor keeps or drops a last line as it likes.
-  // They're compared as a project stores them, so a class exported by the VBA editor matches the same class in a workbook.
+  // They're compared as a project stores them, so a class exported by the VBA editor matches the same class in a workbook,
+  // and a form without its VB_Base, which each copy of a form has its own of.
   static bool Same(VbaModule a, VbaModule b) =>
-    ClassAttributes.StoredSource(a).TrimEnd().Equals(ClassAttributes.StoredSource(b).TrimEnd(), StringComparison.Ordinal);
+    ClassAttributes.Comparable(a).TrimEnd().Equals(ClassAttributes.Comparable(b).TrimEnd(), StringComparison.Ordinal);
 
   static ILookup<string, string> UsedBy(VbaProject? project) =>
     (project is null ? [] : DependencyAnalyser.Analyse(ProjectParser.Parse(project)).ModuleEdges)

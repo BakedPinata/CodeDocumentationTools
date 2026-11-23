@@ -11,10 +11,10 @@ namespace VbaDocumenter.Core.Importing;
 /// import command, which is why the page gets them as data rather than working them out itself.
 /// </summary>
 /// <remarks>
-/// Standard modules and classes can come. Depending on the workbook isn't a reason to leave something out: plain
-/// <c>ThisWorkbook</c> just means the new workbook. What's listed is what the target may not have (a sheet's code name,
-/// a procedure of the source's own on ThisWorkbook, a form) and what can't be followed (a procedure run by name, or a
-/// late-bound call). None of it stops an import.
+/// Standard modules, classes and UserForms with their designers can come. Depending on the workbook isn't a reason to
+/// leave something out: plain <c>ThisWorkbook</c> just means the new workbook. What's listed is what the target may not
+/// have (a sheet's code name, a procedure of the source's own on ThisWorkbook, a form that can't come) and what can't be
+/// followed (a procedure run by name, or a late-bound call). None of it stops an import.
 /// </remarks>
 public sealed partial class ModuleImport
 {
@@ -28,10 +28,12 @@ public sealed partial class ModuleImport
 
   /// <summary>Works out the lookups for a project.</summary>
   /// <param name="clashing">Modules whose name a file in another subfolder shares, which can't be taken.</param>
-  public ModuleImport(DependencyModel model, IReadOnlySet<string>? clashing = null)
+  /// <param name="formsWithoutDesigner">UserForms that can't be taken as they have no designer, with why.</param>
+  public ModuleImport(DependencyModel model, IReadOnlySet<string>? clashing = null, IReadOnlyDictionary<string, string>? formsWithoutDesigner = null)
   {
     ArgumentNullException.ThrowIfNull(model);
     _clashing = clashing ?? new HashSet<string>();
+    _formsWithoutDesigner = formsWithoutDesigner ?? new Dictionary<string, string>();
     _modules = model.Modules.ToDictionary(m => m.Id, StringComparer.OrdinalIgnoreCase);
     _usedFrom = model.ModuleEdges.ToLookup(e => e.From, StringComparer.OrdinalIgnoreCase);
     _implementationsOf = model.ModuleEdges.Where(e => e.Kind == EdgeKind.Implements).ToLookup(e => e.To, StringComparer.OrdinalIgnoreCase);
@@ -52,11 +54,26 @@ public sealed partial class ModuleImport
     : _modules[id].Module.Kind switch
     {
       VbaModuleKind.Document => "A document module belongs to its workbook",
-      VbaModuleKind.Form => "A UserForm can't be imported yet",
+      VbaModuleKind.Form => _formsWithoutDesigner.GetValueOrDefault(id),
       _ => null,
     };
 
+  /// <summary>The rules for a project as read, with its clashing names and its forms that have no designer.</summary>
+  public static ModuleImport For(VbaProject project)
+  {
+    ArgumentNullException.ThrowIfNull(project);
+    return For(project, DependencyAnalyser.Analyse(ProjectParser.Parse(project)));
+  }
+
+  /// <summary>The rules for a project as read, from its model when that's been worked out already.</summary>
+  public static ModuleImport For(VbaProject project, DependencyModel model)
+  {
+    ArgumentNullException.ThrowIfNull(project);
+    return new ModuleImport(model, project.ClashingModules, project.FormsWithoutDesigner());
+  }
+
   readonly IReadOnlySet<string> _clashing;
+  readonly IReadOnlyDictionary<string, string> _formsWithoutDesigner;
 
   /// <summary>The modules a module uses that can come with it.</summary>
   public IEnumerable<string> Uses(string id) => _usedFrom[id].Select(e => e.To).Where(to => WhyNot(to) is null).Distinct();
@@ -71,7 +88,7 @@ public sealed partial class ModuleImport
     foreach (var edge in _usedFrom[id].DistinctBy(e => e.To))
     {
       var used = _modules[edge.To].Module;
-      if (used.Kind == VbaModuleKind.Form) needs.Add(new(used.Name, "a UserForm, which can't come along"));
+      if (used.Kind == VbaModuleKind.Form && WhyNot(edge.To) is not null) needs.Add(new(used.Name, "a UserForm, which can't come along"));
       else if (used.Kind == VbaModuleKind.Document && !IsWorkbook(used)) needs.Add(new(used.Name, "a sheet's code name, so the target needs a sheet called that"));
     }
 

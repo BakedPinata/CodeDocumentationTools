@@ -27,7 +27,7 @@ sealed class ImportCommand(ILogger logger, AppServices services)
     var workbook = Path.GetFileName(Path.TrimEndingDirectorySeparator(request.Source));
     var project = ImportSource.Read(request.Source, request.Recursive, logger);
     var (items, leaveOut) = run.ReadChoice(request, workbook);
-    var import = new ModuleImport(DependencyAnalyser.Analyse(ProjectParser.Parse(project)), project.ClashingModules);
+    var import = ModuleImport.For(project);
 
     var unknown = items.Where(item => import.Find(item) is null).ToList();
     if (unknown.Count > 0)
@@ -62,7 +62,7 @@ sealed class ImportCommand(ILogger logger, AppServices services)
     }
 
     return run.WriteBundle(request, ModuleBundle.Files(project, plan), ModuleBundle.Readme(workbook, project, plan, references),
-        ProjectExporter.ModuleExtensions.ToList(), ProjectExporter.GitAttributesContent);
+        ModuleBundle.Extensions.ToList(), ProjectExporter.GitAttributesContent);
   }
 
   /// <summary>Everything a workbook is written from.</summary>
@@ -105,6 +105,8 @@ sealed class ImportCommand(ILogger logger, AppServices services)
 
     var references = ReferenceChoice.Make(choice.References, workbook.Project, services.IsLibraryInstalled);
     var adding = compared.New.Concat(resolution.Overwrite).ToHashSet(StringComparer.OrdinalIgnoreCase);
+    if (FormsLibrary.IsNeeded(project.Modules.Where(m => adding.Contains(m.Name)), workbook.Project, references.Add))
+      references = references with { Add = [.. references.Add, FormsLibrary.Reference] };
     Report(compared, resolution, references, workbook);
     if (adding.Count == 0 && references.Add.Count == 0)
     {
